@@ -1,0 +1,90 @@
+[project]
+name = "modgud"
+version = "0.1.0"
+description = "Guard clauses are validation checks at the beginning of functions that exit early when preconditions aren't met. They prevent deeply nested conditional logic and make the \"happy path\" of your code more readable."
+authors = [
+    {name = "steven.miers@gmail.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.13"
+
+repository = "https://github.com/terracoil/modgud"
+homepage = "https://pypi.org/project/modgud/"
+documentation = "https://github.com/terracoil/modgud/tree/main/docs"
+keywords = ["cli", "auto", "introspection", "argparse", "command-line"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+packages = [{include = "modgud"}]
+include = [
+    "LICENSE",
+    "README.md",
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.13"
+# No runtime dependencies - modgud only stdlib
+
+[dependency-groups]
+test = [
+    "pytest (>=8.4.2,<9.0.0)",
+    "pytest-cov (>=7.0.0,<8.0.0)",
+    "pytest-timeout (>=2.3.1,<3.0.0)",
+    "pytest-xdist (>=3.8.0,<4.0.0)",
+    "ruff (>=0.14.2,<0.15.0)"
+]
+dev = [
+    { include-group = "test" },
+    "freyja (>=1.0.22,<2.0.0)",
+    "mypy[reports] (>=1.18.2,<2.0.0)",
+    "pre-commit (>=4.3.0,<5.0.0)",
+    "poetry-dynamic-versioning (>=1.9.1,<2.0.0)"
+]
+
+[tool.mypy]
+disallow_untyped_defs = true
+exclude = [
+    "build/",
+    "dist/",
+]
+
+# Output
+linecount_report = "reports/mypy/"
+linecoverage_report = "reports/mypy/"
+lineprecision_report = "reports/mypy/"
+python_version = "3.13"
+show_error_codes = true
+verbosity=1
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers --cov=modgud --cov-report=term-missing --cov-report=html:reports/coverage --cov-report=xml:reports/coverage/converage.xml"
+log_file = "pytest.log" # Path to the log file
+log_file_level = "DEBUG" # Minimum level for logging to file
+log_file_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_file_date_format = "%Y-%m-%d %H:%M:%S"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.poetry-dynamic-versioning]
+enable = false
+vcs = "git"
+style = "semver"
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
