@@ -404,6 +404,46 @@ class FreyjaDevTools:
         # Tag doesn't exist, which is what we want
         pass
 
+      # Update version in pyproject.toml
+      parent._print_info(f"📝 Updating version in pyproject.toml to {version}...")
+      pyproject_path = parent.project_root / "pyproject.toml"
+
+      try:
+        with open(pyproject_path, 'r') as f:
+          content = f.read()
+
+        # Update version line
+        updated_content = re.sub(
+          r'^version = "[^"]+"',
+          f'version = "{version}"',
+          content,
+          count=1,
+          flags=re.MULTILINE
+        )
+
+        with open(pyproject_path, 'w') as f:
+          f.write(updated_content)
+
+        parent._print_success(f"Updated pyproject.toml version to {version}")
+      except Exception as e:
+        parent._print_error(f"Failed to update pyproject.toml: {e}")
+        return
+
+      # Commit the version change
+      parent._print_info("💾 Committing version update...")
+      if not parent._run_command("git add pyproject.toml", "Staging pyproject.toml"):
+        parent._print_error("Failed to stage pyproject.toml")
+        return
+
+      commit_msg = f"Bump version to {version}"
+      commit_cmd = f'''git commit -m "$(cat <<'EOF'
+{commit_msg}
+EOF
+)"'''
+      if not parent._run_command(commit_cmd, f"Committing version bump"):
+        parent._print_error("Failed to commit version change")
+        return
+
       # Use Claude to generate tag message
       parent._print_info("🤖 Generating tag message with Claude...")
       try:
@@ -423,22 +463,31 @@ class FreyjaDevTools:
       # Create the tag on HEAD
       parent._print_info(f"Creating tag: {tag}")
 
-      if not parent._run_command(f'git tag -a "{tag}" HEAD -m "{tag_message}"', f"Creating tag {tag} on HEAD"):
-        parent._print_error("Failed to create tag")
+      # Use subprocess directly to handle multi-line tag messages properly
+      try:
+        subprocess.run(
+          ['git', 'tag', '-a', tag, 'HEAD', '-m', tag_message],
+          cwd=parent.project_root,
+          capture_output=True,
+          text=True,
+          check=True
+        )
+        parent._print_success(f"Created tag {tag} on HEAD")
+      except subprocess.CalledProcessError as e:
+        parent._print_error(f"Failed to create tag: {e.stderr}")
         return
 
-      parent._print_success(f"Created tag {tag} on HEAD")
-
-      # Push tag to remote
-      parent._print_info("🚀 Pushing tag to remote...")
-      if not parent._run_command("git push --tags", "Pushing tags to remote"):
-        parent._print_error("Failed to push tag to remote. Tag created locally.")
-        parent._print_info(f"To push manually, run: {parent.colors['blue']}git push --tags{parent.colors['nc']}")
+      # Push commit and tag to remote
+      parent._print_info("🚀 Pushing commit and tag to remote...")
+      if not parent._run_command("git push && git push --tags", "Pushing to remote"):
+        parent._print_error("Failed to push to remote. Commit and tag created locally.")
+        parent._print_info(f"To push manually, run: {parent.colors['blue']}git push && git push --tags{parent.colors['nc']}")
         return
 
       # Success summary
-      parent._print_success("🎉 Tag created successfully!")
-      parent._print_success(f"Tagged version: {tag}")
+      parent._print_success("🎉 Version updated, tagged, and pushed successfully!")
+      parent._print_success(f"Version: {version}")
+      parent._print_success(f"Tag: {tag}")
       parent._print_success("Pushed to remote repository")
 
 

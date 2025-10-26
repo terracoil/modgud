@@ -1,13 +1,14 @@
 [project]
 name = "modgud"
+description = "Expression-oriented programming for Python 3.13+ with guard clause decorators and implicit returns. Eliminate defensive coding clutter through declarative input validation and Ruby/Rust-style automatic return transformation, all while maintaining single return point architecture and zero runtime dependencies."
 version = "0.2.1"
-description = "Guard clauses are validation checks at the beginning of functions that exit early when preconditions aren't met. They prevent deeply nested conditional logic and make the \"happy path\" of your code more readable."
+license = {text = "MIT"}
+readme = "README.md"
 authors = [
     {name = "steven.miers@gmail.com"}
 ]
-license = {text = "MIT"}
-requires-python = ">=3.13"
 
+requires-python = ">=3.13"
 repository = "https://github.com/terracoil/modgud"
 homepage = "https://pypi.org/project/modgud/"
 documentation = "https://github.com/terracoil/modgud/tree/main/docs"
