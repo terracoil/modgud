@@ -1,6 +1,6 @@
 [project]
 name = "modgud"
-version = "0.2.0"
+version = "0.2.1"
 description = "Guard clauses are validation checks at the beginning of functions that exit early when preconditions aren't met. They prevent deeply nested conditional logic and make the \"happy path\" of your code more readable."
 authors = [
     {name = "steven.miers@gmail.com"}
