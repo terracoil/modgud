@@ -1,6 +1,6 @@
 # MODGUD
 
-![modgud](https://github.com/terracoil/freyja/raw/main/docs/modgud.png)
+![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud.png)
 
 ## Finally. Expression-Oriented Programming for Python.
 
