@@ -1,7 +1,7 @@
 [project]
 name = "modgud"
 description = "Expression-oriented programming for Python 3.13+ with guard clause decorators and implicit returns. Eliminate defensive coding clutter through declarative input validation and Ruby/Rust-style automatic return transformation, all while maintaining single return point architecture and zero runtime dependencies."
-version = "0.2.4"
+version = "0.2.5"
 license = {text = "MIT"}
 readme = "README.md"
 authors = [
