@@ -206,3 +206,4 @@ All errors inherit from appropriate base classes:
   - `ExplicitReturnDisallowedError` - Explicit return found with implicit_return=True
   - `MissingImplicitReturnError` - Block doesn't produce a value
   - `UnsupportedConstructError` - Unsupported AST construct at tail position
+- Please don't mention claude in any git commit messages, and don't put "co-authored by claude" either.
