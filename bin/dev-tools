@@ -9,8 +9,9 @@ import subprocess
 import shutil
 import glob
 import re
+import shlex
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Union
 from freyja import FreyjaCLI
 
 # Add the project root to the Python path
@@ -19,13 +20,13 @@ sys.path.insert(0, str(project_root))
 
 # Detect project name from git repository
 try:
-  PROJECT_NAME = subprocess.run(
-    "basename $(git rev-parse --show-toplevel)",
-    shell=True,
+  result = subprocess.run(
+    ['git', 'rev-parse', '--show-toplevel'],
     capture_output=True,
     text=True,
     check=True
-  ).stdout.strip()
+  )
+  PROJECT_NAME = Path(result.stdout.strip()).name
 except subprocess.CalledProcessError:
   PROJECT_NAME = "project"  # Fallback if not in git repo
 
@@ -58,31 +59,40 @@ class FreyjaDevTools:
       'nc': '\033[0m'  # No Color
     }
 
-  def _run_command(self, command: str, description: str = "", shell: bool = True) -> bool:
+  def _run_command(self, command: Union[str, List[str]], description: str = "", shell: bool = False) -> bool:
     """
-    Execute a shell command with proper logging.
+    Execute a command with proper logging.
 
-    :param command: Command to execute
+    :param command: Command to execute (list preferred for security)
     :param description: Description of the command for output
-    :param shell: Whether to run in shell mode
+    :param shell: Whether to run in shell mode (default False for security)
     :return: True if command succeeded, False otherwise
     """
+    success = True
+
     if description:
       print(f"{self.colors['blue']}{description}{self.colors['nc']}")
 
+    # Convert string to list if shell=False for safety
+    if isinstance(command, str) and not shell:
+      command = shlex.split(command)
+
+    # Display command for verbose/dry-run
+    cmd_display = command if isinstance(command, str) else ' '.join(shlex.quote(arg) for arg in command)
     if self.verbose or self.dry_run:
-      print(f"Command: {command}")
+      print(f"Command: {cmd_display}")
 
     if self.dry_run:
       print("(DRY RUN - command not executed)")
-      return True
+    else:
+      try:
+        result = subprocess.run(command, shell=shell, check=True, cwd=self.project_root)
+        success = result.returncode == 0
+      except subprocess.CalledProcessError as e:
+        print(f"{self.colors['red']}❌ Command failed with exit code {e.returncode}{self.colors['nc']}")
+        success = False
 
-    try:
-      result = subprocess.run(command, shell=shell, check=True, cwd=self.project_root)
-      return result.returncode == 0
-    except subprocess.CalledProcessError as e:
-      print(f"{self.colors['red']}❌ Command failed with exit code {e.returncode}{self.colors['nc']}")
-      return False
+    return success
 
   def _print_success(self, message: str) -> None:
     """Print success message with formatting."""
@@ -351,7 +361,7 @@ class FreyjaDevTools:
 
       # Validate we're in a git repository
       try:
-        subprocess.run("git rev-parse --git-dir", shell=True, capture_output=True, text=True, check=True)
+        subprocess.run(['git', 'rev-parse', '--git-dir'], capture_output=True, text=True, check=True)
       except subprocess.CalledProcessError:
         parent._print_error("Not in a git repository")
         return
@@ -360,7 +370,7 @@ class FreyjaDevTools:
       if version is None and auto_increment:
         # Get latest tag and auto-increment
         try:
-          result = subprocess.run("git describe --tags --abbrev=0", shell=True, capture_output=True, text=True, check=True)
+          result = subprocess.run(['git', 'describe', '--tags', '--abbrev=0'], capture_output=True, text=True, check=True)
           latest_tag = result.stdout.strip()
           parent._print_info(f"Latest tag: {latest_tag}")
 
@@ -397,7 +407,7 @@ class FreyjaDevTools:
       # Check if tag already exists
       tag = f"v{version}"
       try:
-        subprocess.run(f"git rev-parse {tag}", shell=True, capture_output=True, check=True)
+        subprocess.run(['git', 'rev-parse', tag], capture_output=True, check=True)
         parent._print_error(f"Tag '{tag}' already exists")
         return
       except subprocess.CalledProcessError:
@@ -448,8 +458,7 @@ EOF
       parent._print_info("🤖 Generating tag message with Claude...")
       try:
         result = subprocess.run(
-          'claude -p "Create a very short message to be used on a new tag basing it on the most recent commit (HEAD). Return a single string representing the tag description with no preamble, summary, or afterthoughts."',
-          shell=True,
+          ['claude', '-p', 'Create a very short message to be used on a new tag basing it on the most recent commit (HEAD). Return a single string representing the tag description with no preamble, summary, or afterthoughts.'],
           capture_output=True,
           text=True,
           check=True
@@ -564,7 +573,7 @@ EOF
           print(f"Command: {test_command}")
 
         try:
-          result = subprocess.run(test_command, shell=True, capture_output=True, text=True, timeout=10)
+          result = subprocess.run(shlex.split(test_command), capture_output=True, text=True, timeout=10)
 
           if expected_pattern in result.stdout or expected_pattern in result.stderr:
             if parent.verbose:
@@ -686,8 +695,8 @@ EOF
 
         # Test completion system availability
         try:
-          result = subprocess.run("python examples/cls_example completion --help",
-                                shell=True, capture_output=True, text=True, timeout=5)
+          result = subprocess.run(['python', 'examples/cls_example', 'completion', '--help'],
+                                capture_output=True, text=True, timeout=5)
           if result.returncode == 0:
             parent._print_success("Completion system is available")
           else:
