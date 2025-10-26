@@ -14,7 +14,7 @@ from typing import Any, Callable, Optional
 
 from ..shared.errors import GuardClauseError, UnsupportedConstructError
 from ..shared.types import FailureBehavior, GuardFunction
-from .ast_transform import apply_implicit_return_transform
+from .implicit_return import apply_implicit_return_transform
 from .guard_runtime import check_guards, handle_failure
 
 

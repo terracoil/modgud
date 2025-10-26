@@ -18,6 +18,9 @@ from freyja import FreyjaCLI
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+# Configure cache directories to use tmp/
+os.environ.setdefault('RUFF_CACHE_DIR', str(project_root / 'tmp' / '.ruff_cache'))
+
 # Detect project name from git repository
 def get_project_name() -> str:
   """Get project name from git repository or fallback."""
@@ -370,12 +373,43 @@ class FreyjaDevTools:
       parent._print("🤖 Generating commit message with Claude...", 'info')
       commit_message: Optional[str] = None
       result = parent._run_command(
-        ['claude', '-p', 'Ultrathink and commit the uncommitted files, creating an informative message without mentioning claude or phases, or "Co-authored with Claude". There should be no preamble, summary, or afterthoughts.'],
+        ['claude', '-p', 'Review the git changes and generate ONLY a clean git commit message. Return the commit message as plain text with no markdown formatting, no code blocks, no preamble, and no explanatory text. The message should follow conventional commit format with a clear subject line and detailed body. Do not mention Claude, AI, or co-authorship.'],
         capture_output=True
       )
       if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
-        commit_message = result.stdout.strip()
-        parent._print(f"Commit message:\n{commit_message}", 'info')
+        raw_output = result.stdout.strip()
+
+        # Extract commit message from code blocks if present
+        code_block_match = re.search(r'```(?:text|markdown|git)?\s*\n(.*?)\n```', raw_output, re.DOTALL)
+        if code_block_match:
+          commit_message = code_block_match.group(1).strip()
+        else:
+          # Try to find the actual commit message by skipping explanatory text
+          lines = raw_output.split('\n')
+          # Skip lines that look like explanations
+          filtered_lines = []
+          skip_patterns = [
+            r'^(I need to|Here\'s|This|The changes|Let me)',
+            r'^\*\*',  # Markdown headers
+            r'^-',     # Bullet points at start
+          ]
+
+          capturing = False
+          for line in lines:
+            # Start capturing after we see a clear commit subject line
+            if not capturing and line and not any(re.match(p, line, re.IGNORECASE) for p in skip_patterns):
+              capturing = True
+
+            if capturing:
+              filtered_lines.append(line)
+
+          commit_message = '\n'.join(filtered_lines).strip()
+
+        if commit_message:
+          parent._print(f"Commit message:\n{commit_message}", 'info')
+        else:
+          parent._print("Failed to extract valid commit message from Claude response", 'error')
+          return
       else:
         parent._print("Failed to generate commit message with Claude", 'error')
         return
@@ -418,9 +452,12 @@ class FreyjaDevTools:
         final_version: Optional[str] = version
 
         if version is None and auto_increment:
-          # Get latest tag and auto-increment
-          result = parent._run_command(['git', 'describe', '--tags', '--abbrev=0'], capture_output=True)
-          if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
+          # Get latest tag and auto-increment (use for-each-ref for reliability)
+          result = parent._run_command(
+            ['git', 'for-each-ref', '--sort=-version:refname', '--format=%(refname:short)', 'refs/tags', '--count=1'],
+            capture_output=True
+          )
+          if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0 and result.stdout.strip():
             latest_tag = result.stdout.strip()
             parent._print(f"Latest tag: {latest_tag}", 'info')
 
@@ -533,7 +570,7 @@ class FreyjaDevTools:
                         parent._print("🚀 Pushing commit and tag to remote...", 'info')
                         push_success = parent._run_command(['git', 'push'], "Pushing commit to remote")
                         if push_success:
-                          push_success = parent._run_command(['git', 'push', '--tags'], "Pushing tags to remote")
+                          push_success = parent._run_command(['git', 'push', 'origin', tag], f"Pushing tag {tag} to remote")
                         if push_success:
                           # Success summary
                           parent._print("🎉 Version updated, tagged, and pushed successfully!", 'success')

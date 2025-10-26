@@ -1,0 +1,250 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.2.8 Chrome/140.0.7339.240 Electron/38.4.0 Safari/537.36" version="28.2.8">
+  <diagram name="Package Dependencies" id="0">
+    <mxGraphModel dx="1018" dy="745" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" background="#FFF2DC" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;font face=&quot;Architect's Daughter&quot; style=&quot;font-size: 36px;&quot;&gt;Modgud Package Dependencies&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=1;textShadow=1;" parent="1" vertex="1">
+          <mxGeometry x="140" y="30" width="570" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- API Layer (Top) -->
+        <mxCell id="api_layer" value="&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 18px;&quot;&gt;&lt;b&gt;API Layer&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=1;textShadow=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="120" width="120" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="modgud_init" value="&lt;font face=&quot;Lucida Console&quot; style=&quot;font-size: 20px;&quot;&gt;modgud/__init__.py&lt;/font&gt;&lt;br&gt;&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 14px;&quot;&gt;Public API exports&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#656565;fontSize=14;fontStyle=0;strokeWidth=3.937;sketch=1;curveFitting=1;jiggle=1;gradientColor=#5089C8;gradientDirection=west;arcSize=50;shadow=1;textShadow=1;glass=0;fontColor=#000000;" parent="1" vertex="1">
+          <mxGeometry x="260" y="160" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Implementation Layer (Middle) -->
+        <mxCell id="impl_layer" value="&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 18px;&quot;&gt;&lt;b&gt;Implementation Layer&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=1;textShadow=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="290" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="guarded_expr" value="&lt;font face=&quot;Lucida Console&quot; style=&quot;font-size: 20px;&quot;&gt;guarded_expression&lt;/font&gt;&lt;br&gt;&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 14px;&quot;&gt;Main decorator package&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFCC;strokeColor=#656565;fontSize=14;fontStyle=0;strokeWidth=3.937;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FFF2CC;gradientDirection=west;arcSize=50;shadow=1;textShadow=1;fontColor=#000000;" parent="1" vertex="1">
+          <mxGeometry x="260" y="330" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- guarded_expression submodules with Glass effect -->
+        <mxCell id="decorator" value="&lt;font face=&quot;Lucida Console&quot; style=&quot;font-size: 14px;&quot;&gt;decorator.py&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#656565;fontSize=12;fontStyle=0;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FFD4AA;gradientDirection=west;arcSize=40;shadow=1;textShadow=1;fontColor=#000000;glass=1;" parent="1" vertex="1">
+          <mxGeometry x="80" y="460" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ast_transform" value="&lt;font face=&quot;Lucida Console&quot; style=&quot;font-size: 14px;&quot;&gt;ast_transform.py&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#656565;fontSize=12;fontStyle=0;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FFD4AA;gradientDirection=west;arcSize=40;shadow=1;textShadow=1;fontColor=#000000;glass=1;" parent="1" vertex="1">
+          <mxGeometry x="250" y="460" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="guard_runtime" value="&lt;font face=&quot;Lucida Console&quot; style=&quot;font-size: 14px;&quot;&gt;guard_runtime.py&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#656565;fontSize=12;fontStyle=0;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FFD4AA;gradientDirection=west;arcSize=40;shadow=1;textShadow=1;fontColor=#000000;glass=1;" parent="1" vertex="1">
+          <mxGeometry x="420" y="460" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="common_guards" value="&lt;font face=&quot;Lucida Console&quot; style=&quot;font-size: 14px;&quot;&gt;common_guards.py&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#656565;fontSize=12;fontStyle=0;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FFD4AA;gradientDirection=west;arcSize=40;shadow=1;textShadow=1;fontColor=#000000;glass=1;" parent="1" vertex="1">
+          <mxGeometry x="590" y="460" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Shared Infrastructure Layer (Bottom) -->
+        <mxCell id="infra_layer" value="&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 18px;&quot;&gt;&lt;b&gt;Shared Infrastructure Layer&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=1;textShadow=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="560" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="shared_pkg" value="&lt;font face=&quot;Lucida Console&quot; style=&quot;font-size: 20px;&quot;&gt;shared&lt;/font&gt;&lt;br&gt;&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 14px;&quot;&gt;Common types and errors&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCCCC;strokeColor=#656565;fontSize=14;fontStyle=0;strokeWidth=3.937;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FF9999;gradientDirection=west;arcSize=50;shadow=1;textShadow=1;fontColor=#000000;" parent="1" vertex="1">
+          <mxGeometry x="260" y="600" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- shared submodules with Glass effect -->
+        <mxCell id="types_py" value="&lt;font face=&quot;Lucida Console&quot; style=&quot;font-size: 14px;&quot;&gt;types.py&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFB3B3;strokeColor=#656565;fontSize=12;fontStyle=0;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FF8080;gradientDirection=west;arcSize=40;shadow=1;textShadow=1;fontColor=#000000;glass=1;" parent="1" vertex="1">
+          <mxGeometry x="220" y="730" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="errors_py" value="&lt;font face=&quot;Lucida Console&quot; style=&quot;font-size: 14px;&quot;&gt;errors.py&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFB3B3;strokeColor=#656565;fontSize=12;fontStyle=0;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FF8080;gradientDirection=west;arcSize=40;shadow=1;textShadow=1;fontColor=#000000;glass=1;" parent="1" vertex="1">
+          <mxGeometry x="440" y="730" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Dependencies with curved edges -->
+        <!-- modgud/__init__ -> guarded_expression -->
+        <mxCell id="dep1" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;shape=flexArrow;rounded=1;startSize=3.937;endSize=3.937;jiggle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.9685;fillColor=#A4C0DA;strokeColor=#314354;gradientColor=#647687;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;" parent="1" source="modgud_init" target="guarded_expr" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <mxPoint x="630" y="400" as="sourcePoint" />
+            <mxPoint x="770" y="400" as="targetPoint" />
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dep1_label" value="Imports" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#647687;labelBorderColor=#647687;fontColor=#FFFFFF;fontFamily=Garamond;fontSize=12;spacing=15.748;spacingTop=-1.9685;textShadow=1;" parent="dep1" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="-10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- modgud/__init__ -> shared (for errors) -->
+        <mxCell id="dep2" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;shape=flexArrow;rounded=1;startSize=3.937;endSize=3.937;jiggle=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.9685;fillColor=#A4C0DA;strokeColor=#314354;gradientColor=#647687;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;" parent="1" source="modgud_init" target="shared_pkg" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <mxPoint x="630" y="400" as="sourcePoint" />
+            <mxPoint x="770" y="400" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="330" y="280" />
+              <mxPoint x="200" y="280" />
+              <mxPoint x="200" y="540" />
+              <mxPoint x="330" y="540" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dep2_label" value="Imports errors" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#647687;labelBorderColor=#647687;fontColor=#FFFFFF;fontFamily=Garamond;fontSize=12;spacing=15.748;spacingTop=-1.9685;textShadow=1;" parent="dep2" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="-10" relative="1" as="geometry">
+            <mxPoint x="-50" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- guarded_expression -> submodules (contains relationship) -->
+        <mxCell id="dep3" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=1;startSize=2;endSize=2;jiggle=1;exitX=0.125;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.5;strokeColor=#666666;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;dashed=1;dashPattern=5 5;" parent="1" source="guarded_expr" target="decorator" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep4" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=1;startSize=2;endSize=2;jiggle=1;exitX=0.375;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.5;strokeColor=#666666;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;dashed=1;dashPattern=5 5;" parent="1" source="guarded_expr" target="ast_transform" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep5" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=1;startSize=2;endSize=2;jiggle=1;exitX=0.625;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.5;strokeColor=#666666;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;dashed=1;dashPattern=5 5;" parent="1" source="guarded_expr" target="guard_runtime" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep6" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=1;startSize=2;endSize=2;jiggle=1;exitX=0.875;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.5;strokeColor=#666666;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;dashed=1;dashPattern=5 5;" parent="1" source="guarded_expr" target="common_guards" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- decorator -> ast_transform, guard_runtime -->
+        <mxCell id="dep7" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=1;startSize=2;endSize=2;jiggle=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=1.5;strokeColor=#666666;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;" parent="1" source="decorator" target="ast_transform" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep8" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=1;startSize=2;endSize=2;jiggle=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;strokeWidth=1.5;strokeColor=#666666;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;" parent="1" source="decorator" target="guard_runtime" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240" y="498" />
+              <mxPoint x="240" y="530" />
+              <mxPoint x="400" y="530" />
+              <mxPoint x="400" y="498" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- All implementation modules -> shared -->
+        <mxCell id="dep9" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;shape=flexArrow;rounded=1;startSize=3.937;endSize=3.937;jiggle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.15;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.9685;fillColor=#A4C0DA;strokeColor=#314354;gradientColor=#647687;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;" parent="1" source="decorator" target="shared_pkg" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="150" y="550" />
+              <mxPoint x="302" y="550" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="dep10" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;shape=flexArrow;rounded=1;startSize=3.937;endSize=3.937;jiggle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.35;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.9685;fillColor=#A4C0DA;strokeColor=#314354;gradientColor=#647687;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;" parent="1" source="ast_transform" target="shared_pkg" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="550" />
+              <mxPoint x="358" y="550" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="dep11" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;shape=flexArrow;rounded=1;startSize=3.937;endSize=3.937;jiggle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.65;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.9685;fillColor=#A4C0DA;strokeColor=#314354;gradientColor=#647687;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;" parent="1" source="guard_runtime" target="shared_pkg" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="550" />
+              <mxPoint x="442" y="550" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="dep12" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;shape=flexArrow;rounded=1;startSize=3.937;endSize=3.937;jiggle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.85;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.9685;fillColor=#A4C0DA;strokeColor=#314354;gradientColor=#647687;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;" parent="1" source="common_guards" target="shared_pkg" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="660" y="550" />
+              <mxPoint x="498" y="550" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="dep_label" value="Uses types" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#647687;labelBorderColor=#647687;fontColor=#FFFFFF;fontFamily=Garamond;fontSize=12;spacing=15.748;spacingTop=-1.9685;textShadow=1;" parent="dep12" vertex="1" connectable="0">
+          <mxGeometry x="0.3" y="-10" relative="1" as="geometry">
+            <mxPoint x="30" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- guarded_expression -> Implementation -->
+        <mxCell id="dep13" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;shape=flexArrow;rounded=1;startSize=3.937;endSize=3.937;jiggle=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.9685;fillColor=#A4C0DA;strokeColor=#314354;gradientColor=#647687;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;" parent="1" source="guarded_expr" target="shared_pkg" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dep13_label" value="Depends on" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=#647687;labelBorderColor=#647687;fontColor=#FFFFFF;fontFamily=Garamond;fontSize=12;spacing=15.748;spacingTop=-1.9685;textShadow=1;" parent="dep13" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="-10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- shared -> submodules (contains relationship) -->
+        <mxCell id="dep14" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=1;startSize=2;endSize=2;jiggle=1;exitX=0.35;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.5;strokeColor=#666666;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;dashed=1;dashPattern=5 5;" parent="1" source="shared_pkg" target="types_py" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep15" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=1;startSize=2;endSize=2;jiggle=1;exitX=0.65;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=1.5;strokeColor=#666666;textShadow=1;sketch=1;curveFitting=1;shadow=1;curved=1;dashed=1;dashPattern=5 5;" parent="1" source="shared_pkg" target="errors_py" edge="1">
+          <mxGeometry width="140" relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Legend with Glass style -->
+        <mxCell id="legend_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=12;fontStyle=0;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;arcSize=5;shadow=1;textShadow=0;glass=1;" parent="1" vertex="1">
+          <mxGeometry x="600" y="140" width="200" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_title" value="&lt;font face=&quot;Architect's Daughter&quot; style=&quot;font-size: 16px;&quot;&gt;&lt;b&gt;Legend&lt;/b&gt;&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;textShadow=1;" parent="1" vertex="1">
+          <mxGeometry x="610" y="150" width="80" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_arrow" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;shape=flexArrow;rounded=1;startSize=3.937;endSize=3.937;strokeWidth=1.9685;fillColor=#A4C0DA;strokeColor=#314354;gradientColor=#647687;" parent="1" edge="1">
+          <mxGeometry x="610" y="180" width="50" height="10" as="geometry">
+            <mxPoint x="610" y="185" as="sourcePoint" />
+            <mxPoint x="660" y="185" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="legend_text1" value="&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 12px;&quot;&gt;Depends on&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;" parent="1" vertex="1">
+          <mxGeometry x="670" y="175" width="120" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_dashed" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=1;startSize=2;endSize=2;strokeWidth=1.5;strokeColor=#666666;dashed=1;dashPattern=5 5;" parent="1" edge="1">
+          <mxGeometry x="610" y="205" width="50" height="10" as="geometry">
+            <mxPoint x="610" y="210" as="sourcePoint" />
+            <mxPoint x="660" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="legend_text2" value="&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 12px;&quot;&gt;Contains&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;shadow=0;" parent="1" vertex="1">
+          <mxGeometry x="670" y="200" width="120" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_api" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#656565;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;gradientColor=#5089C8;gradientDirection=west;" parent="1" vertex="1">
+          <mxGeometry x="610" y="230" width="30" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_api_text" value="&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 12px;&quot;&gt;API Layer&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;" parent="1" vertex="1">
+          <mxGeometry x="650" y="227" width="80" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_impl" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFCC;strokeColor=#656565;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FFF2CC;gradientDirection=west;" parent="1" vertex="1">
+          <mxGeometry x="610" y="250" width="30" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_impl_text" value="&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 12px;&quot;&gt;Implementation&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;" parent="1" vertex="1">
+          <mxGeometry x="650" y="247" width="100" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legend_shared" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCCCC;strokeColor=#656565;strokeWidth=2;sketch=1;curveFitting=1;jiggle=1;gradientColor=#FF9999;gradientDirection=west;" parent="1" vertex="1">
+          <mxGeometry x="610" y="270" width="30" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_shared_text" value="&lt;font face=&quot;Garamond&quot; style=&quot;font-size: 12px;&quot;&gt;Infrastructure&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;" parent="1" vertex="1">
+          <mxGeometry x="650" y="267" width="100" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

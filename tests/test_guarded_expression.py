@@ -334,3 +334,68 @@ def test_async_explicit_return():
 
   result = asyncio.run(async_explicit_return(5))
   assert result == 15
+
+
+# CommonGuards edge case tests (coverage improvement)
+def test_common_guards_kwargs_precedence():
+  """Test kwargs take precedence over positional args."""
+  @guarded_expression(
+    CommonGuards.positive("value", position=1),  # Expects second positional
+    implicit_return=False
+  )
+  def process(x, y, value=5):
+    return value * 2
+
+  # Positional arg at position 1 is 2, but kwarg value=10 takes precedence
+  assert process(1, 2, value=10) == 20
+  # Positional arg at position 1 is -5, but kwarg value=3 takes precedence
+  assert process(1, -5, value=3) == 6
+  # No kwarg provided, guard checks position 1 (y=-5), which is negative
+  with pytest.raises(GuardClauseError):
+    process(1, -5)
+
+
+def test_extract_param_out_of_bounds():
+  """Test _extract_param with invalid position returns default."""
+  @guarded_expression(
+    CommonGuards.positive("x", position=5),  # No 6th arg
+    implicit_return=False
+  )
+  def process(a, b):
+    return a + b
+
+  # Only 2 args, position 5 doesn't exist, uses default=0, fails positive check
+  with pytest.raises(GuardClauseError):
+    process(1, 2)
+
+
+def test_not_empty_with_object_lacking_len():
+  """Test not_empty with object lacking __len__ method."""
+  class NoLen:
+    def __bool__(self):
+      return False
+
+  @guarded_expression(
+    CommonGuards.not_empty("obj"),
+    implicit_return=False
+  )
+  def process(obj):
+    return "processed"
+
+  # Object without __len__ falls back to bool() check
+  with pytest.raises(GuardClauseError):
+    process(NoLen())
+
+
+# Decorator error handling tests (coverage improvement)
+def test_decorator_source_unavailable():
+  """Test decorator fails gracefully when source unavailable."""
+  from modgud.shared.errors import UnsupportedConstructError
+
+  # Create function from compiled code
+  code = compile("def foo(): return 42", "<string>", "exec")
+  env = {}
+  exec(code, env)
+
+  with pytest.raises(UnsupportedConstructError, match="Source unavailable"):
+    guarded_expression(implicit_return=True)(env['foo'])

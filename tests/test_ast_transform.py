@@ -2,7 +2,7 @@
 import ast
 
 import pytest
-from modgud.guarded_expression.ast_transform import apply_implicit_return_transform
+from modgud.guarded_expression.implicit_return import apply_implicit_return_transform
 from modgud.shared.errors import ExplicitReturnDisallowedError, MissingImplicitReturnError
 
 
@@ -86,3 +86,91 @@ def outer():
 """
   tree, _ = apply_implicit_return_transform(source.strip(), "outer")
   assert isinstance(tree, ast.Module)
+
+
+# Match statement tests (coverage improvement)
+def test_match_empty_case_raises_error():
+  """Test match with empty case body raises error."""
+  source = """
+def foo(x):
+    match x:
+        case 1:
+            pass
+"""
+  with pytest.raises(MissingImplicitReturnError, match="Pass statement cannot yield"):
+    apply_implicit_return_transform(source.strip(), "foo")
+
+
+def test_match_all_cases_transform():
+  """Test match where all cases produce values."""
+  source = """
+def foo(x):
+    match x:
+        case 1:
+            "one"
+        case 2:
+            "two"
+        case _:
+            "other"
+"""
+  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  # Compile and verify it works
+  code = compile(tree, "<test>", "exec")
+  env = {}
+  exec(code, env)
+  assert env['foo'](1) == "one"
+  assert env['foo'](2) == "two"
+  assert env['foo'](99) == "other"
+
+
+# Visitor edge case tests (coverage improvement)
+def test_nested_lambda_not_transformed():
+  """Test nested lambda functions are not transformed."""
+  source = """
+def foo(x):
+    f = lambda y: y + 1
+    result = f(x)
+    result * 2
+"""
+  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  assert isinstance(tree, ast.Module)
+  # Verify it compiles and works
+  code = compile(tree, "<test>", "exec")
+  env = {}
+  exec(code, env)
+  assert env['foo'](5) == 12
+
+
+def test_async_function_blocked():
+  """Test async function definitions are not traversed."""
+  source = """
+async def foo(x):
+    await some_async_call()
+    x + 1
+"""
+  # async functions should work but not be transformed
+  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  assert isinstance(tree, ast.Module)
+
+
+def test_try_except_else_finally_transform():
+  """Test try-except-else-finally with all branches setting result."""
+  source = """
+def foo(x):
+    try:
+        10 / x
+    except ZeroDivisionError:
+        0
+    else:
+        x + 1
+    finally:
+        pass
+"""
+  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  assert isinstance(tree, ast.Module)
+  # Verify it compiles and works
+  code = compile(tree, "<test>", "exec")
+  env = {}
+  exec(code, env)
+  assert env['foo'](2) == 3  # No exception, try succeeds (10/2=5), else runs (2+1=3)
+  assert env['foo'](0) == 0  # Exception caught, except block returns 0

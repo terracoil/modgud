@@ -8,6 +8,15 @@ Primary API:
 """
 
 from .guarded_expression import CommonGuards, guarded_expression
+from .guarded_expression.guard_registry import (
+  get_guard,
+  get_registry,
+  has_custom_guard,
+  list_custom_guards,
+  list_guard_namespaces,
+  register_guard,
+  unregister_guard,
+)
 from .shared.errors import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
@@ -25,4 +34,11 @@ __all__ = [
   'ExplicitReturnDisallowedError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
+  'register_guard',
+  'get_guard',
+  'has_custom_guard',
+  'list_custom_guards',
+  'list_guard_namespaces',
+  'unregister_guard',
+  'get_registry',
 ]

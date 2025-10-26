@@ -114,3 +114,28 @@ def test_handle_failure_none_value():
   )
   assert result is None
   assert exception is None
+
+
+# Guard runtime logging test (coverage improvement)
+def test_handle_failure_with_logging(caplog):
+  """Test handle_failure logs when log=True."""
+  import logging
+  caplog.set_level(logging.INFO)
+
+  result, exception = handle_failure(
+    "Validation failed",
+    None,
+    "process_user",
+    (1, 2),
+    {"name": "test"},
+    True  # log_enabled=True
+  )
+
+  # Verify logging occurred
+  assert len(caplog.records) == 1
+  assert "Guard clause failed in process_user: Validation failed" in caplog.text
+  assert caplog.records[0].levelname == "INFO"
+
+  # Verify normal behavior
+  assert result is None
+  assert exception is None

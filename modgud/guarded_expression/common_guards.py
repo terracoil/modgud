@@ -5,7 +5,10 @@ common validation patterns like not_none, positive, in_range, etc.
 """
 
 import re
+from enum import Enum
+from pathlib import Path
 from typing import Any, Optional, Union
+from urllib.parse import urlparse
 
 from ..shared.types import GuardFunction
 
@@ -162,3 +165,108 @@ class CommonGuards:
       return re.match(pattern, value) is not None or f'{param_name} must match pattern {pattern}'
 
     return check_pattern
+
+  @staticmethod
+  def valid_file_path(
+    param_name: str = 'path',
+    position: int = 0,
+    must_exist: bool = True,
+    must_be_file: bool = False,
+    must_be_dir: bool = False,
+  ) -> GuardFunction:
+    """Guard ensuring parameter is a valid file path.
+
+    Args:
+        param_name: Name of the parameter to check
+        position: Position for positional args (default: 0)
+        must_exist: If True, path must exist (default: True)
+        must_be_file: If True, path must be a file (default: False)
+        must_be_dir: If True, path must be a directory (default: False)
+
+    """
+
+    def check_file_path(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+
+      if value is None:
+        return f'{param_name} is required'
+
+      path = Path(value)
+
+      if must_exist and not path.exists():
+        return f'{param_name} does not exist: {value}'
+
+      if must_be_file and not path.is_file():
+        return f'{param_name} must be a file: {value}'
+
+      if must_be_dir and not path.is_dir():
+        return f'{param_name} must be a directory: {value}'
+
+      return True
+
+    return check_file_path
+
+  @staticmethod
+  def valid_url(param_name: str = 'url', position: int = 0, require_scheme: bool = True) -> GuardFunction:
+    """Guard ensuring parameter is a valid URL.
+
+    Args:
+        param_name: Name of the parameter to check
+        position: Position for positional args (default: 0)
+        require_scheme: If True, URL must have scheme (http/https) (default: True)
+
+    """
+
+    def check_url(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+
+      if value is None:
+        return f'{param_name} is required'
+
+      parsed = urlparse(str(value))
+
+      if require_scheme and not parsed.scheme:
+        return f'{param_name} must include a scheme (http/https): {value}'
+
+      if not parsed.netloc and not parsed.path:
+        return f'{param_name} is not a valid URL: {value}'
+
+      return True
+
+    return check_url
+
+  @staticmethod
+  def valid_enum(
+    enum_class: type[Enum], param_name: str = 'parameter', position: int = 0
+  ) -> GuardFunction:
+    """Guard ensuring parameter is a valid enum value.
+
+    Args:
+        enum_class: The Enum class to validate against
+        param_name: Name of the parameter to check
+        position: Position for positional args (default: 0)
+
+    """
+
+    def check_enum(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+
+      if value is None:
+        return f'{param_name} is required'
+
+      # Check if value is already an enum instance
+      if isinstance(value, enum_class):
+        return True
+
+      # Try to convert string to enum
+      if isinstance(value, str):
+        try:
+          enum_class(value)
+          return True
+        except ValueError:
+          valid_values = [e.value for e in enum_class]
+          return f'{param_name} must be one of {valid_values}: got {value}'
+
+      return f'{param_name} must be a valid {enum_class.__name__} value'
+
+    return check_enum
