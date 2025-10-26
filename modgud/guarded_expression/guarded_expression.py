@@ -12,10 +12,10 @@ import inspect
 from textwrap import dedent
 from typing import Any, Callable, Optional
 
-from ..shared.errors import GuardClauseError, UnsupportedConstructError
-from ..shared.types import FailureBehavior, GuardFunction
-from .implicit_return import apply_implicit_return_transform
-from .guard_runtime import check_guards, handle_failure
+from .errors import GuardClauseError, UnsupportedConstructError
+from .types import FailureBehavior, GuardFunction
+from .implicit_return import ImplicitReturnTransformer
+from .guard_runtime import GuardRuntime
 
 
 class guarded_expression:
@@ -88,7 +88,9 @@ class guarded_expression:
       ) from e
 
     # Transform the AST
-    new_tree, filename = apply_implicit_return_transform(source, func.__name__)
+    new_tree, filename = ImplicitReturnTransformer.apply_implicit_return_transform(
+      source, func.__name__
+    )
 
     # Compile the transformed code in the original global scope
     env = func.__globals__.copy()
@@ -110,10 +112,10 @@ class guarded_expression:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
       # Check guards if any are defined
       if self.guards:
-        error_msg = check_guards(self.guards, args, kwargs)
+        error_msg = GuardRuntime.check_guards(self.guards, args, kwargs)
         if error_msg is not None:
           # Handle failure
-          result, exception_to_raise = handle_failure(
+          result, exception_to_raise = GuardRuntime.handle_failure(
             error_msg, self.on_error, func.__name__, args, kwargs, self.log
           )
           # Raise exception if configured

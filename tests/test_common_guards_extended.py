@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from modgud import CommonGuards, guarded_expression
-from modgud.shared.errors import GuardClauseError
+from modgud.guarded_expression.errors import GuardClauseError
 
 
 class TestValidFilePathGuard:

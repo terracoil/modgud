@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Optional, Union
 from urllib.parse import urlparse
 
-from ..shared.types import GuardFunction
+from .types import GuardFunction
 
 
 class CommonGuards:
@@ -43,15 +43,15 @@ class CommonGuards:
         Parameter value or default
 
     """
+    result = default
     if param_name in kwargs:
-      return kwargs[param_name]
-
-    # Use explicit position if provided, else default to first arg
-    pos = position if position is not None else 0
-    if 0 <= pos < len(args):
-      return args[pos]
-
-    return default
+      result = kwargs[param_name]
+    else:
+      # Use explicit position if provided, else default to first arg
+      pos = position if position is not None else 0
+      if 0 <= pos < len(args):
+        result = args[pos]
+    return result
 
   @staticmethod
   def not_empty(param_name: str = 'parameter', position: Optional[int] = None) -> GuardFunction:

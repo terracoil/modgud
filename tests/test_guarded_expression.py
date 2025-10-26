@@ -1,7 +1,7 @@
 """Integration tests for the guarded_expression decorator."""
 import pytest
 from modgud.guarded_expression import CommonGuards, guarded_expression
-from modgud.shared.errors import ExplicitReturnDisallowedError, GuardClauseError
+from modgud.guarded_expression.errors import ExplicitReturnDisallowedError, GuardClauseError
 
 
 # Test basic guard clause functionality
@@ -390,7 +390,7 @@ def test_not_empty_with_object_lacking_len():
 # Decorator error handling tests (coverage improvement)
 def test_decorator_source_unavailable():
   """Test decorator fails gracefully when source unavailable."""
-  from modgud.shared.errors import UnsupportedConstructError
+  from modgud.guarded_expression.errors import UnsupportedConstructError
 
   # Create function from compiled code
   code = compile("def foo(): return 42", "<string>", "exec")

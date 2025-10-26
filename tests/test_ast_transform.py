@@ -2,8 +2,8 @@
 import ast
 
 import pytest
-from modgud.guarded_expression.implicit_return import apply_implicit_return_transform
-from modgud.shared.errors import ExplicitReturnDisallowedError, MissingImplicitReturnError
+from modgud.guarded_expression.implicit_return import ImplicitReturnTransformer
+from modgud.guarded_expression.errors import ExplicitReturnDisallowedError, MissingImplicitReturnError
 
 
 def test_simple_expression_transform():
@@ -13,7 +13,7 @@ def foo():
     x = 10
     x + 5
 """
-  tree, filename = apply_implicit_return_transform(source.strip(), "foo")
+  tree, filename = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
   assert isinstance(tree, ast.Module)
   assert filename == "<foo-implicit>"
 
@@ -27,7 +27,7 @@ def foo(x):
     else:
         "negative"
 """
-  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
   assert isinstance(tree, ast.Module)
 
 
@@ -40,7 +40,7 @@ def foo(x):
     except ZeroDivisionError:
         0
 """
-  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
   assert isinstance(tree, ast.Module)
 
 
@@ -51,7 +51,7 @@ def foo():
     return 10
 """
   with pytest.raises(ExplicitReturnDisallowedError):
-    apply_implicit_return_transform(source.strip(), "foo")
+    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
 
 
 def test_if_without_else_raises_error():
@@ -62,7 +62,7 @@ def foo(x):
         "positive"
 """
   with pytest.raises(MissingImplicitReturnError):
-    apply_implicit_return_transform(source.strip(), "foo")
+    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
 
 
 def test_empty_block_raises_error():
@@ -72,7 +72,7 @@ def foo():
     pass
 """
   with pytest.raises(MissingImplicitReturnError):
-    apply_implicit_return_transform(source.strip(), "foo")
+    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
 
 
 def test_nested_function_allows_return():
@@ -84,7 +84,7 @@ def outer():
     x = inner()
     x + 5
 """
-  tree, _ = apply_implicit_return_transform(source.strip(), "outer")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "outer")
   assert isinstance(tree, ast.Module)
 
 
@@ -98,7 +98,7 @@ def foo(x):
             pass
 """
   with pytest.raises(MissingImplicitReturnError, match="Pass statement cannot yield"):
-    apply_implicit_return_transform(source.strip(), "foo")
+    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
 
 
 def test_match_all_cases_transform():
@@ -113,7 +113,7 @@ def foo(x):
         case _:
             "other"
 """
-  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
   # Compile and verify it works
   code = compile(tree, "<test>", "exec")
   env = {}
@@ -132,7 +132,7 @@ def foo(x):
     result = f(x)
     result * 2
 """
-  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
   assert isinstance(tree, ast.Module)
   # Verify it compiles and works
   code = compile(tree, "<test>", "exec")
@@ -149,7 +149,7 @@ async def foo(x):
     x + 1
 """
   # async functions should work but not be transformed
-  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
   assert isinstance(tree, ast.Module)
 
 
@@ -166,7 +166,7 @@ def foo(x):
     finally:
         pass
 """
-  tree, _ = apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
   assert isinstance(tree, ast.Module)
   # Verify it compiles and works
   code = compile(tree, "<test>", "exec")

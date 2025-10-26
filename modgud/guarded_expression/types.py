@@ -1,4 +1,4 @@
-"""Shared type definitions for the modgud library."""
+"""Type definitions for the guarded_expression module."""
 
 from typing import Callable, Union
 

@@ -6,7 +6,7 @@ accessed through the CommonGuards interface or separately.
 
 from typing import Any, Callable, Dict, Optional, Union
 
-from ..shared.types import GuardFunction
+from .types import GuardFunction
 
 
 class GuardRegistry:
@@ -64,9 +64,12 @@ class GuardRegistry:
         Guard factory function if found, None otherwise
 
     """
+    result = None
     if namespace is None:
-      return self._guards.get(name)
-    return self._namespaces.get(namespace, {}).get(name)
+      result = self._guards.get(name)
+    else:
+      result = self._namespaces.get(namespace, {}).get(name)
+    return result
 
   def list_guards(self, namespace: Optional[str] = None) -> list[str]:
     """List all registered guard names.
@@ -78,9 +81,12 @@ class GuardRegistry:
         List of registered guard names
 
     """
+    result = []
     if namespace is None:
-      return list(self._guards.keys())
-    return list(self._namespaces.get(namespace, {}).keys())
+      result = list(self._guards.keys())
+    else:
+      result = list(self._namespaces.get(namespace, {}).keys())
+    return result
 
   def list_namespaces(self) -> list[str]:
     """List all registered namespaces.
@@ -115,18 +121,18 @@ class GuardRegistry:
         True if guard was removed, False if not found
 
     """
+    removed = False
     if namespace is None:
       if name in self._guards:
         del self._guards[name]
-        return True
-      return False
-
-    if namespace in self._namespaces and name in self._namespaces[namespace]:
-      del self._namespaces[namespace][name]
-      if not self._namespaces[namespace]:
-        del self._namespaces[namespace]
-      return True
-    return False
+        removed = True
+    else:
+      if namespace in self._namespaces and name in self._namespaces[namespace]:
+        del self._namespaces[namespace][name]
+        if not self._namespaces[namespace]:
+          del self._namespaces[namespace]
+        removed = True
+    return removed
 
 
 # Global registry instance

@@ -1,17 +1,15 @@
-"""Shared error classes for the modgud library."""
+"""Error classes for the guarded_expression module."""
 
 from typing import Optional
 
 
 class GuardClauseError(Exception):
-
   """Exception raised when a guard clause fails."""
 
   pass
 
 
 class ImplicitReturnError(SyntaxError):
-
   """Base class for implicit-return related transformation errors."""
 
   def __init__(
@@ -33,12 +31,10 @@ class ImplicitReturnError(SyntaxError):
 
 
 class ExplicitReturnDisallowedError(ImplicitReturnError):
-
   """Raised when an explicit `return` statement is found in a decorated function."""
 
 
 class MissingImplicitReturnError(ImplicitReturnError):
-
   """Raised when block cannot yield a value.
 
   Raised when a block is required to yield a value but does not end with
@@ -47,5 +43,4 @@ class MissingImplicitReturnError(ImplicitReturnError):
 
 
 class UnsupportedConstructError(ImplicitReturnError):
-
   """Raised when an unsupported AST construct appears at a required return boundary."""

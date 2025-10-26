@@ -4,7 +4,7 @@ These functions are defined at module level so their source can be inspected
 by the implicit_return transformer.
 """
 from modgud.guarded_expression import CommonGuards, guarded_expression
-from modgud.shared.errors import GuardClauseError
+from modgud.guarded_expression.errors import GuardClauseError
 
 
 # Simple implicit return

@@ -10,7 +10,7 @@ from __future__ import annotations
 import ast
 from typing import List, Optional, Tuple
 
-from ..shared.errors import (
+from .errors import (
   ExplicitReturnDisallowedError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
@@ -132,57 +132,85 @@ class _TailRewriter:
     return [*init, *new_last]
 
 
-def transform_function_ast(fn_node: ast.AST, func_name: str) -> ast.AST:
-  """Transform function AST to enforce implicit return semantics.
+class ImplicitReturnTransformer:
+  """AST transformation for implicit return functionality."""
 
-  Pure function that transforms a FunctionDef/AsyncFunctionDef AST node to enforce
-  implicit return semantics.
+  @classmethod
+  def transform_function_ast(cls, fn_node: ast.AST, func_name: str) -> ast.AST:
+    """Transform function AST to enforce implicit return semantics.
 
-  Steps:
-    1. Verify no explicit `return` at top-level
-    2. Rewrite tail of the function body to assign to a hidden result var
-    3. Append a single `return __implicit_result`
+    Transforms a FunctionDef/AsyncFunctionDef AST node to enforce
+    implicit return semantics.
 
-  Args:
-      fn_node: The function AST node to transform
-      func_name: Name of the function (for error messages)
+    Steps:
+      1. Verify no explicit `return` at top-level
+      2. Rewrite tail of the function body to assign to a hidden result var
+      3. Append a single `return __implicit_result`
 
-  Returns:
-      The transformed AST node with implicit return semantics
+    Args:
+        fn_node: The function AST node to transform
+        func_name: Name of the function (for error messages)
 
-  Raises:
-      ExplicitReturnDisallowedError: If explicit return found at top level
-      MissingImplicitReturnError: If a block cannot yield a value
-      UnsupportedConstructError: If an unsupported construct is found
+    Returns:
+        The transformed AST node with implicit return semantics
 
-  """
-  assert isinstance(fn_node, (ast.FunctionDef, ast.AsyncFunctionDef))
-  body = fn_node.body
+    Raises:
+        ExplicitReturnDisallowedError: If explicit return found at top level
+        MissingImplicitReturnError: If a block cannot yield a value
+        UnsupportedConstructError: If an unsupported construct is found
 
-  # Check for explicit return at top-level
-  checker = _NoExplicitReturnChecker()
-  # Visit only top-level statements
-  for stmt in body:
-    checker.visit(stmt)
-  if checker.found is not None:
-    line, col = checker.found
-    raise ExplicitReturnDisallowedError(
-      f"Explicit `return` is disallowed in '@guarded_expression' function '{func_name}' with implicit_return=True.",
-      line,
-      col,
-    )
+    """
+    assert isinstance(fn_node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    body = fn_node.body
 
-  result_name = '__implicit_result'
-  rewriter = _TailRewriter(result_name)
-  new_body = rewriter.rewrite_block(body)
-  # Append the single return
-  new_body.append(ast.Return(value=ast.Name(id=result_name, ctx=ast.Load())))
-  fn_node.body = new_body
-  return fn_node
+    # Check for explicit return at top-level
+    checker = _NoExplicitReturnChecker()
+    # Visit only top-level statements
+    for stmt in body:
+      checker.visit(stmt)
+    if checker.found is not None:
+      line, col = checker.found
+      raise ExplicitReturnDisallowedError(
+        f"Explicit `return` is disallowed in '@guarded_expression' function '{func_name}' with implicit_return=True.",
+        line,
+        col,
+      )
+
+    result_name = '__implicit_result'
+    rewriter = _TailRewriter(result_name)
+    new_body = rewriter.rewrite_block(body)
+    # Append the single return
+    new_body.append(ast.Return(value=ast.Name(id=result_name, ctx=ast.Load())))
+    fn_node.body = new_body
+    return fn_node
+
+  @classmethod
+  def apply_implicit_return_transform(
+    cls, func_source: str, func_name: str
+  ) -> Tuple[ast.Module, str]:
+    """Apply implicit return transformation to function source code.
+
+    Args:
+        func_source: The source code of the function (dedented)
+        func_name: The name of the function to transform
+
+    Returns:
+        Tuple of (transformed_ast, compiled_code_object)
+
+    Raises:
+        ExplicitReturnDisallowedError: If explicit return found
+        MissingImplicitReturnError: If a block cannot yield a value
+        UnsupportedConstructError: If an unsupported construct is found
+
+    """
+    tree = ast.parse(func_source)
+    transformer = _TopLevelTransformer(func_name, cls)
+    new_tree = transformer.visit(tree)
+    ast.fix_missing_locations(new_tree)
+    return new_tree, f'<{func_name}-implicit>'
 
 
 class _TopLevelTransformer(ast.NodeTransformer):
-
   """Transform only the target function definition.
 
   Applies transformation only to the *decorated* function definition that we parsed.
@@ -190,41 +218,19 @@ class _TopLevelTransformer(ast.NodeTransformer):
   Strips all decorators to prevent re-application during exec.
   """
 
-  def __init__(self, target_name: str) -> None:
+  def __init__(self, target_name: str, transformer_cls: type) -> None:
     self.target_name = target_name
+    self.transformer_cls = transformer_cls
     super().__init__()
 
   def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:  # type: ignore[override]
     if node.name == self.target_name:
       node.decorator_list = []
-      return transform_function_ast(node, node.name)
+      return self.transformer_cls.transform_function_ast(node, node.name)
     return node
 
   def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:  # type: ignore[override]
     if node.name == self.target_name:
       node.decorator_list = []
-      return transform_function_ast(node, node.name)
+      return self.transformer_cls.transform_function_ast(node, node.name)
     return node
-
-
-def apply_implicit_return_transform(func_source: str, func_name: str) -> Tuple[ast.Module, str]:
-  """Pure function that applies implicit return transformation to function source code.
-
-  Args:
-      func_source: The source code of the function (dedented)
-      func_name: The name of the function to transform
-
-  Returns:
-      Tuple of (transformed_ast, compiled_code_object)
-
-  Raises:
-      ExplicitReturnDisallowedError: If explicit return found
-      MissingImplicitReturnError: If a block cannot yield a value
-      UnsupportedConstructError: If an unsupported construct is found
-
-  """
-  tree = ast.parse(func_source)
-  transformer = _TopLevelTransformer(func_name)
-  new_tree = transformer.visit(tree)
-  ast.fix_missing_locations(new_tree)
-  return new_tree, f'<{func_name}-implicit>'

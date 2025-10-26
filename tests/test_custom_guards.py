@@ -13,7 +13,7 @@ from modgud import (
   unregister_guard,
 )
 from modgud.guarded_expression.guard_registry import GuardRegistry
-from modgud.shared.errors import GuardClauseError
+from modgud.guarded_expression.errors import GuardClauseError
 
 
 class TestGuardRegistry:

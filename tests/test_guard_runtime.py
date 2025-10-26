@@ -1,7 +1,7 @@
 """Unit tests for guard runtime logic."""
 
-from modgud.guarded_expression.guard_runtime import check_guards, handle_failure
-from modgud.shared.errors import GuardClauseError
+from modgud.guarded_expression.guard_runtime import GuardRuntime
+from modgud.guarded_expression.errors import GuardClauseError
 
 
 def test_check_guards_all_pass():
@@ -10,7 +10,7 @@ def test_check_guards_all_pass():
     lambda x: x > 0 or "Must be positive",
     lambda x: x < 100 or "Must be less than 100",
   )
-  result = check_guards(guards, (50,), {})
+  result = GuardRuntime.check_guards(guards, (50,), {})
   assert result is None
 
 
@@ -20,7 +20,7 @@ def test_check_guards_first_fails():
     lambda x: x > 0 or "Must be positive",
     lambda x: x < 100 or "Must be less than 100",
   )
-  result = check_guards(guards, (-5,), {})
+  result = GuardRuntime.check_guards(guards, (-5,), {})
   assert result == "Must be positive"
 
 
@@ -30,20 +30,20 @@ def test_check_guards_second_fails():
     lambda x: x > 0 or "Must be positive",
     lambda x: x < 100 or "Must be less than 100",
   )
-  result = check_guards(guards, (150,), {})
+  result = GuardRuntime.check_guards(guards, (150,), {})
   assert result == "Must be less than 100"
 
 
 def test_check_guards_boolean_false():
   """Test that check_guards handles boolean False guard result."""
   guards = (lambda x: False,)
-  result = check_guards(guards, (5,), {})
+  result = GuardRuntime.check_guards(guards, (5,), {})
   assert result == "Guard clause failed"
 
 
 def test_handle_failure_exception_class():
   """Test handle_failure with exception class."""
-  result, exception = handle_failure(
+  result, exception = GuardRuntime.handle_failure(
     "Test error",
     ValueError,
     "test_func",
@@ -58,7 +58,7 @@ def test_handle_failure_exception_class():
 
 def test_handle_failure_custom_value():
   """Test handle_failure with custom return value."""
-  result, exception = handle_failure(
+  result, exception = GuardRuntime.handle_failure(
     "Test error",
     {"error": "custom"},
     "test_func",
@@ -75,7 +75,7 @@ def test_handle_failure_callable():
   def handler(msg, *args, **kwargs):
     return f"Handled: {msg}"
 
-  result, exception = handle_failure(
+  result, exception = GuardRuntime.handle_failure(
     "Test error",
     handler,
     "test_func",
@@ -89,7 +89,7 @@ def test_handle_failure_callable():
 
 def test_handle_failure_guard_clause_error():
   """Test handle_failure with GuardClauseError."""
-  result, exception = handle_failure(
+  result, exception = GuardRuntime.handle_failure(
     "Test error",
     GuardClauseError,
     "test_func",
@@ -104,7 +104,7 @@ def test_handle_failure_guard_clause_error():
 
 def test_handle_failure_none_value():
   """Test handle_failure with None as on_error value."""
-  result, exception = handle_failure(
+  result, exception = GuardRuntime.handle_failure(
     "Test error",
     None,
     "test_func",
@@ -122,7 +122,7 @@ def test_handle_failure_with_logging(caplog):
   import logging
   caplog.set_level(logging.INFO)
 
-  result, exception = handle_failure(
+  result, exception = GuardRuntime.handle_failure(
     "Validation failed",
     None,
     "process_user",

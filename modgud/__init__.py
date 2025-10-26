@@ -17,7 +17,7 @@ from .guarded_expression.guard_registry import (
   register_guard,
   unregister_guard,
 )
-from .shared.errors import (
+from .guarded_expression.errors import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
