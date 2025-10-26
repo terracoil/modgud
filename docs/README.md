@@ -1,6 +1,6 @@
 # MODGUD Technical Documentation
 
-![modgud](modgud-github.png)
+![modgud](https://github.com/terracoil/freyja/raw/main/docs/modgud-github.png)
 
 > **New to modgud?** Check out the [main introduction](../README.md) for a quick overview and compelling examples!
 
