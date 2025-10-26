@@ -150,6 +150,7 @@ class FreyjaDevTools:
           print("  python bin/dev-tools build compile     # Compile/build package")
           print("  python bin/dev-tools build lint        # Run linters")
           print("  python bin/dev-tools test run          # Run tests")
+          print("  python bin/dev-tools build autocommit  # Commit changes with Claude-generated message")
           print("  python bin/dev-tools build tag-version    # Create git tag for HEAD commit")
           print("  python bin/dev-tools build publish     # Publish to PyPI")
         else:
@@ -351,6 +352,56 @@ class FreyjaDevTools:
         parent._print(f"Please set {token_var} environment variable with your PyPI token", 'error')
       return
 
+    def autocommit(self) -> None:
+      """Commit all uncommitted files using Claude to generate an informative commit message."""
+      parent = self.parent
+      parent._print("💾 Preparing to commit changes...", 'info')
+
+      # Check if there are any changes to commit
+      result = parent._run_command(['git', 'status', '--porcelain'], capture_output=True)
+      if not isinstance(result, subprocess.CompletedProcess) or not result.stdout.strip():
+        parent._print("No changes to commit", 'info')
+        return
+
+      # Show what will be committed
+      parent._run_command(['git', 'status', '--short'], "Changes to be committed:")
+
+      # Use Claude to generate commit message
+      parent._print("🤖 Generating commit message with Claude...", 'info')
+      commit_message: Optional[str] = None
+      result = parent._run_command(
+        ['claude', '-p', 'Ultrathink and commit the uncommitted files, creating an informative message without mentioning claude or phases, or "Co-authored with Claude". There should be no preamble, summary, or afterthoughts.'],
+        capture_output=True
+      )
+      if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
+        commit_message = result.stdout.strip()
+        parent._print(f"Commit message:\n{commit_message}", 'info')
+      else:
+        parent._print("Failed to generate commit message with Claude", 'error')
+        return
+
+      if commit_message:
+        # Add all files
+        parent._print("📁 Staging all changes...", 'info')
+        add_success = parent._run_command(['git', 'add', '-A'], "Adding all files")
+
+        if add_success:
+          # Commit with the generated message
+          commit_success = parent._run_command(
+            ['git', 'commit', '-m', commit_message],
+            "Creating commit"
+          )
+
+          if commit_success:
+            parent._print("🎉 Changes committed successfully!", 'success')
+            # Show the commit
+            parent._run_command(['git', 'log', '-1', '--oneline'], "Latest commit:")
+          else:
+            parent._print("Failed to create commit", 'error')
+        else:
+          parent._print("Failed to stage files", 'error')
+      return
+
     def tag_version(self, version: Optional[str] = None, auto_increment: bool = True) -> None:
       """Create git tag with Claude-generated message, auto-incrementing version if needed."""
       parent = self.parent
@@ -441,22 +492,18 @@ class FreyjaDevTools:
               if update_success:
                 # Commit the version change
                 parent._print("💾 Committing version update...", 'info')
-                commit_success = parent._run_command("git add pyproject.toml", "Staging pyproject.toml")
+                commit_success = parent._run_command(['git', 'add', 'pyproject.toml'], "Staging pyproject.toml")
 
                 if commit_success:
                   commit_msg = f"Bump version to {final_version}"
-                  commit_cmd = f'''git commit -m "$(cat <<'EOF'
-{commit_msg}
-EOF
-)"'''
-                  commit_success = parent._run_command(commit_cmd, f"Committing version bump")
+                  commit_success = parent._run_command(['git', 'commit', '-m', commit_msg], f"Committing version bump")
 
                   if commit_success:
                     # Use Claude to generate tag message
                     parent._print("🤖 Generating tag message with Claude...", 'info')
                     tag_message: Optional[str] = None
                     result = parent._run_command(
-                      ['claude', '-p', 'Create a very short message to be used on a new tag basing it on the most recent commit (HEAD). Return a single string representing the tag description with no preamble, summary, or afterthoughts.'],
+                      ['claude', '-p', 'Create a very short message to be used on a new tag basing it on the most recent commit (HEAD). Return a single string representing the tag description with no preamble, summary, or afterthoughts. Dont mention phases or claude AT ALL'],
                       capture_output=True
                     )
                     if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
@@ -471,7 +518,7 @@ EOF
 
                       # Create the tag
                       result = parent._run_command(
-                        ['git', 'tag', '-a', tag, 'HEAD', '-m', tag_message],
+                        ['git', 'tag', '-a', tag, '-m', tag_message, 'HEAD'],
                         capture_output=True
                       )
                       tag_created = isinstance(result, subprocess.CompletedProcess) and result.returncode == 0
@@ -484,7 +531,9 @@ EOF
                       if tag_created:
                         # Push commit and tag to remote
                         parent._print("🚀 Pushing commit and tag to remote...", 'info')
-                        push_success = parent._run_command("git push && git push --tags", "Pushing to remote")
+                        push_success = parent._run_command(['git', 'push'], "Pushing commit to remote")
+                        if push_success:
+                          push_success = parent._run_command(['git', 'push', '--tags'], "Pushing tags to remote")
                         if push_success:
                           # Success summary
                           parent._print("🎉 Version updated, tagged, and pushed successfully!", 'success')
