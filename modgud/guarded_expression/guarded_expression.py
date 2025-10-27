@@ -70,6 +70,7 @@ class guarded_expression:
 
   def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
     """Apply guard wrapping and optional implicit return transformation."""
+    # Transform first if needed, then wrap - transformation changes function body
     return (
       self._apply_implicit_return(func)
       if self.implicit_return_enabled
@@ -91,12 +92,12 @@ class guarded_expression:
       source, func.__name__
     )
 
-    # Compile the transformed code in the original global scope
+    # Execute in copy of original scope - preserves imports/closures
     env = func.__globals__.copy()
     code = compile(new_tree, filename=filename, mode='exec')
     exec(code, env)
 
-    transformed = env[func.__name__]
+    transformed = env[func.__name__]  # Extract the redefined function
 
     # Wrap with guards and return
     return self._wrap_with_guards(transformed, preserve_metadata_from=func)
@@ -105,6 +106,7 @@ class guarded_expression:
     self, func: Callable[..., Any], preserve_metadata_from: Optional[Callable[..., Any]] = None
   ) -> Callable[..., Any]:
     """Wrap the function with guard checking logic."""
+    # Use original for metadata when transforming - transformed lacks source context
     metadata_source = preserve_metadata_from if preserve_metadata_from is not None else func
 
     @functools.wraps(metadata_source)
@@ -117,7 +119,7 @@ class guarded_expression:
           result, exception_to_raise = GuardRuntime.handle_failure(
             error_msg, self.on_error, func.__name__, args, kwargs, self.log
           )
-          # Raise exception if configured
+          # Exception path prioritized for clean error propagation
           if exception_to_raise:
             raise exception_to_raise
           return result
@@ -125,7 +127,7 @@ class guarded_expression:
       # All guards passed - execute the function
       return func(*args, **kwargs)
 
-    # Preserve explicit annotations for typing/IDE help
+    # Preserve signature for IDE autocomplete and runtime introspection
     wrapper.__signature__ = inspect.signature(metadata_source)  # type: ignore[attr-defined]
     wrapper.__annotations__ = getattr(metadata_source, '__annotations__', {})
     return wrapper

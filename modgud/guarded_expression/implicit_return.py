@@ -32,7 +32,7 @@ class _NoExplicitReturnChecker(ast.NodeVisitor):
     # If we are called, it means we're at top-level (we never recurse into nested defs)
     self.found = (getattr(node, 'lineno', 0), getattr(node, 'col_offset', 0))
 
-  # Block traversal into nested defs/lambdas
+  # Block traversal into nested defs/lambdas - they retain standard Python semantics
   def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
     return
 
@@ -85,16 +85,15 @@ class _TailRewriter:
       return [stmt]
 
     if isinstance(stmt, ast.Try):
-      # Body must produce a value
+      # Body must produce a value - normal execution path
       stmt.body = self.rewrite_block(stmt.body)
-      # Each except must produce a value
+      # Each except must produce a value - error recovery paths need values too
       for h in stmt.handlers:
         h.body = self.rewrite_block(h.body)
-      # Else (if present) also produces a value (it runs on success)
+      # Else (if present) runs on success, replaces body's value
       if stmt.orelse:
         stmt.orelse = self.rewrite_block(stmt.orelse)
-      # finally is allowed, but it shouldn't need to assign result; it runs after
-      # the above assignments. We leave it unchanged.
+      # Finally runs regardless but can't affect return value - cleanup only
       return [stmt]
 
     if isinstance(stmt, ast.Match):
@@ -110,12 +109,11 @@ class _TailRewriter:
       return [stmt]
 
     if isinstance(stmt, ast.Pass):
-      # Pass statement yields None (mimics Python's implicit return None)
+      # Pass yields None - consistent with Python's implicit None return
       return [self._assign(ast.Constant(value=None))]
 
     if isinstance(stmt, ast.Raise):
-      # Raise statement doesn't produce a value, but that's OK - execution transfers
-      # We assign None before the raise so the variable is always initialized
+      # Initialize result before raise - prevents unbound variable if exception caught higher up
       return [self._assign(ast.Constant(value=None)), stmt]
 
     raise UnsupportedConstructError(
@@ -180,7 +178,7 @@ class ImplicitReturnTransformer:
     result_name = '__implicit_result'
     rewriter = _TailRewriter(result_name)
 
-    # Skip docstring if it's the first statement
+    # Preserve docstrings - they're metadata, not executable code to transform
     actual_body = body
     docstring_stmt = None
     if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
@@ -250,12 +248,12 @@ class _TopLevelTransformer(ast.NodeTransformer):
 
   def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:
     if node.name == self.target_name:
-      node.decorator_list = []
+      node.decorator_list = []  # Strip decorators to prevent infinite recursion during exec
       return self.transformer_cls.transform_function_ast(node, node.name)
     return node
 
   def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:
     if node.name == self.target_name:
-      node.decorator_list = []
+      node.decorator_list = []  # Strip decorators to prevent infinite recursion during exec
       return self.transformer_cls.transform_function_ast(node, node.name)
     return node

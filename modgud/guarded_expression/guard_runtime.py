@@ -32,8 +32,8 @@ class GuardRuntime:
     """
     for guard in guards:
       guard_result = guard(*args, **kwargs)
-      # Handle guard failure
-      if guard_result is not True:
+      # Early exit on first failure - fail fast principle
+      if guard_result is not True:  # Must be exact True, not just truthy
         return guard_result if isinstance(guard_result, str) else 'Guard clause failed'
     return None
 
@@ -63,12 +63,12 @@ class GuardRuntime:
         - If value should be returned: (value, None)
 
     """
-    # Log if enabled
+    # Log before handling - capture failure regardless of handler outcome
     if log_enabled:
       cls._logger.info(f'Guard clause failed in {func_name}: {error_msg}')
 
-    # Handle failure based on on_error type
+    # Exception classes raise, callables transform, values pass through
     if isinstance(on_error, type) and issubclass(on_error, BaseException):
       return (None, on_error(error_msg))
-    # Handle callables and values
+    # Callables get full context for recovery logic, values are simple fallbacks
     return (on_error(error_msg, *args, **kwargs) if callable(on_error) else on_error, None)  # type: ignore[call-arg]
