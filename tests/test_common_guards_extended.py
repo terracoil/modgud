@@ -8,16 +8,15 @@ import pytest
 from modgud import CommonGuards, guarded_expression
 from modgud.guarded_expression.errors import GuardClauseError
 
+from .helpers import create_temp_file
+
 
 class TestValidFilePathGuard:
   """Tests for valid_file_path guard."""
 
   def test_valid_existing_file(self):
     """Test guard passes for existing file."""
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-      tmp_path = tmp.name
-
-    try:
+    with create_temp_file('test content') as tmp_path:
 
       @guarded_expression(
         CommonGuards.valid_file_path('filepath', must_be_file=True), implicit_return=False
@@ -27,8 +26,6 @@ class TestValidFilePathGuard:
 
       result = process_file(tmp_path)
       assert 'Processing' in result
-    finally:
-      Path(tmp_path).unlink()
 
   def test_nonexistent_file_fails(self):
     """Test guard fails for nonexistent file."""

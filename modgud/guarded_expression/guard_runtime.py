@@ -13,7 +13,7 @@ from .types import FailureBehavior, GuardFunction
 class GuardRuntime:
   """Runtime guard checking and failure handling."""
 
-  _logger = logging.getLogger(__name__)
+  _logger: logging.Logger = logging.getLogger(__name__)
 
   @classmethod
   def check_guards(

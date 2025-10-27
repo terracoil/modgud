@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 from urllib.parse import urlparse
 
+from .messages import ErrorMessages
 from .types import GuardFunction
 
 
@@ -128,7 +129,7 @@ class CommonGuards:
 
     """
     return CommonGuards._make_guard(
-      param_name, position, lambda v: v > 0, '{param_name} must be positive', default=0
+      param_name, position, lambda v: v > 0, ErrorMessages.PARAM_MUST_BE_POSITIVE, default=0
     )
 
   @staticmethod
@@ -297,3 +298,30 @@ class CommonGuards:
       return f'{param_name} must be a valid {enum_class.__name__} value'
 
     return check_enum
+
+
+def _register_common_guards() -> None:
+  """Auto-register all CommonGuards methods to global registry."""
+  from .guard_registry import register_guard
+
+  # List of guard methods to register (excluding private methods)
+  guards_to_register = [
+    'not_empty',
+    'not_none',
+    'positive',
+    'in_range',
+    'type_check',
+    'matches_pattern',
+    'valid_file_path',
+    'valid_url',
+    'valid_enum',
+  ]
+
+  for name in guards_to_register:
+    method = getattr(CommonGuards, name, None)
+    if callable(method):
+      register_guard(name, method, namespace='common')
+
+
+# Auto-register CommonGuards on module import
+_register_common_guards()
