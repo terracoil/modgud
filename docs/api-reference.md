@@ -12,7 +12,7 @@ Complete API reference for the modgud library, covering all decorators, classes,
 - [Primary Decorator](#primary-decorator)
   - [guarded_expression](#guarded_expression)
 - [Classes](#classes)
-  - [CommonGuards](#commonguards)
+  - [Pre-built Guard Functions](#pre-built-guard-functions)
 - [Error Classes](#error-classes)
 - [Guard Registry Functions](#guard-registry-functions)
 - [Type Definitions](#type-definitions)
@@ -26,7 +26,18 @@ from modgud import (
     # Primary decorator
     guarded_expression,
 
-    # Guard validators
+    # Guard validators (all available guards)
+    not_none,
+    not_empty,
+    positive,
+    in_range,
+    type_check,
+    matches_pattern,
+    valid_file_path,
+    valid_url,
+    valid_enum,
+
+    # Or import from CommonGuards class
     CommonGuards,
 
     # Errors
@@ -48,7 +59,8 @@ from modgud import (
 ```
 
 **Version**: 0.2.0
-**Python**: 3.7+
+**Python**: 3.13+
+**Zero Runtime Dependencies**: Uses only Python standard library
 
 ---
 
@@ -176,9 +188,9 @@ process_items([])  # Logs: "INFO: Guard failed: items must not be empty"
 
 ## Classes
 
-### CommonGuards
+### Pre-built Guard Functions
 
-Pre-defined guard validators for common validation scenarios.
+Pre-defined guard validators for common validation scenarios. These functions are imported directly from modgud.
 
 All methods are static and return `GuardFunction` instances that can be used with `guarded_expression`.
 

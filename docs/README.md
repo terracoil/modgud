@@ -28,7 +28,7 @@ This document contains:
   - [Implicit Returns](#implicit-returns)
   - [Explicit Returns](#explicit-returns)
   - [Error Handling Strategies](#error-handling-strategies)
-  - [CommonGuards Usage](#commonguards-usage)
+  - [Pre-built Guards Usage](#pre-built-guards-usage)
   - [Advanced Patterns](#advanced-patterns)
 - [Implicit Return Semantics](#implicit-return-semantics) - How implicit returns work
   - [If/Else Statements](#ifelse-statements)
@@ -160,7 +160,7 @@ Returns a decorated function that:
 3. Transforms function for implicit returns if enabled
 4. Preserves original function metadata (`__name__`, `__doc__`, etc.)
 
-### CommonGuards Class
+### Pre-built Guard Validators
 
 Pre-built guard validators for common validation scenarios.
 
@@ -559,11 +559,11 @@ result = set_level(15)
 # Returns: {"error": True, "message": "level must be between 1 and 10"}
 ```
 
-### CommonGuards Usage
+### Pre-built Guards Usage
 
 #### Parameter Extraction
 
-CommonGuards intelligently extract parameters from both positional and keyword arguments:
+Guard validators intelligently extract parameters from both positional and keyword arguments:
 
 ```python
 from modgud import guarded_expression, not_none, positive, not_empty
@@ -1432,7 +1432,7 @@ def process(x):
 | Combined usage | Stack decorators | Single decorator |
 | Default behavior | Explicit returns | Implicit returns |
 | Error handling | Configurable | Configurable |
-| CommonGuards | Available | Available |
+| Pre-built Guards | Available | Available |
 | Performance | Good | Better (single decorator) |
 
 ### Breaking Changes

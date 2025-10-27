@@ -13,7 +13,7 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 - **Implicit return by default**: `implicit_return=True` enables Ruby-style expression-oriented code
 - **GuardClauseError by default**: `on_error=GuardClauseError` raises exception on guard failure
 - **Failure handling**: Configurable via `on_error` parameter (exception classes, custom values, callables)
-- **Pre-built guards**: `CommonGuards` class provides standard validation patterns (not_none, positive, type_check, etc.)
+- **Pre-built guards**: Standard validation patterns available as individual functions (not_none, positive, type_check, etc.)
 - **NO LEGACY SUPPORT NEEDED**: Old `guard_clause` and `implicit_return` packages should be removed, not maintained as wrappers
 
 ## Development Commands
@@ -98,7 +98,7 @@ poetry run twine check dist/*
   - `decorator.py` - Main `guarded_expression` class
   - `ast_transform.py` - Pure AST transformation for implicit returns
   - `guard_runtime.py` - Pure guard checking and failure handling functions
-  - `common_guards.py` - Pre-built guard factory methods
+  - `common_guards.py` - Pre-built guard factory methods (exports individual functions)
   - `__init__.py` - Package exports
 
 **Shared Infrastructure:**
@@ -107,7 +107,7 @@ poetry run twine check dist/*
   - `errors.py` - All exception classes (`GuardClauseError`, `ImplicitReturnError`, etc.)
 
 **Public API Exports:**
-- `modgud/__init__.py` - Primary exports (`guarded_expression`, `CommonGuards`, error classes)
+- `modgud/__init__.py` - Primary exports (`guarded_expression`, guard functions, error classes)
 
 ### Key Design Patterns
 
@@ -169,7 +169,7 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 - Empty block detection
 - Nested function handling (nested functions can use explicit returns)
 - Logging functionality
-- CommonGuards parameter handling (positional vs named)
+- Guard parameter handling (positional vs named)
 - Metadata preservation (__name__, __doc__, __signature__, __annotations__)
 - Legacy compatibility (guard_clause and implicit_return wrappers)
 
@@ -188,7 +188,7 @@ The v0.2.0 refactoring implements clean architecture with clear separation of co
 
 **Primary API:**
 ```python
-from modgud import guarded_expression, positive, GuardClauseError
+from modgud import guarded_expression, positive, not_none, type_check, GuardClauseError
 
 # With guards and implicit return (default behavior)
 @guarded_expression(
@@ -199,6 +199,16 @@ from modgud import guarded_expression, positive, GuardClauseError
 def process(x):
     result = x * 2
     result  # implicit return
+
+# Multiple guards with different validators
+@guarded_expression(
+    not_none("user"),
+    type_check(str, "name"),
+    positive("amount")
+)
+def create_transaction(user, name, amount):
+    transaction = Transaction(user, name, amount)
+    transaction.id
 
 # Guards only, explicit return
 @guarded_expression(

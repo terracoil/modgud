@@ -95,13 +95,15 @@ class GuardRegistry:
 ```
 
 ### Auto-Registration
-CommonGuards auto-registers at import:
+Pre-built guards auto-register at import:
 ```python
 # At module level in common_guards.py
 def _register_common_guards():
-  for name in dir(CommonGuards):
-    if not name.startswith('_'):
-      register_guard(name, getattr(CommonGuards, name), namespace='common')
+  # Each guard function is registered individually
+  register_guard('not_none', not_none, namespace='common')
+  register_guard('positive', positive, namespace='common')
+  register_guard('type_check', type_check, namespace='common')
+  # ... etc for all pre-built guards
 
 _register_common_guards()
 ```

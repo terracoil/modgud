@@ -150,7 +150,7 @@ Every function has exactly one logical exit point. Easier debugging. Clearer con
 
 Guards handle early exits. Your function handles business logic. Separation of concerns at its finest.
 
-### 4. Pre-Built CommonGuards
+### 4. Pre-Built Guards
 
 Stop writing the same validations over and over:
 
@@ -276,7 +276,7 @@ print(calculate_discount(-10))  # Raises GuardClauseError
 - **Implicit Returns by Default** - Last expression in each branch is auto-returned (like Ruby/Rust/Scala)
 - **Guard Clause Decorators** - Validate inputs before function execution
 - **Single Return Point** - One logical exit point per function
-- **Pre-Built CommonGuards** - Standard validations ready to use (not_none, positive, in_range, type_check, etc.)
+- **Pre-Built Guards** - Standard validations ready to use (not_none, positive, in_range, type_check, etc.)
 - **Configurable Failure Behaviors** - Return values, raise exceptions, or call custom handlers
 - **Clean Architecture** - Dependency injection, pure functions, immutable transforms
 - **Zero Dependencies** - Uses only Python standard library
@@ -351,7 +351,7 @@ def create_user(email, age, username, password):
 
 *"The single return point architecture makes debugging so much easier."*
 
-*"CommonGuards saved me from writing the same validations 100 times."*
+*"Pre-built guards saved me from writing the same validations 100 times."*
 
 ---
 

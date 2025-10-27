@@ -549,7 +549,7 @@ assert my_function(-5) == 0
 1. **Order guards by failure likelihood**: Put most likely to fail first
 2. **Use specific error handlers**: Avoid generic exception catching
 3. **Compile once, run many**: Decoration cost is one-time
-4. **Prefer CommonGuards**: Optimized implementations
+4. **Prefer pre-built guards**: Optimized implementations
 
 ```python
 from modgud import guarded_expression, not_none, not_empty, type_check
