@@ -56,6 +56,53 @@ class FreyjaDevTools:
       'nc': '\033[0m'  # No Color
     }
 
+  def _format_command(self, command: Union[str, List[str]], shell: bool) -> Union[str, List[str]]:
+    """Convert string command to list format if needed."""
+    # Convert string to list if shell=False for safety
+    if isinstance(command, str) and not shell:
+      return shlex.split(command)
+    return command
+
+  def _display_command(self, command: Union[str, List[str]], cwd: Optional[str] = None) -> None:
+    """Display command in verbose/dry-run mode."""
+    cmd_display = command if isinstance(command, str) else ' '.join(shlex.quote(arg) for arg in command)
+    if self.verbose or self.dry_run:
+      print(f"Command: {cmd_display}")
+
+    if self.dry_run:
+      print("(DRY RUN - command not executed)")
+
+  def _execute_subprocess(self, command: Union[str, List[str]], **kwargs) -> subprocess.CompletedProcess:
+    """Execute subprocess with configured parameters."""
+    return subprocess.run(command, cwd=self.project_root, **kwargs)
+
+  def _handle_subprocess_error(self, e: Exception, command: Union[str, List[str]],
+                               capture_output: bool, check: bool) -> Union[bool, subprocess.CompletedProcess]:
+    """Unified error handling for subprocess failures."""
+    if isinstance(e, subprocess.CalledProcessError):
+      if not capture_output:
+        self._print(f"Command failed with exit code {e.returncode}", 'error')
+      if check:
+        raise
+      return e if capture_output else False
+    elif isinstance(e, subprocess.TimeoutExpired):
+      if not capture_output:
+        self._print(f"Command timed out after {e.timeout} seconds", 'error')
+      if check:
+        raise
+      return subprocess.CompletedProcess(command, -1, '', 'Timeout') if capture_output else False
+    elif isinstance(e, FileNotFoundError):
+      cmd_name = command[0] if isinstance(command, list) and command else str(command).split()[0]
+      if not capture_output:
+        self._print(f"Command '{cmd_name}' not found - is it installed and in PATH?", 'error')
+      return subprocess.CompletedProcess(command, -1, '', f"Command not found: {cmd_name}") if capture_output else False
+    elif isinstance(e, OSError):
+      if not capture_output:
+        self._print(f"OS error running command: {e}", 'error')
+      return subprocess.CompletedProcess(command, -1, '', str(e)) if capture_output else False
+    else:
+      raise  # Re-raise unexpected exceptions
+
   def _run_command(
     self,
     command: Union[str, List[str]],
@@ -71,52 +118,33 @@ class FreyjaDevTools:
     if description:
       print(f"{self.colors['blue']}{description}{self.colors['nc']}")
 
-    # Convert string to list if shell=False for safety
-    if isinstance(command, str) and not shell:
-      command = shlex.split(command)
+    # Format command
+    command = self._format_command(command, shell)
 
     # Display command for verbose/dry-run
-    cmd_display = command if isinstance(command, str) else ' '.join(shlex.quote(arg) for arg in command)
-    if self.verbose or self.dry_run:
-      print(f"Command: {cmd_display}")
+    self._display_command(command)
+
+    # Track result value for single return point
+    result_value = None
 
     if self.dry_run:
-      print("(DRY RUN - command not executed)")
-      # Return mock result for dry-run
-      return subprocess.CompletedProcess(command, 0, '', '') if capture_output else True
+      # Set mock result for dry-run
+      result_value = subprocess.CompletedProcess(command, 0, '', '') if capture_output else True
+    else:
+      try:
+        result = self._execute_subprocess(
+          command,
+          shell=shell,
+          check=check,
+          capture_output=capture_output,
+          text=capture_output,  # Use text mode when capturing
+          timeout=timeout
+        )
+        result_value = result if capture_output else (result.returncode == 0)
+      except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
+        result_value = self._handle_subprocess_error(e, command, capture_output, check)
 
-    try:
-      result = subprocess.run(
-        command,
-        shell=shell,
-        check=check,
-        capture_output=capture_output,
-        text=capture_output,  # Use text mode when capturing
-        cwd=self.project_root,
-        timeout=timeout
-      )
-      return result if capture_output else (result.returncode == 0)
-    except subprocess.CalledProcessError as e:
-      if not capture_output:
-        self._print(f"Command failed with exit code {e.returncode}", 'error')
-      if check:
-        raise
-      return e if capture_output else False
-    except subprocess.TimeoutExpired as e:
-      if not capture_output:
-        self._print(f"Command timed out after {timeout} seconds", 'error')
-      if check:
-        raise
-      return subprocess.CompletedProcess(command, -1, '', 'Timeout') if capture_output else False
-    except FileNotFoundError:
-      cmd_name = command[0] if isinstance(command, list) and command else str(command).split()[0]
-      if not capture_output:
-        self._print(f"Command '{cmd_name}' not found - is it installed and in PATH?", 'error')
-      return subprocess.CompletedProcess(command, -1, '', f"Command not found: {cmd_name}") if capture_output else False
-    except OSError as e:
-      if not capture_output:
-        self._print(f"OS error running command: {e}", 'error')
-      return subprocess.CompletedProcess(command, -1, '', str(e)) if capture_output else False
+    return result_value
 
   def _print(self, message: str, msg_type: str = 'info') -> None:
     """Print formatted message based on type."""

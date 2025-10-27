@@ -7,7 +7,7 @@ common validation patterns like not_none, positive, in_range, etc.
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Callable, Optional, Union
 from urllib.parse import urlparse
 
 from .types import GuardFunction
@@ -57,6 +57,34 @@ class CommonGuards:
     return result
 
   @staticmethod
+  def _make_guard(
+    param_name: str,
+    position: Optional[int],
+    validator: Callable[[Any], bool],
+    error_template: str,
+    default: Any = None,
+  ) -> GuardFunction:
+    """Create common guard patterns with a factory method.
+
+    Args:
+        param_name: Name of the parameter to check
+        position: Position for positional args
+        validator: Function that validates the value, returns bool
+        error_template: Error message template with {param_name} and {value} placeholders
+        default: Default value if parameter not found
+
+    Returns:
+        GuardFunction that validates parameters
+
+    """
+
+    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      value = CommonGuards._extract_param(param_name, position, args, kwargs, default)
+      return validator(value) or error_template.format(param_name=param_name, value=value)
+
+    return check
+
+  @staticmethod
   def not_empty(param_name: str = 'parameter', position: Optional[int] = None) -> GuardFunction:
     """Guard ensuring collection parameter is not empty.
 
@@ -86,12 +114,9 @@ class CommonGuards:
         position: Position for positional args (default: 0)
 
     """
-
-    def check_not_none(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
-      return value is not None or f'{param_name} cannot be None'
-
-    return check_not_none
+    return CommonGuards._make_guard(
+      param_name, position, lambda v: v is not None, '{param_name} cannot be None', default=None
+    )
 
   @staticmethod
   def positive(param_name: str = 'parameter', position: int = 0) -> GuardFunction:
@@ -102,12 +127,9 @@ class CommonGuards:
         position: Position for positional args (default: 0)
 
     """
-
-    def check_positive(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=0)
-      return value > 0 or f'{param_name} must be positive'
-
-    return check_positive
+    return CommonGuards._make_guard(
+      param_name, position, lambda v: v > 0, '{param_name} must be positive', default=0
+    )
 
   @staticmethod
   def in_range(

@@ -20,8 +20,7 @@ class TestGuardRegistry:
 
     def sample_guard_factory(param_name: str = 'param'):
       def check(*args, **kwargs):
-        result = True
-        return result
+        return True
 
       return check
 
@@ -37,8 +36,7 @@ class TestGuardRegistry:
 
     def sample_guard_factory(param_name: str = 'param'):
       def check(*args, **kwargs):
-        result = True
-        return result
+        return True
 
       return check
 
@@ -55,8 +53,7 @@ class TestGuardRegistry:
 
     def sample_guard_factory():
       def check(*args, **kwargs):
-        result = True
-        return result
+        return True
 
       return check
 

@@ -30,14 +30,12 @@ class GuardRuntime:
         None if all guards pass, or error message string if any guard fails
 
     """
-    error_msg = None
     for guard in guards:
       guard_result = guard(*args, **kwargs)
       # Handle guard failure
       if guard_result is not True:
-        error_msg = guard_result if isinstance(guard_result, str) else 'Guard clause failed'
-        break
-    return error_msg
+        return guard_result if isinstance(guard_result, str) else 'Guard clause failed'
+    return None
 
   @classmethod
   def handle_failure(
@@ -69,15 +67,8 @@ class GuardRuntime:
     if log_enabled:
       cls._logger.info(f'Guard clause failed in {func_name}: {error_msg}')
 
-    # Handle failure based on on_error type - single return point
-    result = None
-    exception_to_raise = None
-
+    # Handle failure based on on_error type
     if isinstance(on_error, type) and issubclass(on_error, BaseException):
-      exception_to_raise = on_error(error_msg)
-    elif callable(on_error):
-      result = on_error(error_msg, *args, **kwargs)  # type: ignore[call-arg]
-    else:
-      result = on_error
-
-    return result, exception_to_raise
+      return (None, on_error(error_msg))
+    # Handle callables and values
+    return (on_error(error_msg, *args, **kwargs) if callable(on_error) else on_error, None)  # type: ignore[call-arg]

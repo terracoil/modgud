@@ -2,6 +2,14 @@
 
 from typing import Optional
 
+__all__ = [
+  'GuardClauseError',
+  'ImplicitReturnError',
+  'ExplicitReturnDisallowedError',
+  'MissingImplicitReturnError',
+  'UnsupportedConstructError',
+]
+
 
 class GuardClauseError(Exception):
   """Exception raised when a guard clause fails."""

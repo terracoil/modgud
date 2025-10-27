@@ -1,6 +1,7 @@
 """Test helper utilities for modgud test suite."""
 
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -20,6 +21,7 @@ def assert_guard_fails(
   return exc_info
 
 
+@contextmanager
 def create_temp_file(content: str = 'test'):
   """Context manager for temporary test files."""
   with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp:

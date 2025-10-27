@@ -8,6 +8,17 @@ from typing import Callable, Dict, Optional
 
 from .types import GuardFunction
 
+__all__ = [
+  'GuardRegistry',
+  'register_guard',
+  'get_guard',
+  'list_custom_guards',
+  'list_guard_namespaces',
+  'has_custom_guard',
+  'unregister_guard',
+  'get_registry',
+]
+
 
 class GuardRegistry:
   """Registry for custom guard validators.
@@ -66,12 +77,9 @@ class GuardRegistry:
         Guard factory function if found, None otherwise
 
     """
-    result = None
-    if namespace is None:
-      result = self._guards.get(name)
-    else:
-      result = self._namespaces.get(namespace, {}).get(name)
-    return result
+    return (
+      self._guards.get(name) if namespace is None else self._namespaces.get(namespace, {}).get(name)
+    )
 
   def list_guards(self, namespace: Optional[str] = None) -> list[str]:
     """List all registered guard names.
@@ -83,12 +91,11 @@ class GuardRegistry:
         List of registered guard names
 
     """
-    result = []
-    if namespace is None:
-      result = list(self._guards.keys())
-    else:
-      result = list(self._namespaces.get(namespace, {}).keys())
-    return result
+    return (
+      list(self._guards.keys())
+      if namespace is None
+      else list(self._namespaces.get(namespace, {}).keys())
+    )
 
   def list_namespaces(self) -> list[str]:
     """List all registered namespaces.
