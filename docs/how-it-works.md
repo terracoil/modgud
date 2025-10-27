@@ -2,26 +2,36 @@
 
 # How It Works: The Magic Behind Expression-Oriented Python
 
-[← Back to Documentation Hub](README.md)
+---
+
+## 📍 Navigation
+
+**You are here**: How It Works (Technical Deep-Dive)
+
+**Parent**: [📚 Documentation Hub](README.md) - Back to documentation index
+**Grandparent**: [🌉 Main README](../README.md) - Project overview
+**Sibling**: [📖 API Reference](api-reference.md) - Complete API documentation
+
+---
 
 Welcome to the technical deep-dive into modgud's internals. This document explains how we transform Python from a statement-oriented language into one that embraces expression-oriented programming—all through the power of decorators and AST manipulation.
 
 ---
 
-## Table of Contents
+## 📋 Table of Contents
 
-1. [Introduction: Breaking Python's Rules (For Good)](#introduction-breaking-pythons-rules-for-good)
-2. [The Architecture: Clean, Functional, Powerful](#the-architecture-clean-functional-powerful)
-3. [The Guard Pipeline: Your Function's Bouncer](#the-guard-pipeline-your-functions-bouncer)
-4. [AST Transformation: The Secret Sauce](#ast-transformation-the-secret-sauce)
-5. [Implicit Return Mechanics: Expression Magic](#implicit-return-mechanics-expression-magic)
-6. [Runtime Composition: Putting It All Together](#runtime-composition-putting-it-all-together)
-7. [Error Handling: Graceful Failures](#error-handling-graceful-failures)
-8. [Advanced Topics](#advanced-topics)
+1. [💭 Introduction: Breaking Python's Rules (For Good)](#introduction-breaking-pythons-rules-for-good)
+2. [🏛️ The Architecture: Clean, Functional, Powerful](#the-architecture-clean-functional-powerful)
+3. [🛡️ The Guard Pipeline: Your Function's Bouncer](#the-guard-pipeline-your-functions-bouncer)
+4. [🔮 AST Transformation: The Secret Sauce](#ast-transformation-the-secret-sauce)
+5. [🎨 Implicit Return Mechanics: Expression Magic](#implicit-return-mechanics-expression-magic)
+6. [⚡ Runtime Composition: Putting It All Together](#runtime-composition-putting-it-all-together)
+7. [🚨 Error Handling: Graceful Failures](#error-handling-graceful-failures)
+8. [🎓 Advanced Topics](#advanced-topics)
 
 ---
 
-## Introduction: Breaking Python's Rules (For Good)
+## 💭 Introduction: Breaking Python's Rules (For Good)
 
 Python has always been a statement-oriented language. Every `if`, `for`, and `try` block is a statement that executes code but doesn't yield a value. This design choice has served Python well, but it also means we write more boilerplate than necessary.
 
@@ -77,7 +87,7 @@ But how does this work? Let's dive in.
 
 ---
 
-## The Architecture: Clean, Functional, Powerful
+## 🏛️ The Architecture: Clean, Functional, Powerful
 
 Modgud follows clean architecture principles with three distinct layers:
 
@@ -121,7 +131,7 @@ Modgud follows clean architecture principles with three distinct layers:
 
 ---
 
-## The Guard Pipeline: Your Function's Bouncer
+## 🛡️ The Guard Pipeline: Your Function's Bouncer
 
 When you decorate a function with `@guarded_expression`, here's what happens at runtime:
 
@@ -190,7 +200,7 @@ The `on_error` parameter determines what happens when a guard fails:
 
 ---
 
-## AST Transformation: The Secret Sauce
+## 🔮 AST Transformation: The Secret Sauce
 
 The real magic happens in the Abstract Syntax Tree (AST) transformation. When `implicit_return=True` (the default), modgud rewrites your function at the AST level.
 
@@ -279,7 +289,7 @@ def complex_logic(x, y, z):
 
 ---
 
-## Implicit Return Mechanics: Expression Magic
+## 🎨 Implicit Return Mechanics: Expression Magic
 
 The implicit return system transforms Python statements into expressions by introducing a hidden accumulator variable.
 
@@ -370,7 +380,7 @@ This raises `MissingImplicitReturnError` at decoration time, not runtime.
 
 ---
 
-## Runtime Composition: Putting It All Together
+## ⚡ Runtime Composition: Putting It All Together
 
 The `guarded_expression` decorator orchestrates the entire process:
 
@@ -414,7 +424,7 @@ Modgud is thread-safe:
 
 ---
 
-## Error Handling: Graceful Failures
+## 🚨 Error Handling: Graceful Failures
 
 Modgud provides a rich error hierarchy for different failure modes:
 
@@ -476,7 +486,7 @@ def greet_user(user):
 
 ---
 
-## Advanced Topics
+## 🎓 Advanced Topics
 
 ### Custom Guard Registration
 

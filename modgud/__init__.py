@@ -29,7 +29,7 @@ Usage Examples:
                 x - y  # Implicit return
 
     Custom guard registration:
-        from modgud import register_guard
+        from modgud import GuardRegistry
 
         def valid_email(param_name="email", position=0):
             def check(*args, **kwargs):
@@ -37,7 +37,7 @@ Usage Examples:
                 return "@" in str(value) or f"{param_name} must be a valid email"
             return check
 
-        register_guard("valid_email", valid_email, namespace="validators")
+        GuardRegistry.register("valid_email", valid_email, namespace="validators")
 """
 
 from .guarded_expression import guarded_expression
@@ -49,15 +49,7 @@ from .guarded_expression.errors import (
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .guarded_expression.guard_registry import (
-  get_guard,
-  get_registry,
-  has_custom_guard,
-  list_custom_guards,
-  list_guard_namespaces,
-  register_guard,
-  unregister_guard,
-)
+from .guarded_expression.guard_registry import GuardRegistry
 
 # Export guards as module-level functions for convenient direct import
 not_empty = CommonGuards.not_empty
@@ -70,10 +62,14 @@ valid_file_path = CommonGuards.valid_file_path
 valid_url = CommonGuards.valid_url
 valid_enum = CommonGuards.valid_enum
 
-__version__ = '0.2.0'
+__version__ = '1.1.0'
 __all__ = [
+  # Primary decorator
   'guarded_expression',
-  # Guard validators
+  # Classes
+  'CommonGuards',
+  'GuardRegistry',
+  # Guard validators (convenience exports)
   'not_empty',
   'not_none',
   'positive',
@@ -89,12 +85,4 @@ __all__ = [
   'ExplicitReturnDisallowedError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
-  # Registry functions
-  'register_guard',
-  'get_guard',
-  'has_custom_guard',
-  'list_custom_guards',
-  'list_guard_namespaces',
-  'unregister_guard',
-  'get_registry',
 ]

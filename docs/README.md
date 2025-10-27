@@ -2,49 +2,55 @@
 
 # !["Móðguðr"](https://github.com/terracoil/modgud/raw/master/docs/modgud-text-sm.png)
 
-> **New to modgud?** Check out the [main introduction](../README.md) for a quick overview and compelling examples!
+---
 
-## 📚 Documentation Navigation
-![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud-thumb.png)
+## 📍 Navigation
 
-### Core Documentation
-- **[🔮 How It Works](how-it-works.md)** - Deep dive into AST transformation, guard pipelines, and the magic behind implicit returns
-- **[📖 API Reference](api-reference.md)** - Complete reference for all decorators, guards, and types
-- **[🏛️ Architecture Overview](architecture/README.md)** - Clean architecture design principles
+**You are here**: Documentation Hub
 
-### Quick Links
-- [← Back to Main README](../README.md)
+**Parent**:
+- [🌉 Main README](../README.md) - Project overview and quick start
+
+**Children**:
+- [📖 API Reference](api-reference.md) - Complete API documentation
+- [⚙️ How It Works](how-it-works.md) - Technical deep-dive into AST transformation
+
+**External Links**:
 - [GitHub Repository](https://github.com/terracoil/modgud)
 - [PyPI Package](https://pypi.org/project/modgud/)
 
 ---
 
-## Table of Contents
+![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud-thumb.png)
+
+---
+
+## 📋 Table of Contents
 
 This document contains:
-- [Overview](#overview) - What modgud is and why it exists
-- [Installation](#installation) - Getting started with modgud
-- [Usage Examples](#usage-examples) - Practical code examples
+- [🗺️ Overview](#overview) - What modgud is and why it exists
+- [📦 Installation](#installation) - Getting started with modgud
+- [💻 Usage Examples](#usage-examples) - Practical code examples
   - [Basic Guard Usage](#basic-guard-usage)
   - [Implicit Returns](#implicit-returns)
   - [Explicit Returns](#explicit-returns)
   - [Error Handling Strategies](#error-handling-strategies)
   - [Pre-built Guards Usage](#pre-built-guards-usage)
   - [Advanced Patterns](#advanced-patterns)
-- [Implicit Return Semantics](#implicit-return-semantics) - How implicit returns work
+- [🎨 Implicit Return Semantics](#implicit-return-semantics) - How implicit returns work
   - [If/Else Statements](#ifelse-statements)
   - [Try/Except Blocks](#tryexcept-blocks)
   - [Match/Case Statements](#matchcase-statements)
   - [Rules and Restrictions](#rules-and-restrictions)
-- [Guard Function Signature](#guard-function-signature) - Writing custom guards
-- [Configuration Options](#configuration-options) - Decorator parameters
-- [Testing Considerations](#testing-considerations) - Testing with modgud
-- [Migration Guide](#migration-guide) - Upgrading between versions
-- [Architecture Details](#architecture-details) - Design principles
+- [✍️ Guard Function Signature](#guard-function-signature) - Writing custom guards
+- [⚙️ Configuration Options](#configuration-options) - Decorator parameters
+- [🧪 Testing Considerations](#testing-considerations) - Testing with modgud
+- [🔄 Migration Guide](#migration-guide) - Upgrading between versions
+- [🏛️ Architecture Details](#architecture-details) - Design principles
 
 > **Looking for specific API details?** See the [Complete API Reference](api-reference.md) for detailed documentation of all functions and classes.
 
-## Overview
+## 🗺️ Overview
 
 **modgud** is a Python library that brings expression-oriented programming, single return point architecture, and guard clause decorators to Python 3.13+. It provides a clean, functional approach to validation and control flow that eliminates defensive coding clutter while maintaining code clarity and maintainability.
 
@@ -73,7 +79,7 @@ modgud solves these problems by:
 - Providing composable, reusable guard functions
 - Standardizing error handling approaches
 
-## Installation
+## 📦 Installation
 
 ### Using Poetry (Recommended)
 
@@ -106,11 +112,6 @@ pip install -e ".[dev]"
 - Python 3.13 or higher
 - No external runtime dependencies (uses only Python standard library)
 
-## Complete API Reference
-
-> **Note**: The complete API reference has been moved to a dedicated document for easier navigation.
->
-> **[📖 View Complete API Reference](api-reference.md)**
 
 Below is a quick overview. For detailed documentation including all parameters, return values, and examples, see the [full API reference](api-reference.md).
 
@@ -309,7 +310,7 @@ def send_email(email):
     smtp_client.send(email)
 ```
 
-### Error Classes
+### 🚨 Error Classes
 
 #### GuardClauseError
 
@@ -382,7 +383,7 @@ class UnsupportedConstructError(ImplicitReturnError):
 
 Raised when the AST transformer encounters an unsupported construct at tail position (e.g., `with` statements, `async for`, etc.).
 
-## Usage Examples
+## 💻 Usage Examples
 
 ### Basic Guard Usage
 
@@ -717,7 +718,7 @@ def transfer_funds(amount):
 transfer_funds(0)
 ```
 
-## Implicit Return Semantics
+## 🎨 Implicit Return Semantics
 
 Implicit return transforms functions to automatically return the last expression in each code branch, similar to languages like Ruby, Rust, and Scala.
 
@@ -969,7 +970,7 @@ def process_file(filename):
     cleaned.split()
 ```
 
-## Guard Function Signature
+## ✍️ Guard Function Signature
 
 ### Basic Guard Structure
 
@@ -1105,7 +1106,7 @@ async def fetch_secure(url):
             await response.text()
 ```
 
-## Configuration Options
+## ⚙️ Configuration Options
 
 ### Decorator Parameters Summary
 
@@ -1216,7 +1217,7 @@ def logged_function(value):
 logged_function(-5)
 ```
 
-## Testing Considerations
+## 🧪 Testing Considerations
 
 ### Module-Level Functions for Implicit Returns
 
@@ -1338,7 +1339,7 @@ def test_guard_evaluation_order():
     assert result is None
 ```
 
-## Migration Guide
+## 🔄 Migration Guide
 
 ### From v0.1.x to v0.2.0
 
@@ -1467,7 +1468,7 @@ def implicit_return(func):
     return guarded_expression()(func)
 ```
 
-## Architecture Details
+## 🏛️ Architecture Details
 
 ### Clean Architecture Principles
 

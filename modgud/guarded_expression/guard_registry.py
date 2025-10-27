@@ -9,34 +9,77 @@ from typing import Callable, Dict, Optional
 
 from .types import GuardFunction
 
-__all__ = [
-  'GuardRegistry',
-  'register_guard',
-  'get_guard',
-  'list_custom_guards',
-  'list_guard_namespaces',
-  'has_custom_guard',
-  'unregister_guard',
-  'get_registry',
-]
-
 
 class GuardRegistry:
   """
-  Registry for custom guard validators.
+  Singleton registry for custom guard validators.
 
   Allows registration of custom guards that can be used alongside
   CommonGuards. Guards can be registered globally or namespaced
   for organizational purposes.
+
+  Usage:
+      # Direct class method access (recommended)
+      GuardRegistry.register('my_guard', factory_fn)
+      guard = GuardRegistry.get('my_guard')
+
+      # Or get the singleton instance for advanced usage
+      registry = GuardRegistry.instance()
+      registry.register('another_guard', factory_fn)
   """
 
+  _instance: Optional['GuardRegistry'] = None
+  _allow_direct_instantiation: bool = False
+
   def __init__(self) -> None:
-    """Initialize the guard registry."""
+    """
+    Initialize the guard registry.
+
+    For production code, use GuardRegistry.instance() to get the singleton.
+    Direct instantiation is allowed only for testing purposes.
+    """
+    if not GuardRegistry._allow_direct_instantiation and GuardRegistry._instance is not None:
+      raise RuntimeError(
+        'GuardRegistry is a singleton. Use GuardRegistry.instance() or '
+        'GuardRegistry._create_for_testing() for tests.'
+      )
     self._guards: Dict[str, Callable[..., GuardFunction]] = {}
     self._namespaces: Dict[str, Dict[str, Callable[..., GuardFunction]]] = {}
 
+  @classmethod
+  def _create_for_testing(cls) -> 'GuardRegistry':
+    """
+    Create a new GuardRegistry instance for testing.
+
+    This bypasses the singleton enforcement to allow isolated test instances.
+
+    Returns:
+        New GuardRegistry instance for testing
+
+    """
+    cls._allow_direct_instantiation = True
+    instance = cls()
+    cls._allow_direct_instantiation = False
+    return instance
+
+  @classmethod
+  def instance(cls) -> 'GuardRegistry':
+    """
+    Get the singleton GuardRegistry instance.
+
+    Returns:
+        Global GuardRegistry singleton instance
+
+    """
+    if cls._instance is None:
+      cls._instance = cls.__new__(cls)
+      cls._instance._guards = {}
+      cls._instance._namespaces = {}
+    return cls._instance
+
+  @classmethod
   def register(
-    self, name: str, guard_factory: Callable[..., GuardFunction], namespace: Optional[str] = None
+    cls, name: str, guard_factory: Callable[..., GuardFunction], namespace: Optional[str] = None
   ) -> None:
     """
     Register a custom guard validator.
@@ -44,18 +87,91 @@ class GuardRegistry:
     Args:
         name: Name for the guard (e.g., 'valid_file_path')
         guard_factory: Factory function that returns a GuardFunction
-        namespace: Optional namespace for organization (e.g., 'cli', 'web')
+        namespace: Optional namespace for organization
 
     Example:
-        def valid_file_path_factory(param_name: str = 'path', position: int = 0) -> GuardFunction:
-            def check_file_path(*args, **kwargs) -> Union[bool, str]:
-                # Implementation here
-                return True
-            return check_file_path
-
-        registry.register('valid_file_path', valid_file_path_factory, namespace='cli')
+        GuardRegistry.register('valid_email', email_validator_factory)
 
     """
+    cls.instance()._register(name, guard_factory, namespace)
+
+  @classmethod
+  def get(
+    cls, name: str, namespace: Optional[str] = None
+  ) -> Optional[Callable[..., GuardFunction]]:
+    """
+    Retrieve a registered guard factory.
+
+    Args:
+        name: Name of the guard
+        namespace: Optional namespace
+
+    Returns:
+        Guard factory function if found, None otherwise
+
+    """
+    return cls.instance()._get(name, namespace)
+
+  @classmethod
+  def list_guards(cls, namespace: Optional[str] = None) -> list[str]:
+    """
+    List all registered guard names.
+
+    Args:
+        namespace: Optional namespace to list
+
+    Returns:
+        List of registered guard names
+
+    """
+    return cls.instance()._list_guards(namespace)
+
+  @classmethod
+  def list_namespaces(cls) -> list[str]:
+    """
+    List all registered namespaces.
+
+    Returns:
+        List of namespace names
+
+    """
+    return cls.instance()._list_namespaces()
+
+  @classmethod
+  def has_guard(cls, name: str, namespace: Optional[str] = None) -> bool:
+    """
+    Check if a guard is registered.
+
+    Args:
+        name: Name of the guard
+        namespace: Optional namespace
+
+    Returns:
+        True if guard exists, False otherwise
+
+    """
+    return cls.instance()._has_guard(name, namespace)
+
+  @classmethod
+  def unregister(cls, name: str, namespace: Optional[str] = None) -> bool:
+    """
+    Unregister a custom guard.
+
+    Args:
+        name: Name of the guard
+        namespace: Optional namespace
+
+    Returns:
+        True if guard was removed, False if not found
+
+    """
+    return cls.instance()._unregister(name, namespace)
+
+  # Instance methods (prefixed with _ to indicate they're called via class methods)
+  def _register(
+    self, name: str, guard_factory: Callable[..., GuardFunction], namespace: Optional[str] = None
+  ) -> None:
+    """Instance method for registration logic."""
     if namespace is None:
       if name in self._guards:
         raise ValueError(f"Guard '{name}' is already registered in global namespace")
@@ -67,77 +183,32 @@ class GuardRegistry:
         raise ValueError(f"Guard '{name}' is already registered in namespace '{namespace}'")
       self._namespaces[namespace][name] = guard_factory
 
-  def get(
+  def _get(
     self, name: str, namespace: Optional[str] = None
   ) -> Optional[Callable[..., GuardFunction]]:
-    """
-    Retrieve a registered guard factory.
-
-    Args:
-        name: Name of the guard
-        namespace: Optional namespace to search in
-
-    Returns:
-        Guard factory function if found, None otherwise
-
-    """
+    """Instance method for retrieval logic."""
     return (
       self._guards.get(name) if namespace is None else self._namespaces.get(namespace, {}).get(name)
     )
 
-  def list_guards(self, namespace: Optional[str] = None) -> list[str]:
-    """
-    List all registered guard names.
-
-    Args:
-        namespace: Optional namespace to list (None for global)
-
-    Returns:
-        List of registered guard names
-
-    """
+  def _list_guards(self, namespace: Optional[str] = None) -> list[str]:
+    """Instance method for listing guards."""
     return (
       list(self._guards.keys())
       if namespace is None
       else list(self._namespaces.get(namespace, {}).keys())
     )
 
-  def list_namespaces(self) -> list[str]:
-    """
-    List all registered namespaces.
-
-    Returns:
-        List of namespace names
-
-    """
+  def _list_namespaces(self) -> list[str]:
+    """Instance method for listing namespaces."""
     return list(self._namespaces.keys())
 
-  def has_guard(self, name: str, namespace: Optional[str] = None) -> bool:
-    """
-    Check if a guard is registered.
+  def _has_guard(self, name: str, namespace: Optional[str] = None) -> bool:
+    """Instance method for checking guard existence."""
+    return self._get(name, namespace) is not None
 
-    Args:
-        name: Name of the guard
-        namespace: Optional namespace to check
-
-    Returns:
-        True if guard exists, False otherwise
-
-    """
-    return self.get(name, namespace) is not None
-
-  def unregister(self, name: str, namespace: Optional[str] = None) -> bool:
-    """
-    Unregister a custom guard.
-
-    Args:
-        name: Name of the guard to remove
-        namespace: Optional namespace
-
-    Returns:
-        True if guard was removed, False if not found
-
-    """
+  def _unregister(self, name: str, namespace: Optional[str] = None) -> bool:
+    """Instance method for unregistration logic."""
     removed = False
     if namespace is None:
       if name in self._guards:
@@ -150,139 +221,3 @@ class GuardRegistry:
           del self._namespaces[namespace]
         removed = True
     return removed
-
-
-# Global registry instance
-_global_registry = GuardRegistry()
-
-
-def register_guard(
-  name: str, guard_factory: Callable[..., GuardFunction], namespace: Optional[str] = None
-) -> None:
-  """
-  Register a custom guard validator in the global registry.
-
-  This is a convenience function for accessing the global registry.
-
-  Args:
-      name: Name for the guard (e.g., 'valid_file_path')
-      guard_factory: Factory function that returns a GuardFunction
-      namespace: Optional namespace for organization
-
-  Example:
-      from pathlib import Path
-      from modgud import register_guard
-
-      def valid_file_path(param_name: str = 'path', position: int = 0):
-          def check_file_path(*args, **kwargs):
-              # Extract parameter value
-              value = args[position] if position < len(args) else kwargs.get(param_name)
-              if value is None:
-                  return f"{param_name} is required"
-
-              path = Path(value)
-              if not path.exists():
-                  return f"{param_name} does not exist: {value}"
-              if not path.is_file():
-                  return f"{param_name} is not a file: {value}"
-
-              return True
-          return check_file_path
-
-      # Register the guard
-      register_guard('valid_file_path', valid_file_path, namespace='filesystem')
-
-      # Use it with guarded_expression
-      from modgud import guarded_expression, get_guard
-
-      @guarded_expression(
-          get_guard('valid_file_path', namespace='filesystem')('config_file'),
-          log=True
-      )
-      def load_config(config_file: str):
-          with open(config_file) as f:
-              return f.read()
-
-  """
-  _global_registry.register(name, guard_factory, namespace)
-
-
-def get_guard(name: str, namespace: Optional[str] = None) -> Optional[Callable[..., GuardFunction]]:
-  """
-  Retrieve a registered guard factory from the global registry.
-
-  Args:
-      name: Name of the guard
-      namespace: Optional namespace
-
-  Returns:
-      Guard factory function if found, None otherwise
-
-  """
-  return _global_registry.get(name, namespace)
-
-
-def list_custom_guards(namespace: Optional[str] = None) -> list[str]:
-  """
-  List all registered custom guards.
-
-  Args:
-      namespace: Optional namespace to list
-
-  Returns:
-      List of registered guard names
-
-  """
-  return _global_registry.list_guards(namespace)
-
-
-def list_guard_namespaces() -> list[str]:
-  """
-  List all registered guard namespaces.
-
-  Returns:
-      List of namespace names
-
-  """
-  return _global_registry.list_namespaces()
-
-
-def has_custom_guard(name: str, namespace: Optional[str] = None) -> bool:
-  """
-  Check if a custom guard is registered.
-
-  Args:
-      name: Name of the guard
-      namespace: Optional namespace
-
-  Returns:
-      True if guard exists, False otherwise
-
-  """
-  return _global_registry.has_guard(name, namespace)
-
-
-def unregister_guard(name: str, namespace: Optional[str] = None) -> bool:
-  """
-  Unregister a custom guard from the global registry.
-
-  Args:
-      name: Name of the guard
-      namespace: Optional namespace
-
-  Returns:
-      True if guard was removed, False if not found
-
-  """
-  return _global_registry.unregister(name, namespace)
-
-
-def get_registry() -> GuardRegistry:
-  """
-  Get the global guard registry instance.
-
-  Returns:
-      Global GuardRegistry instance
-
-  """
-  return _global_registry

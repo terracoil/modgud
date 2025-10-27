@@ -421,29 +421,34 @@ class CommonGuards:
 
     return result
 
+  @classmethod
+  def _register_to_global_registry(cls) -> None:
+    """
+    Auto-register all CommonGuards methods to global registry.
 
-def _register_common_guards() -> None:
-  """Auto-register all CommonGuards methods to global registry."""
-  from .guard_registry import register_guard
+    This method is called once on module import to make all common guards
+    available through the GuardRegistry.
+    """
+    from .guard_registry import GuardRegistry
 
-  # List of guard methods to register (excluding private methods)
-  guards_to_register = [
-    'not_empty',
-    'not_none',
-    'positive',
-    'in_range',
-    'type_check',
-    'matches_pattern',
-    'valid_file_path',
-    'valid_url',
-    'valid_enum',
-  ]
+    # List of guard methods to register (excluding private methods)
+    guards_to_register = [
+      'not_empty',
+      'not_none',
+      'positive',
+      'in_range',
+      'type_check',
+      'matches_pattern',
+      'valid_file_path',
+      'valid_url',
+      'valid_enum',
+    ]
 
-  for name in guards_to_register:
-    method = getattr(CommonGuards, name, None)
-    if callable(method):
-      register_guard(name, method, namespace='common')
+    for name in guards_to_register:
+      method = getattr(cls, name, None)
+      if callable(method):
+        GuardRegistry.register(name, method, namespace='common')
 
 
 # Auto-register CommonGuards on module import
-_register_common_guards()
+CommonGuards._register_to_global_registry()

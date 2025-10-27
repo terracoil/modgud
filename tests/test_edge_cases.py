@@ -50,19 +50,19 @@ class TestThreadSafety:
 
   def test_concurrent_registry_operations(self):
     """Registry operations must be thread-safe."""
-    registry = GuardRegistry()
+    registry = GuardRegistry._create_for_testing()
     results = {'register': [], 'get': [], 'errors': []}
 
     def register_guard(name: str):
       try:
-        registry.register(name, lambda: True)
+        registry._register(name, lambda: True)
         results['register'].append(name)
       except Exception as e:
         results['errors'].append(e)
 
     def get_guard(name: str):
       try:
-        guard = registry.get(name)
+        guard = registry._get(name)
         if guard:
           results['get'].append(name)
       except Exception:
