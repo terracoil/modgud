@@ -2,7 +2,7 @@
 Unified guarded_expression decorator combining guards and implicit returns.
 
 Unified guarded_expression decorator that combines guard clause validation
-with optional implicit return transformation.
+with optional implicit return transformation using port-based dependency injection.
 
 This is the primary decorator for the modgud library, unifying the functionality
 of guard_clause and implicit_return into a single, composable decorator.
@@ -13,10 +13,9 @@ import inspect
 from textwrap import dedent
 from typing import Any, Callable, Optional
 
-from .errors import GuardClauseError, UnsupportedConstructError
-from .guard_runtime import GuardRuntime
-from .implicit_return import ImplicitReturnTransformer
-from .types import FailureBehavior, GuardFunction
+from ..domain.errors import GuardClauseError, UnsupportedConstructError
+from ..domain.ports import AstTransformerPort, GuardCheckerPort
+from ..domain.types import FailureBehavior, GuardFunction
 
 
 class guarded_expression:
@@ -36,6 +35,8 @@ class guarded_expression:
           - Callable: Invoked with (error_msg, *args, **kwargs), return value used
           - Exception class: Instantiated with error message and raised
       log: If True, log guard failures at INFO level (default: False)
+      guard_checker: Optional GuardCheckerPort implementation (uses default if not provided)
+      ast_transformer: Optional AstTransformerPort implementation (uses default if not provided)
 
   Usage:
       @guarded_expression(
@@ -55,6 +56,8 @@ class guarded_expression:
     implicit_return: bool = True,
     on_error: FailureBehavior = GuardClauseError,
     log: bool = False,
+    guard_checker: Optional[GuardCheckerPort] = None,
+    ast_transformer: Optional[AstTransformerPort] = None,
   ):
     """
     Initialize the guarded_expression decorator.
@@ -64,12 +67,36 @@ class guarded_expression:
         implicit_return: Enable implicit return transformation
         on_error: Behavior on guard failure
         log: Enable logging of guard failures
+        guard_checker: Optional port implementation for guard checking (uses default if None)
+        ast_transformer: Optional port implementation for AST transformation (uses default if None)
 
     """
     self.guards = guards
     self.implicit_return_enabled = implicit_return
     self.on_error = on_error
     self.log = log
+
+    # Dependency injection with lazy defaults - avoid circular imports
+    self._guard_checker = guard_checker
+    self._ast_transformer = ast_transformer
+
+  @property
+  def guard_checker(self) -> GuardCheckerPort:
+    """Get guard checker implementation, lazily loading default if needed."""
+    if self._guard_checker is None:
+      from .guard_checker import DefaultGuardChecker
+
+      self._guard_checker = DefaultGuardChecker()
+    return self._guard_checker
+
+  @property
+  def ast_transformer(self) -> AstTransformerPort:
+    """Get AST transformer implementation, lazily loading default if needed."""
+    if self._ast_transformer is None:
+      from ..infrastructure.ast_transformer import DefaultAstTransformer
+
+      self._ast_transformer = DefaultAstTransformer()
+    return self._ast_transformer
 
   def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
     """Apply guard wrapping and optional implicit return transformation."""
@@ -90,10 +117,8 @@ class guarded_expression:
         'Source unavailable — guarded_expression with implicit_return=True requires importable source code.'
       ) from e
 
-    # Transform the AST
-    new_tree, filename = ImplicitReturnTransformer.apply_implicit_return_transform(
-      source, func.__name__
-    )
+    # Transform the AST using injected transformer
+    new_tree, filename = self.ast_transformer.apply_implicit_return_transform(source, func.__name__)
 
     # Execute in copy of original scope - preserves imports/closures
     env = func.__globals__.copy()
@@ -116,10 +141,10 @@ class guarded_expression:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
       # Check guards if any are defined
       if self.guards:
-        error_msg = GuardRuntime.check_guards(self.guards, args, kwargs)
+        error_msg = self.guard_checker.check_guards(self.guards, args, kwargs)
         if error_msg is not None:
-          # Handle failure
-          result, exception_to_raise = GuardRuntime.handle_failure(
+          # Handle failure using injected guard checker
+          result, exception_to_raise = self.guard_checker.handle_failure(
             error_msg, self.on_error, func.__name__, args, kwargs, self.log
           )
           # Exception path prioritized for clean error propagation

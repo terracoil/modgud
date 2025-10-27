@@ -87,47 +87,50 @@ But how does this work? Let's dive in.
 
 ---
 
-## 🏛️ The Architecture: Clean, Functional, Powerful
+## 🏛️ The Architecture: LPA-Lite (Layered Ports Architecture)
 
-Modgud follows clean architecture principles with three distinct layers:
+Modgud follows **LPA-Lite** principles with three distinct layers and port-based contracts:
 
 ```
 ┌─────────────────────────────────────┐
-│         API Layer                   │
-│  (guarded_expression decorator)     │
+│      Application Layer              │
+│  (decorator, guard_checker,         │
+│   validators, registry)             │
 ├─────────────────────────────────────┤
-│      Implementation Layer           │
-│  (AST Transform, Guard Runtime)     │
+│    Infrastructure Layer             │
+│  (ast_transformer)                  │
 ├─────────────────────────────────────┤
-│    Shared Infrastructure            │
-│  (Types, Errors, Messages)          │
+│       Domain Layer                  │
+│  (types, errors, messages, ports)   │
 └─────────────────────────────────────┘
+         ↑ Dependencies flow inward ↑
 ```
 
 ### Layer Responsibilities
 
-**API Layer** (`guarded_expression.py`)
-- Public decorator interface
-- Parameter validation
-- Orchestrates transformation and wrapping
+**Application Layer** (`modgud/application/`)
+- `decorator.py`: Main `guarded_expression` decorator (public API)
+- `guard_checker.py`: Implements `GuardCheckerPort` for guard validation
+- `validators.py`: `CommonGuards` factory for pre-built validators
+- `registry.py`: `GuardRegistry` for custom guard management
 
-**Implementation Layer**
-- `implicit_return.py`: AST transformation engine
-- `guard_runtime.py`: Guard evaluation logic
-- `common_guards.py`: Pre-built validators
-- `guard_registry.py`: Custom guard management
+**Infrastructure Layer** (`modgud/infrastructure/`)
+- `ast_transformer.py`: Implements `AstTransformerPort` for AST transformation
 
-**Infrastructure Layer**
-- `types.py`: Type definitions and contracts
+**Domain Layer** (`modgud/domain/`)
+- `types.py`: Type definitions (`GuardFunction`, `FailureBehavior`)
 - `errors.py`: Exception hierarchy
 - `messages.py`: Error message templates
+- `ports.py`: Port interfaces (`GuardCheckerPort`, `AstTransformerPort`)
 
-### Why Clean Architecture?
+### Why LPA-Lite Architecture?
 
-1. **Testability**: Each layer can be tested independently
-2. **Maintainability**: Changes don't cascade across boundaries
-3. **Extensibility**: New features slot in cleanly
-4. **Clarity**: Clear separation of concerns
+1. **Explicit Contracts**: Port interfaces define clear boundaries between layers
+2. **Dependency Injection**: Decorator accepts optional port implementations
+3. **Testability**: Each layer can be tested independently via ports
+4. **Maintainability**: Changes don't cascade across boundaries
+5. **Extensibility**: New implementations can be injected without modifying decorator
+6. **Clarity**: Clear separation of concerns with inward-flowing dependencies
 
 ---
 

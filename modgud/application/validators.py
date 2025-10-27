@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 from urllib.parse import urlparse
 
-from .messages import ErrorMessages
-from .types import GuardFunction
+from ..domain.messages import ErrorMessages
+from ..domain.types import GuardFunction
 
 
 class CommonGuards:
@@ -429,7 +429,7 @@ class CommonGuards:
     This method is called once on module import to make all common guards
     available through the GuardRegistry.
     """
-    from .guard_registry import GuardRegistry
+    from .registry import GuardRegistry
 
     # List of guard methods to register (excluding private methods)
     guards_to_register = [

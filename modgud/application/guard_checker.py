@@ -1,18 +1,18 @@
 """
 Guard checking logic for runtime validation.
 
-Provides the GuardRuntime class that encapsulates guard evaluation and
-failure handling logic.
+Implements GuardCheckerPort to provide guard evaluation and failure handling logic.
 """
 
 import logging
 from typing import Any, Optional, Tuple
 
-from .types import FailureBehavior, GuardFunction
+from ..domain.ports import GuardCheckerPort
+from ..domain.types import FailureBehavior, GuardFunction
 
 
-class GuardRuntime:
-  """Runtime guard checking and failure handling."""
+class DefaultGuardChecker(GuardCheckerPort):
+  """Default runtime guard checking and failure handling implementation."""
 
   _logger: logging.Logger = logging.getLogger(__name__)
 
@@ -75,3 +75,7 @@ class GuardRuntime:
       return (None, on_error(error_msg))
     # Callables get full context for recovery logic, values are simple fallbacks
     return (on_error(error_msg, *args, **kwargs) if callable(on_error) else on_error, None)  # type: ignore[call-arg]
+
+
+# Alias for backward compatibility with tests
+GuardRuntime = DefaultGuardChecker

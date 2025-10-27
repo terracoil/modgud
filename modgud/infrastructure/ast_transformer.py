@@ -1,21 +1,21 @@
 """
-Pure AST transformation logic for implicit return functionality.
+AST transformation implementation for implicit return functionality.
 
-Extracts the AST rewriting logic from implicit_return into a composable,
-testable pure function that transforms function nodes to enforce implicit
-return semantics.
+Implements AstTransformerPort to provide pure AST transformation logic that
+transforms function nodes to enforce implicit return semantics.
 """
 
 from __future__ import annotations
 
 import ast
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
-from .errors import (
+from ..domain.errors import (
   ExplicitReturnDisallowedError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
+from ..domain.ports import AstTransformerPort
 
 
 class _NoExplicitReturnChecker(ast.NodeVisitor):
@@ -135,11 +135,11 @@ class _TailRewriter:
     return [*init, *new_last]
 
 
-class ImplicitReturnTransformer:
-  """AST transformation for implicit return functionality."""
+class DefaultAstTransformer(AstTransformerPort):
+  """Default AST transformation implementation for implicit return functionality."""
 
   @classmethod
-  def transform_function_ast(cls, fn_node: ast.AST, func_name: str) -> ast.AST:
+  def transform_function_ast(cls, fn_node: Any, func_name: str) -> Any:
     """
     Transform function AST to enforce implicit return semantics.
 
@@ -224,7 +224,7 @@ class ImplicitReturnTransformer:
         func_name: The name of the function to transform
 
     Returns:
-        Tuple of (transformed_ast, compiled_code_object)
+        Tuple of (transformed_ast, filename)
 
     Raises:
         ExplicitReturnDisallowedError: If explicit return found
@@ -248,19 +248,23 @@ class _TopLevelTransformer(ast.NodeTransformer):
   Strips all decorators to prevent re-application during exec.
   """
 
-  def __init__(self, target_name: str, transformer_cls: type[ImplicitReturnTransformer]) -> None:
+  def __init__(self, target_name: str, transformer_cls: type[DefaultAstTransformer]) -> None:
     self.target_name = target_name
     self.transformer_cls = transformer_cls
     super().__init__()
 
-  def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:
+  def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
     if node.name == self.target_name:
       node.decorator_list = []  # Strip decorators to prevent infinite recursion during exec
       return self.transformer_cls.transform_function_ast(node, node.name)
     return node
 
-  def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:
+  def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> Any:
     if node.name == self.target_name:
       node.decorator_list = []  # Strip decorators to prevent infinite recursion during exec
       return self.transformer_cls.transform_function_ast(node, node.name)
     return node
+
+
+# Alias for backward compatibility with tests
+ImplicitReturnTransformer = DefaultAstTransformer

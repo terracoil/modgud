@@ -5,9 +5,8 @@ These functions are defined at module level so their source can be inspected
 by the implicit_return transformer.
 """
 
-from modgud import not_none, positive
-from modgud.guarded_expression import guarded_expression
-from modgud.guarded_expression.errors import GuardClauseError
+from modgud import guarded_expression, not_none, positive
+from modgud.domain.errors import GuardClauseError
 
 
 # Simple implicit return

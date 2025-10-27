@@ -67,7 +67,7 @@ from modgud import (
 )
 ```
 
-**Version**: 0.2.0
+**Version**: 0.3.0 (LPA-Lite)
 **Python**: 3.13+
 **Zero Runtime Dependencies**: Uses only Python standard library
 

@@ -40,16 +40,16 @@ Usage Examples:
         GuardRegistry.register("valid_email", valid_email, namespace="validators")
 """
 
-from .guarded_expression import guarded_expression
-from .guarded_expression.common_guards import CommonGuards
-from .guarded_expression.errors import (
+from .application.decorator import guarded_expression
+from .application.registry import GuardRegistry
+from .application.validators import CommonGuards
+from .domain.errors import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .guarded_expression.guard_registry import GuardRegistry
 
 # Export guards as module-level functions for convenient direct import
 not_empty = CommonGuards.not_empty

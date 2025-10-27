@@ -91,20 +91,27 @@ poetry run twine check dist/*
 
 ## Code Architecture
 
-### Core Module Structure (v0.2.0)
+### Core Module Structure (v0.3.0 - LPA-Lite Architecture)
 
-**Primary API:**
-- `modgud/guarded_expression/` - Unified decorator implementation
-  - `decorator.py` - Main `guarded_expression` class
-  - `ast_transform.py` - Pure AST transformation for implicit returns
-  - `guard_runtime.py` - Pure guard checking and failure handling functions
-  - `common_guards.py` - Pre-built guard factory methods (exports individual functions)
-  - `__init__.py` - Package exports
+modgud follows a simplified 3-layer Layered Ports Architecture (LPA-Lite) for clear separation of concerns and dependency management.
 
-**Shared Infrastructure:**
-- `modgud/shared/` - Common types and errors
+**Layer 1 - Domain (Innermost):**
+- `modgud/domain/` - Core types, errors, and port interfaces
   - `types.py` - Type definitions (`GuardFunction`, `FailureBehavior`)
   - `errors.py` - All exception classes (`GuardClauseError`, `ImplicitReturnError`, etc.)
+  - `messages.py` - Error message constants
+  - `ports.py` - Port interfaces (`GuardCheckerPort`, `AstTransformerPort`)
+
+**Layer 2 - Infrastructure:**
+- `modgud/infrastructure/` - System boundaries and AST transformation
+  - `ast_transformer.py` - AST transformation implementation (implements `AstTransformerPort`)
+
+**Layer 3 - Application (Outermost):**
+- `modgud/application/` - Business logic and decorator orchestration
+  - `decorator.py` - Main `guarded_expression` decorator with dependency injection
+  - `guard_checker.py` - Guard validation logic (implements `GuardCheckerPort`)
+  - `validators.py` - Pre-built guard factories (`CommonGuards` class)
+  - `registry.py` - Custom guard registration (`GuardRegistry` class)
 
 **Public API Exports:**
 - `modgud/__init__.py` - Primary exports (`guarded_expression`, guard functions, error classes)
@@ -175,14 +182,15 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 
 ## Architecture Notes
 
-### Clean Architecture Principles
+### LPA-Lite Architecture Principles
 
-The v0.2.0 refactoring implements clean architecture with clear separation of concerns:
+The v0.3.0 refactoring implements a simplified Layered Ports Architecture with clear separation of concerns:
 
-1. **Pure Functions**: AST transformation (`ast_transform.py`) and guard checking (`guard_runtime.py`) are pure, composable functions with no decorator-specific logic
-2. **Dependency Injection**: The decorator composes pure functions rather than creating its own dependencies
-3. **Immutability**: All transformed functions preserve original function metadata
-4. **Functional Composition**: Guard functions are composable - they're pure functions returning True or error messages
+1. **Port-Based Boundaries**: Communication between layers uses explicit port interfaces (`GuardCheckerPort`, `AstTransformerPort`)
+2. **Dependency Injection**: The decorator accepts optional port implementations via constructor, defaulting to concrete implementations
+3. **Layered Dependencies**: Dependencies flow inward (Application → Infrastructure → Domain)
+4. **Testability**: Port interfaces enable easy mocking and testing in isolation
+5. **Flexibility**: Can swap implementations without modifying decorator code
 
 ### Import Examples
 

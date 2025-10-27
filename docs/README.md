@@ -1481,20 +1481,31 @@ modgud follows clean architecture with clear separation of concerns:
 
 ### Module Structure
 
+**v0.3.0 LPA-Lite Architecture:**
+
 ```
 modgud/
 ├── __init__.py                 # Public API exports
-├── guarded_expression/         # Primary decorator package
+├── domain/                     # Layer 1 (Innermost) - Core types and contracts
 │   ├── __init__.py
-│   ├── decorator.py           # Main guarded_expression class
-│   ├── ast_transform.py       # Pure AST transformation functions
-│   ├── guard_runtime.py       # Pure guard checking functions
-│   └── common_guards.py       # Pre-built guard factories
-└── shared/                     # Shared infrastructure
+│   ├── types.py               # GuardFunction, FailureBehavior types
+│   ├── errors.py              # Exception hierarchy
+│   ├── messages.py            # Error message constants
+│   └── ports.py               # Port interfaces (GuardCheckerPort, AstTransformerPort)
+│
+├── infrastructure/             # Layer 2 - System boundaries
+│   ├── __init__.py
+│   └── ast_transformer.py     # Implements AstTransformerPort
+│
+└── application/                # Layer 3 (Outermost) - Business logic
     ├── __init__.py
-    ├── types.py               # Type definitions
-    └── errors.py              # Exception classes
+    ├── decorator.py           # Main guarded_expression with dependency injection
+    ├── guard_checker.py       # Implements GuardCheckerPort
+    ├── validators.py          # CommonGuards factory methods
+    └── registry.py            # Custom guard registration
 ```
+
+**Dependencies flow inward:** Application → Infrastructure → Domain
 
 ### AST Transformation Process
 

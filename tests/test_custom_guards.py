@@ -2,7 +2,7 @@
 
 import pytest
 from modgud import GuardRegistry, guarded_expression
-from modgud.guarded_expression.errors import GuardClauseError
+from modgud.domain.errors import GuardClauseError
 
 
 class TestGuardRegistry:
