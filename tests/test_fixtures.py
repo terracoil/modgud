@@ -1,4 +1,5 @@
-"""Test fixtures for guarded_expression tests.
+"""
+Test fixtures for guarded_expression tests.
 
 These functions are defined at module level so their source can be inspected
 by the implicit_return transformer.

@@ -1,10 +1,11 @@
 # MODGUD Technical Documentation Hub
 
-![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud-github.png)
+# !["Móðguðr"](https://github.com/terracoil/modgud/raw/master/docs/modgud-text-sm.png)
 
 > **New to modgud?** Check out the [main introduction](../README.md) for a quick overview and compelling examples!
 
 ## 📚 Documentation Navigation
+![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud-thumb.png)
 
 ### Core Documentation
 - **[🔮 How It Works](how-it-works.md)** - Deep dive into AST transformation, guard pipelines, and the magic behind implicit returns

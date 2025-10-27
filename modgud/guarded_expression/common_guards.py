@@ -1,4 +1,5 @@
-"""Common guard validators for typical validation scenarios.
+"""
+Common guard validators for typical validation scenarios.
 
 Provides pre-built guard functions through the CommonGuards class for
 common validation patterns like not_none, positive, in_range, etc.
@@ -15,7 +16,8 @@ from .types import GuardFunction
 
 
 class CommonGuards:
-  """Pre-defined common guard clauses.
+  """
+  Pre-defined common guard clauses.
 
   Usage:
       @guarded_expression(
@@ -34,7 +36,8 @@ class CommonGuards:
     kwargs: dict[str, Any],
     default: Any = None,
   ) -> Any:
-    """Extract parameter value from args or kwargs.
+    """
+    Extract parameter value from args or kwargs.
 
     Args:
         param_name: Name of the parameter in kwargs
@@ -65,7 +68,8 @@ class CommonGuards:
     error_template: str,
     default: Any = None,
   ) -> GuardFunction:
-    """Create common guard patterns with a factory method.
+    """
+    Create common guard patterns with a factory method.
 
     Args:
         param_name: Name of the parameter to check
@@ -91,7 +95,8 @@ class CommonGuards:
 
   @staticmethod
   def not_empty(param_name: str = 'parameter', position: Optional[int] = None) -> GuardFunction:
-    """Guard ensuring collection parameter is not empty.
+    """
+    Guard ensuring collection parameter is not empty.
 
     Args:
         param_name: Name of the parameter to check
@@ -107,7 +112,8 @@ class CommonGuards:
 
   @staticmethod
   def not_none(param_name: str = 'parameter', position: int = 0) -> GuardFunction:
-    """Guard ensuring parameter is not None.
+    """
+    Guard ensuring parameter is not None.
 
     Args:
         param_name: Name of the parameter to check
@@ -120,7 +126,8 @@ class CommonGuards:
 
   @staticmethod
   def positive(param_name: str = 'parameter', position: int = 0) -> GuardFunction:
-    """Guard ensuring parameter is positive.
+    """
+    Guard ensuring parameter is positive.
 
     Args:
         param_name: Name of the parameter to check
@@ -135,7 +142,8 @@ class CommonGuards:
   def in_range(
     min_val: float, max_val: float, param_name: str = 'parameter', position: int = 0
   ) -> GuardFunction:
-    """Guard ensuring parameter is within range [min_val, max_val].
+    """
+    Guard ensuring parameter is within range [min_val, max_val].
 
     Args:
         min_val: Minimum value (inclusive)
@@ -155,7 +163,8 @@ class CommonGuards:
   def type_check(
     expected_type: type, param_name: str = 'parameter', position: int = 0
   ) -> GuardFunction:
-    """Guard ensuring parameter matches expected type.
+    """
+    Guard ensuring parameter matches expected type.
 
     Args:
         expected_type: Expected type for the parameter
@@ -174,7 +183,8 @@ class CommonGuards:
   def matches_pattern(
     pattern: str, param_name: str = 'parameter', position: int = 0
   ) -> GuardFunction:
-    """Guard ensuring string parameter matches regex pattern.
+    """
+    Guard ensuring string parameter matches regex pattern.
 
     Args:
         pattern: Regular expression pattern to match
@@ -197,7 +207,8 @@ class CommonGuards:
     must_be_file: bool = False,
     must_be_dir: bool = False,
   ) -> GuardFunction:
-    """Guard ensuring parameter is a valid file path.
+    """
+    Guard ensuring parameter is a valid file path.
 
     Args:
         param_name: Name of the parameter to check
@@ -220,7 +231,8 @@ class CommonGuards:
   def valid_url(
     param_name: str = 'url', position: int = 0, require_scheme: bool = True
   ) -> GuardFunction:
-    """Guard ensuring parameter is a valid URL.
+    """
+    Guard ensuring parameter is a valid URL.
 
     Args:
         param_name: Name of the parameter to check
@@ -239,7 +251,8 @@ class CommonGuards:
   def valid_enum(
     enum_class: type[Enum], param_name: str = 'parameter', position: int = 0
   ) -> GuardFunction:
-    """Guard ensuring parameter is a valid enum value.
+    """
+    Guard ensuring parameter is a valid enum value.
 
     Args:
         enum_class: The Enum class to validate against

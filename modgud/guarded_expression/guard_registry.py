@@ -1,4 +1,5 @@
-"""Custom guard registration system for extending CommonGuards.
+"""
+Custom guard registration system for extending CommonGuards.
 
 Allows external packages to register custom guard validators that can be
 accessed through the CommonGuards interface or separately.
@@ -21,7 +22,8 @@ __all__ = [
 
 
 class GuardRegistry:
-  """Registry for custom guard validators.
+  """
+  Registry for custom guard validators.
 
   Allows registration of custom guards that can be used alongside
   CommonGuards. Guards can be registered globally or namespaced
@@ -36,7 +38,8 @@ class GuardRegistry:
   def register(
     self, name: str, guard_factory: Callable[..., GuardFunction], namespace: Optional[str] = None
   ) -> None:
-    """Register a custom guard validator.
+    """
+    Register a custom guard validator.
 
     Args:
         name: Name for the guard (e.g., 'valid_file_path')
@@ -67,7 +70,8 @@ class GuardRegistry:
   def get(
     self, name: str, namespace: Optional[str] = None
   ) -> Optional[Callable[..., GuardFunction]]:
-    """Retrieve a registered guard factory.
+    """
+    Retrieve a registered guard factory.
 
     Args:
         name: Name of the guard
@@ -82,7 +86,8 @@ class GuardRegistry:
     )
 
   def list_guards(self, namespace: Optional[str] = None) -> list[str]:
-    """List all registered guard names.
+    """
+    List all registered guard names.
 
     Args:
         namespace: Optional namespace to list (None for global)
@@ -98,7 +103,8 @@ class GuardRegistry:
     )
 
   def list_namespaces(self) -> list[str]:
-    """List all registered namespaces.
+    """
+    List all registered namespaces.
 
     Returns:
         List of namespace names
@@ -107,7 +113,8 @@ class GuardRegistry:
     return list(self._namespaces.keys())
 
   def has_guard(self, name: str, namespace: Optional[str] = None) -> bool:
-    """Check if a guard is registered.
+    """
+    Check if a guard is registered.
 
     Args:
         name: Name of the guard
@@ -120,7 +127,8 @@ class GuardRegistry:
     return self.get(name, namespace) is not None
 
   def unregister(self, name: str, namespace: Optional[str] = None) -> bool:
-    """Unregister a custom guard.
+    """
+    Unregister a custom guard.
 
     Args:
         name: Name of the guard to remove
@@ -151,7 +159,8 @@ _global_registry = GuardRegistry()
 def register_guard(
   name: str, guard_factory: Callable[..., GuardFunction], namespace: Optional[str] = None
 ) -> None:
-  """Register a custom guard validator in the global registry.
+  """
+  Register a custom guard validator in the global registry.
 
   This is a convenience function for accessing the global registry.
 
@@ -199,7 +208,8 @@ def register_guard(
 
 
 def get_guard(name: str, namespace: Optional[str] = None) -> Optional[Callable[..., GuardFunction]]:
-  """Retrieve a registered guard factory from the global registry.
+  """
+  Retrieve a registered guard factory from the global registry.
 
   Args:
       name: Name of the guard
@@ -213,7 +223,8 @@ def get_guard(name: str, namespace: Optional[str] = None) -> Optional[Callable[.
 
 
 def list_custom_guards(namespace: Optional[str] = None) -> list[str]:
-  """List all registered custom guards.
+  """
+  List all registered custom guards.
 
   Args:
       namespace: Optional namespace to list
@@ -226,7 +237,8 @@ def list_custom_guards(namespace: Optional[str] = None) -> list[str]:
 
 
 def list_guard_namespaces() -> list[str]:
-  """List all registered guard namespaces.
+  """
+  List all registered guard namespaces.
 
   Returns:
       List of namespace names
@@ -236,7 +248,8 @@ def list_guard_namespaces() -> list[str]:
 
 
 def has_custom_guard(name: str, namespace: Optional[str] = None) -> bool:
-  """Check if a custom guard is registered.
+  """
+  Check if a custom guard is registered.
 
   Args:
       name: Name of the guard
@@ -250,7 +263,8 @@ def has_custom_guard(name: str, namespace: Optional[str] = None) -> bool:
 
 
 def unregister_guard(name: str, namespace: Optional[str] = None) -> bool:
-  """Unregister a custom guard from the global registry.
+  """
+  Unregister a custom guard from the global registry.
 
   Args:
       name: Name of the guard
@@ -264,7 +278,8 @@ def unregister_guard(name: str, namespace: Optional[str] = None) -> bool:
 
 
 def get_registry() -> GuardRegistry:
-  """Get the global guard registry instance.
+  """
+  Get the global guard registry instance.
 
   Returns:
       Global GuardRegistry instance

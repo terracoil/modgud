@@ -1,4 +1,5 @@
-"""Modgud - Modern Guard Clauses for Python.
+"""
+Modgud - Modern Guard Clauses for Python.
 
 A library for implementing guard clause decorators with single return point architecture.
 

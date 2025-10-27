@@ -1,4 +1,5 @@
-"""Guard checking logic for runtime validation.
+"""
+Guard checking logic for runtime validation.
 
 Provides the GuardRuntime class that encapsulates guard evaluation and
 failure handling logic.
@@ -19,7 +20,8 @@ class GuardRuntime:
   def check_guards(
     cls, guards: Tuple[GuardFunction, ...], args: Tuple[Any, ...], kwargs: dict[str, Any]
   ) -> Optional[str]:
-    """Evaluate all guards sequentially.
+    """
+    Evaluate all guards sequentially.
 
     Args:
         guards: Tuple of guard functions to evaluate
@@ -47,7 +49,8 @@ class GuardRuntime:
     kwargs: dict[str, Any],
     log_enabled: bool,
   ) -> Tuple[Any, Optional[BaseException]]:
-    """Handle guard failure based on on_error configuration.
+    """
+    Handle guard failure based on on_error configuration.
 
     Args:
         error_msg: The error message from the failed guard

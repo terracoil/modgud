@@ -1,6 +1,4 @@
-# MODGUD
-
-![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud.png)
+# !["Móðguðr"](https://github.com/terracoil/modgud/raw/master/docs/modgud-text-sm.png)
 
 ## Finally. Expression-Oriented Programming for Python.
 
@@ -9,6 +7,18 @@
 Tired of functions where 80% of the code is validation boilerplate? Frustrated by nested conditionals checking types, values, and state before you can even *think* about business logic? Wish Python had expression-oriented programming like Ruby, Rust, or Scala?
 
 **modgud changes everything.**
+
+![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud-github-md.png)
+
+---
+
+## The Name: Móðguðr, Guardian of the Bridge
+
+In Norse mythology, **Móðguðr** (*"Furious Battler"*) stands as guardian of Gjallarbrú—the golden-roofed bridge spanning the river Gjöll on the path to Hel. Every soul seeking passage must stop and state their name and business before crossing. She is the threshold keeper, the boundary enforcer, the one who demands identification before allowing entry to sacred ground.
+
+This is exactly what `modgud` does for your functions. Just as Móðguðr guards the bridge to the underworld, our guard clauses protect your function boundaries—challenging invalid inputs before they can corrupt your logic. And yes, we're well aware that "modgud" sounds remarkably like **"mod-good"** or **"good mods"**. That's not accidental. 😊
+
+After all, what are expression-oriented guard clauses if not *genuinely good modifications* to Python? You're literally adding **gud mods** to your functions. The Norse goddess would approve: proper guards at every threshold, allowing only the worthy to pass. Your code deserves both mythological protection *and* some really good enhancements.
 
 ---
 

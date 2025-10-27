@@ -23,7 +23,8 @@ class ImplicitReturnError(SyntaxError):
   def __init__(
     self, message: str, lineno: Optional[int] = None, col_offset: Optional[int] = None
   ) -> None:
-    """Initialize the ImplicitReturnError with location information.
+    """
+    Initialize the ImplicitReturnError with location information.
 
     Args:
         message: Error message describing the issue
@@ -43,7 +44,8 @@ class ExplicitReturnDisallowedError(ImplicitReturnError):
 
 
 class MissingImplicitReturnError(ImplicitReturnError):
-  """Raised when block cannot yield a value.
+  """
+  Raised when block cannot yield a value.
 
   Raised when a block is required to yield a value but does not end with
   a (convertible) final expression or a supported branching structure.

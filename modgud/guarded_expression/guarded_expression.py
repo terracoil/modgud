@@ -1,4 +1,5 @@
-"""Unified guarded_expression decorator combining guards and implicit returns.
+"""
+Unified guarded_expression decorator combining guards and implicit returns.
 
 Unified guarded_expression decorator that combines guard clause validation
 with optional implicit return transformation.
@@ -19,7 +20,8 @@ from .types import FailureBehavior, GuardFunction
 
 
 class guarded_expression:
-  """Unified decorator combining guard clauses with optional implicit return.
+  """
+  Unified decorator combining guard clauses with optional implicit return.
 
   Guards are callables that return True (pass) or a string error message (fail).
   On failure, behavior is determined by the `on_error` parameter.
@@ -54,7 +56,8 @@ class guarded_expression:
     on_error: FailureBehavior = GuardClauseError,
     log: bool = False,
   ):
-    """Initialize the guarded_expression decorator.
+    """
+    Initialize the guarded_expression decorator.
 
     Args:
         *guards: Variable number of guard functions

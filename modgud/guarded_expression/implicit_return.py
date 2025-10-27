@@ -1,4 +1,5 @@
-"""Pure AST transformation logic for implicit return functionality.
+"""
+Pure AST transformation logic for implicit return functionality.
 
 Extracts the AST rewriting logic from implicit_return into a composable,
 testable pure function that transforms function nodes to enforce implicit
@@ -18,7 +19,8 @@ from .errors import (
 
 
 class _NoExplicitReturnChecker(ast.NodeVisitor):
-  """Check for explicit return statements in top-level function body.
+  """
+  Check for explicit return statements in top-level function body.
 
   Ensures no explicit `return` appears in the *top-level* body of the decorated
   function. We deliberately do NOT descend into nested function/async def/lambda
@@ -44,7 +46,8 @@ class _NoExplicitReturnChecker(ast.NodeVisitor):
 
 
 class _TailRewriter:
-  """Rewrite tail positions to assign to implicit result variable.
+  """
+  Rewrite tail positions to assign to implicit result variable.
 
   Rewrites *tail positions* (the final statement of a block that determines the
   branch's return value) by replacing a final expression with an assignment to a
@@ -65,7 +68,8 @@ class _TailRewriter:
     return ast.Assign(targets=[ast.Name(id=self.result_name, ctx=ast.Store())], value=value)
 
   def rewrite_tail_stmt(self, stmt: ast.stmt) -> List[ast.stmt]:
-    """Rewrite tail statement to assign to result variable.
+    """
+    Rewrite tail statement to assign to result variable.
 
     Return a list of statements that replace the given tail statement,
     ensuring the result variable is set on all runtime paths.
@@ -136,7 +140,8 @@ class ImplicitReturnTransformer:
 
   @classmethod
   def transform_function_ast(cls, fn_node: ast.AST, func_name: str) -> ast.AST:
-    """Transform function AST to enforce implicit return semantics.
+    """
+    Transform function AST to enforce implicit return semantics.
 
     Transforms a FunctionDef/AsyncFunctionDef AST node to enforce
     implicit return semantics.
@@ -211,7 +216,8 @@ class ImplicitReturnTransformer:
   def apply_implicit_return_transform(
     cls, func_source: str, func_name: str
   ) -> Tuple[ast.Module, str]:
-    """Apply implicit return transformation to function source code.
+    """
+    Apply implicit return transformation to function source code.
 
     Args:
         func_source: The source code of the function (dedented)
@@ -234,7 +240,8 @@ class ImplicitReturnTransformer:
 
 
 class _TopLevelTransformer(ast.NodeTransformer):
-  """Transform only the target function definition.
+  """
+  Transform only the target function definition.
 
   Applies transformation only to the *decorated* function definition that we parsed.
   We rely on inspect.getsource(func) returning just that function (common in modules).
