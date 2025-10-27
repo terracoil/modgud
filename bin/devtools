@@ -328,9 +328,10 @@ class FreyjaDevTools:
 
       if success:
         parent._print("All code quality checks passed!", 'success')
+        sys.exit(0)
       else:
         parent._print("Some code quality checks failed!", 'error')
-      return
+        sys.exit(1)
 
     def compile(self, clean_first: bool = True) -> None:
       """Build the package with Poetry, optionally cleaning artifacts first."""

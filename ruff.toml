@@ -12,6 +12,7 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$" # Allow unused vari
 fixable = ["ALL"] # Allow fix for all enabled rules (when `--fix`) is provided.
 exclude = ["*.ipynb"]
 ignore = [
+    "D203",  # "1 blank line required before class docstring" - we don't require blank line before class docstrings
     "D211",  # "No blank lines allowed before class docstring" - conflicts with D203
     "D400",  # "First line should end with a period" - enforces ending punctuation in first line
 ]
