@@ -1,34 +1,47 @@
-# MODGUD Technical Documentation
+# MODGUD Technical Documentation Hub
 
 ![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud-github.png)
 
 > **New to modgud?** Check out the [main introduction](../README.md) for a quick overview and compelling examples!
 
+## 📚 Documentation Navigation
+
+### Core Documentation
+- **[🔮 How It Works](how-it-works.md)** - Deep dive into AST transformation, guard pipelines, and the magic behind implicit returns
+- **[📖 API Reference](api-reference.md)** - Complete reference for all decorators, guards, and types
+- **[🏛️ Architecture Overview](architecture/README.md)** - Clean architecture design principles
+
+### Quick Links
+- [← Back to Main README](../README.md)
+- [GitHub Repository](https://github.com/terracoil/modgud)
+- [PyPI Package](https://pypi.org/project/modgud/)
+
+---
+
 ## Table of Contents
 
-- [Overview](#overview)
-- [Installation](#installation)
-- [Complete API Reference](#complete-api-reference)
-  - [guarded_expression Decorator](#guarded_expression-decorator)
-  - [CommonGuards Class](#commonguards-class)
-  - [Error Classes](#error-classes)
-- [Usage Examples](#usage-examples)
+This document contains:
+- [Overview](#overview) - What modgud is and why it exists
+- [Installation](#installation) - Getting started with modgud
+- [Usage Examples](#usage-examples) - Practical code examples
   - [Basic Guard Usage](#basic-guard-usage)
   - [Implicit Returns](#implicit-returns)
   - [Explicit Returns](#explicit-returns)
   - [Error Handling Strategies](#error-handling-strategies)
   - [CommonGuards Usage](#commonguards-usage)
   - [Advanced Patterns](#advanced-patterns)
-- [Implicit Return Semantics](#implicit-return-semantics)
+- [Implicit Return Semantics](#implicit-return-semantics) - How implicit returns work
   - [If/Else Statements](#ifelse-statements)
   - [Try/Except Blocks](#tryexcept-blocks)
   - [Match/Case Statements](#matchcase-statements)
   - [Rules and Restrictions](#rules-and-restrictions)
-- [Guard Function Signature](#guard-function-signature)
-- [Configuration Options](#configuration-options)
-- [Testing Considerations](#testing-considerations)
-- [Migration Guide](#migration-guide)
-- [Architecture Details](#architecture-details)
+- [Guard Function Signature](#guard-function-signature) - Writing custom guards
+- [Configuration Options](#configuration-options) - Decorator parameters
+- [Testing Considerations](#testing-considerations) - Testing with modgud
+- [Migration Guide](#migration-guide) - Upgrading between versions
+- [Architecture Details](#architecture-details) - Design principles
+
+> **Looking for specific API details?** See the [Complete API Reference](api-reference.md) for detailed documentation of all functions and classes.
 
 ## Overview
 
@@ -93,6 +106,12 @@ pip install -e ".[dev]"
 - No external runtime dependencies (uses only Python standard library)
 
 ## Complete API Reference
+
+> **Note**: The complete API reference has been moved to a dedicated document for easier navigation.
+>
+> **[📖 View Complete API Reference](api-reference.md)**
+
+Below is a quick overview. For detailed documentation including all parameters, return values, and examples, see the [full API reference](api-reference.md).
 
 ### guarded_expression Decorator
 

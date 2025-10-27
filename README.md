@@ -345,11 +345,113 @@ def create_user(email, age, username, password):
 
 ---
 
+## The Name: Why Móðguðr?
+
+In Norse mythology, **Móðguðr** (*"Furious Battler"*) is the guardian of Gjallarbrú, the golden-roofed bridge spanning the river Gjöll on the path to Hel. She stands at this critical boundary, demanding that all who would cross must first state their name and business.
+
+Just like this legendary guardian, `modgud` stands watch at your function boundaries—and yes, we know it also sounds like "good mods" for your Python code! 😊 After all, what better way to enhance your functions than with some good mods that guard them like a Norse goddess?
+
+This ancient guardian embodies exactly what this library does:
+
+- **Guards the Boundary**: Just as Móðguðr guards the bridge to the underworld, our guards protect function boundaries
+- **Demands Identification**: Móðguðr requires travelers to identify themselves; our guards require parameters to validate themselves
+- **Controls Passage**: Only the worthy may cross her bridge; only valid inputs enter your functions
+- **Maintains Order**: She prevents chaos at the boundary; we prevent bad data from corrupting your logic
+
+Your functions are sacred spaces. They deserve a guardian at the gate—and perhaps some good mods to make them even better!
+
+---
+
+## Expression-Oriented Programming: Finally in Python
+
+Most modern languages have embraced [expression-oriented programming](https://en.wikipedia.org/wiki/Expression-oriented_programming_language):
+
+- **Ruby**: Everything is an expression
+- **Rust**: if, match, and blocks are expressions
+- **Scala**: Unified expression model
+- **Kotlin**: When expressions, if expressions
+- Even **JavaScript**: Arrow functions with implicit returns
+
+Python has been left behind—until now.
+
+### What is Expression-Oriented Programming?
+
+In [expression-oriented languages](https://en.wikipedia.org/wiki/Expression-oriented_programming_language), nearly every construct yields a value. This isn't just syntactic sugar—it's a fundamental paradigm shift that leads to:
+
+- **Cleaner code**: No unnecessary intermediate variables
+- **Better composability**: Everything can be chained and combined
+- **Functional thinking**: Focus on transformations, not procedures
+- **Less boilerplate**: The language works with you, not against you
+
+### Why It Matters
+
+Expression-oriented programming isn't about being clever—it's about writing code that expresses intent clearly:
+
+```python
+# Statement-oriented (traditional Python)
+def get_status(user):
+    if user.is_active:
+        if user.is_premium:
+            status = "premium_active"
+        else:
+            status = "standard_active"
+    else:
+        status = "inactive"
+    return status
+
+# Expression-oriented (with modgud)
+from modgud import guarded_expression
+
+@guarded_expression()
+def get_status(user):
+    if user.is_active:
+        "premium_active" if user.is_premium else "standard_active"
+    else:
+        "inactive"
+```
+
+The second version isn't just shorter—it's *clearer*. The code structure mirrors the logic structure. No hunting for return statements. No temporary variables. Just pure intent.
+
+### Bringing Expressions to Python
+
+With modgud, Python developers can finally write in an expression-oriented style:
+
+- **Implicit Returns**: The last expression in each branch becomes the return value
+- **Single Return Point**: One logical exit, multiple paths to get there
+- **Clean Composition**: Guards handle preconditions, your code handles logic
+
+```python
+# Complex business logic, expression style
+@guarded_expression(
+    CommonGuards.not_none("order"),
+    CommonGuards.positive("discount_rate")
+)
+def calculate_final_price(order, discount_rate, is_premium):
+    base_price = order.total
+    if is_premium:
+        if base_price > 100:
+            base_price * (1 - discount_rate * 1.5)  # Premium + bulk discount
+        else:
+            base_price * (1 - discount_rate * 1.2)  # Premium discount only
+    else:
+        if base_price > 100:
+            base_price * (1 - discount_rate)        # Standard bulk discount
+        else:
+            base_price                               # No discount
+```
+
+Every branch yields a value. No `return` keywords cluttering the logic. The code reads like a mathematical expression, not a procedure.
+
+---
+
 ## Documentation
 
 Ready to dive deeper?
 
-- **[📚 Complete Technical Documentation](docs/README.md)** - Full API reference, usage examples, and advanced patterns
+- **[🔮 How It Works](docs/how-it-works.md)** - Deep dive into AST transformation and the magic behind implicit returns
+- **[📖 API Reference](docs/api-reference.md)** - Complete API documentation for all decorators and guards
+- **[📚 Full Documentation Hub](docs/README.md)** - Usage examples, migration guide, and advanced patterns
+- **[🏛️ Architecture](docs/architecture/README.md)** - Clean architecture design principles
 - **[GitHub Repository](https://github.com/terracoil/modgud)** - Source code, issues, contributions
 - **[PyPI Package](https://pypi.org/project/modgud/)** - Official releases
 
@@ -381,7 +483,9 @@ poetry add modgud
 
 ## Quick Links
 
-- [Complete Documentation](docs/README.md) - Full API reference
+- [How It Works](docs/how-it-works.md) - AST transformation deep dive
+- [API Reference](docs/api-reference.md) - Complete API documentation
+- [Documentation Hub](docs/README.md) - Full documentation
 - [GitHub Repository](https://github.com/terracoil/modgud) - Source & issues
 - [PyPI Package](https://pypi.org/project/modgud/) - Latest releases
 - [License](LICENSE) - MIT
