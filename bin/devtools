@@ -183,7 +183,7 @@ class FreyjaDevTools:
           print("  python bin/devtools build lint --fix   # Auto-fix linting issues")
           print("  python bin/devtools test run           # Run tests with coverage")
           print("  python bin/devtools build autocommit   # Commit changes with Claude-generated message")
-          print("  python bin/devtools build tag-version  # Create git tag for HEAD commit")
+          print("  python bin/devtools build autotag      # Create git tag for HEAD commit")
           print("  python bin/devtools build publish      # Publish to PyPI")
         else:
           parent._print("Failed to install pre-commit hooks", 'error')
@@ -281,7 +281,10 @@ class FreyjaDevTools:
         "**/.pytest_cache",
         "build",
         "dist",
-        "*.egg-info"
+        "*.egg-info",
+        "**/.mypy_cache",
+        "**/.ruff_cache",
+        "**/pytest.log",
       ]
 
       removed_count = sum(
@@ -296,35 +299,55 @@ class FreyjaDevTools:
         parent._print("No items to clean", 'info')
       return
 
-    def lint(self, fix: bool = False) -> None:
-      """Run all linting and formatting tools, optionally auto-fixing issues."""
+    def lint(self, fix: bool = False, skip_mypy: bool = False) -> None:
+      """Run all linting and formatting tools, optionally auto-fixing issues.
+
+      Args:
+        fix: Auto-fix linting issues where possible
+        skip_mypy: Skip MyPy type checking if True
+      """
       parent = self.parent
       parent._print("🔍 Running code quality checks...", 'info')
 
       success: bool = True
 
-      # Run Ruff linting
-      ruff_cmd = "poetry run ruff check ."
-      if fix:
-        ruff_cmd += " --fix"
-      if not parent._run_command(ruff_cmd, "📝 Running Ruff linting..."):
-        success = False
+      # Big bright message before linting
+      print(f"\n{parent.colors['yellow']}{'='*60}{parent.colors['nc']}")
+      print(f"{parent.colors['yellow']}{'='*20} 🔍 LINTING... {'='*20}{parent.colors['nc']}")
+      print(f"{parent.colors['yellow']}{'='*60}{parent.colors['nc']}\n")
 
-      # Run Ruff formatting
+      # Run Ruff formatting first (establishes base code style)
       ruff_format_cmd = "poetry run ruff format ."
       if not fix:
         ruff_format_cmd += " --check"
       if not parent._run_command(ruff_format_cmd, "🎨 Running Ruff formatting..."):
         success = False
 
-      # Run MyPy with strict type checking
-      mypy_cmd = f"poetry run mypy {parent.project_name}"
-      # Generate reports if directories exist
-      reports_dir = parent.project_root / "reports" / "mypy"
-      if reports_dir.exists():
-        mypy_cmd += f" --html-report {reports_dir} --linecount-report {reports_dir} --linecoverage-report {reports_dir}"
-      if not parent._run_command(mypy_cmd, "🔧 Running MyPy type checking..."):
+      # Run Ruff linting second (checks logical issues on formatted code)
+      ruff_cmd = "poetry run ruff check ."
+      if fix:
+        ruff_cmd += " --fix"
+      if not parent._run_command(ruff_cmd, "📝 Running Ruff linting..."):
         success = False
+
+      # Run MyPy with strict type checking (unless skipped)
+      if not skip_mypy:
+        # Big bright message before MyPy
+        print(f"\n{parent.colors['blue']}{'='*60}{parent.colors['nc']}")
+        print(f"{parent.colors['blue']}{'='*18} 🔧 RUNNING MYPY {'='*18}{parent.colors['nc']}")
+        print(f"{parent.colors['blue']}{'='*60}{parent.colors['nc']}\n")
+
+        # Use actual package name instead of git repo name
+        package_name = "quarksmith"  # The actual Python package name
+        mypy_cmd = f"poetry run mypy {package_name}"
+        # Generate reports if directories exist
+        reports_dir = parent.project_root / "reports" / "mypy"
+        if reports_dir.exists():
+          mypy_cmd += f" --html-report {reports_dir} --linecount-report {reports_dir} --linecoverage-report {reports_dir}"
+        if not parent._run_command(mypy_cmd, "🔧 Running MyPy type checking..."):
+          success = False
+      else:
+        parent._print("⏭️  Skipping MyPy type checking (--skip-mypy)", 'info')
 
       if success:
         parent._print("All code quality checks passed!", 'success')
@@ -410,8 +433,13 @@ class FreyjaDevTools:
 
       return None
 
-    def autocommit(self) -> None:
-      """Commit all uncommitted files using Claude to generate an informative commit message."""
+    def autocommit(self, timeout: int = 120, retry_count: int = 3) -> None:
+      """Commit all uncommitted files using Claude to generate an informative commit message.
+
+      Args:
+        timeout: Initial timeout in seconds for Claude API call (default: 120, increases by 60s per retry)
+        retry_count: Number of times to retry on failure (default: 3)
+      """
       parent = self.parent
       parent._print("💾 Preparing to commit changes...", 'info')
 
@@ -424,21 +452,86 @@ class FreyjaDevTools:
       # Show what will be committed
       parent._run_command(['git', 'status', '--short'], "Changes to be committed:")
 
-      # Use Claude to generate commit message
-      parent._print("🤖 Generating commit message with Claude...", 'info')
-      result = parent._run_command(
-        ['claude', '-p', 'You are a git commit message generator. Output ONLY the commit message, nothing else.\n\nRules:\n- NO preamble like "Here\'s the message" or "Based on the changes"\n- NO markdown code blocks\n- NO explanations before or after\n- NO mentions of AI, Claude, or automated generation\n- First line: short summary (50-72 chars) following conventional commits format (type: description)\n- Blank line\n- Body: detailed explanation of WHAT changed and WHY\n\nYour response must START with the commit type (feat:/fix:/refactor:/etc). Example:\n\nfeat: add user authentication\n\nImplemented JWT-based authentication with refresh tokens.\nAdded middleware for protected routes.\n\nNow analyze the git changes and output ONLY the commit message:'],
-        capture_output=True
-      )
+      # Get a concise summary of changes
+      stat_result = parent._run_command(['git', 'diff', '--stat', '--stat-width=120', '--stat-graph-width=20'], capture_output=True)
+      if not isinstance(stat_result, subprocess.CompletedProcess) or stat_result.returncode != 0:
+        parent._print("Failed to get git diff stats", 'error')
+        if hasattr(stat_result, 'stderr') and stat_result.stderr:
+          parent._print(f"Git error: {stat_result.stderr}", 'error')
+        return
 
+      # Limit the size of changes summary to prevent token limits
+      changes_summary = stat_result.stdout.strip()
+      max_summary_lines = 50
+      summary_lines = changes_summary.split('\n')
+      if len(summary_lines) > max_summary_lines:
+        changes_summary = '\n'.join(summary_lines[:max_summary_lines]) + f"\n... and {len(summary_lines) - max_summary_lines} more files"
+
+      # Use Claude to generate commit message with retry logic
+      parent._print(f"🤖 Generating commit message with Claude (initial timeout: {timeout}s, increases by 60s per retry)...", 'info')
+      prompt = f"""Generate a git commit message. Output ONLY the commit message, nothing else.
+
+Rules:
+- NO preamble, explanations, or markdown blocks
+- First line: conventional commit format (type: description, max 72 chars)
+- Blank line, then body explaining WHAT and WHY
+
+Types: feat, fix, refactor, docs, style, test, chore, perf
+
+Changes:
+{changes_summary}
+
+Commit message:"""
+
+      # Try to get commit message with retries
       commit_message = None
-      if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
-        commit_message = self._extract_commit_message(result.stdout.strip())
-        if not commit_message:
-          parent._print("Failed to extract valid commit message from Claude response", 'error')
-          return
-      else:
-        parent._print("Failed to generate commit message with Claude", 'error')
+      last_error = None
+
+      for attempt in range(retry_count + 1):
+        # Calculate timeout for this attempt (starts at base timeout, increases by 60s each retry)
+        current_timeout = timeout + (attempt * 60)
+
+        if attempt > 0:
+          parent._print(f"Retrying... (attempt {attempt + 1}/{retry_count + 1})", 'info')
+
+        parent._print(f"⏳ Calling Claude API (attempt {attempt + 1}/{retry_count + 1}, timeout: {current_timeout}s)...", 'info')
+        result = parent._run_command(
+          ['poetry', 'run', 'claude', '-p', prompt],
+          capture_output=True,
+          timeout=current_timeout
+        )
+
+        if isinstance(result, subprocess.CompletedProcess):
+          if result.returncode == 0:
+            commit_message = self._extract_commit_message(result.stdout.strip())
+            if commit_message:
+              break  # Success!
+            else:
+              last_error = "Failed to extract valid commit message from Claude response"
+              parent._print(f"Attempt {attempt + 1}: {last_error}", 'error')
+              if parent.verbose and result.stdout:
+                parent._print(f"Claude output: {result.stdout[:200]}...", 'info')
+          else:
+            # Command failed
+            last_error = f"Claude command failed with exit code {result.returncode}"
+            if result.stderr:
+              last_error += f": {result.stderr.strip()}"
+            parent._print(f"Attempt {attempt + 1}: {last_error}", 'error')
+        else:
+          # Timeout or other subprocess error
+          last_error = "Claude command timed out or failed to execute"
+          parent._print(f"Attempt {attempt + 1}: {last_error} (timeout={current_timeout}s)", 'error')
+
+      if not commit_message:
+        parent._print("❌ Failed to generate commit message with Claude after all retries", 'error')
+        if last_error:
+          parent._print(f"Last error: {last_error}", 'error')
+        parent._print("\nTroubleshooting tips:", 'info')
+        parent._print("1. Check if 'claude' command is available: which claude", 'info')
+        parent._print("2. Try running manually: claude -p 'test prompt'", 'info')
+        parent._print("3. Check for API limits or network issues", 'info')
+        parent._print("4. Use --verbose flag for more details", 'info')
+        parent._print(f"5. If timeouts persist, increase timeout: python bin/devtools build autocommit --timeout {timeout * 2}", 'info')
         return
 
       parent._print(f"Commit message:\n{commit_message}", 'info')
@@ -494,6 +587,21 @@ class FreyjaDevTools:
           return f"{major}.{minor}.{patch + 1}"
       return None
 
+    def _get_committed_version(self) -> Optional[str]:
+      """Get the version from the currently committed pyproject.toml."""
+      parent = self.parent
+      result = parent._run_command(
+        ['git', 'show', 'HEAD:pyproject.toml'],
+        capture_output=True
+      )
+
+      if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
+        content = result.stdout
+        match = re.search(r'^version = "([^"]+)"', content, re.MULTILINE)
+        if match:
+          return match.group(1)
+      return None
+
     def _update_pyproject_version(self, version: str) -> bool:
       """Update version in pyproject.toml."""
       parent = self.parent
@@ -546,7 +654,7 @@ class FreyjaDevTools:
       parent._print(f"Failed to create tag: {error_msg}", 'error')
       return False
 
-    def tag_version(self, version: Optional[str] = None, auto_increment: bool = True) -> None:
+    def autotag(self, version: Optional[str] = None, auto_increment: bool = True) -> None:
       """Create git tag with Claude-generated message, auto-incrementing version if needed."""
       parent = self.parent
       parent._print(f"🏷️  Creating {parent.project_name} version tag...", 'info')
@@ -590,36 +698,44 @@ class FreyjaDevTools:
         parent._print(f"Tag '{tag}' already exists", 'error')
         return
 
-      # Update version in pyproject.toml
-      parent._print(f"📝 Updating version in pyproject.toml to {final_version}...", 'info')
-      if not self._update_pyproject_version(final_version):
-        return
+      # Check if the version in the committed state is already at the target
+      committed_version = self._get_committed_version()
+      version_already_committed = committed_version == final_version
 
-      # Commit the version change
-      parent._print("💾 Committing version update...", 'info')
-      if not parent._run_command(['git', 'add', 'pyproject.toml'], "Staging pyproject.toml"):
-        parent._print("Failed to stage pyproject.toml", 'error')
-        return
-
-      commit_msg = f"Bump version to {final_version}"
-      if not parent._run_command(['git', 'commit', '-m', commit_msg], f"Committing version bump"):
-        parent._print("Failed to commit version change", 'error')
-        return
-
-      # Generate tag message with Claude
-      parent._print("🤖 Generating tag message with Claude...", 'info')
-      result = parent._run_command(
-        ['claude', '-p', 'Create a very short message to be used on a new tag basing it on the most recent commit (HEAD). Return a single string representing the tag description with no preamble, summary, or afterthoughts. Dont mention phases or claude AT ALL'],
-        capture_output=True
-      )
-
-      tag_message = None
-      if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
-        tag_message = result.stdout.strip()
-        parent._print(f"Tag message: {tag_message}", 'info')
+      if version_already_committed:
+        parent._print(f"Version in HEAD is already {final_version}, skipping commit step", 'info')
       else:
-        parent._print("Failed to generate tag message with Claude", 'error')
-        return
+        # Update version in pyproject.toml
+        parent._print(f"📝 Updating version in pyproject.toml to {final_version}...", 'info')
+        if not self._update_pyproject_version(final_version):
+          return
+
+        # Commit the version change
+        parent._print("💾 Committing version update...", 'info')
+        if not parent._run_command(['git', 'add', 'pyproject.toml'], "Staging pyproject.toml"):
+          parent._print("Failed to stage pyproject.toml", 'error')
+          return
+
+        commit_msg = f"Bump version to {final_version}"
+        if not parent._run_command(['git', 'commit', '-m', commit_msg], f"Committing version bump"):
+          parent._print("Failed to commit version change", 'error')
+          return
+
+      tag_message = f"Release of version {tag}"
+      # Generate tag message with Claude
+      # parent._print("🤖 Generating tag message with Claude...", 'info')
+      # result = parent._run_command(
+      #   ['poetry', 'run', 'claude', '-p', 'Create a very short message to be used on a new tag basing it on the most recent commit (HEAD). Return a single string representing the tag description with no preamble, summary, or afterthoughts. Dont mention phases or claude AT ALL'],
+      #   capture_output=True
+      # )
+
+      # tag_message = None
+      # if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
+      #   tag_message = result.stdout.strip()
+      #   parent._print(f"Tag message: {tag_message}", 'info')
+      # else:
+      #   parent._print("Failed to generate tag message with Claude", 'error')
+      #   return
 
       # Create the tag
       parent._print(f"Creating tag: {tag}", 'info')

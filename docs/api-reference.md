@@ -1,25 +1,34 @@
 # API Reference
 
-[← Back to Documentation Hub](README.md)
+---
+
+## 📍 Navigation
+
+**You are here**: API Reference
+
+**Parent**: [📚 Documentation Hub](README.md) - Back to documentation index
+**Grandparent**: [🌉 Main README](../README.md) - Project overview
+**Sibling**: [⚙️ How It Works](how-it-works.md) - Technical deep-dive
+
+---
 
 Complete API reference for the modgud library, covering all decorators, classes, functions, and types.
 
 ---
 
-## Table of Contents
+## 📋 Table of Contents
 
-- [Module Overview](#module-overview)
-- [Primary Decorator](#primary-decorator)
+- [📦 Module Overview](#module-overview)
+- [🎖️ Primary Decorator](#primary-decorator)
   - [guarded_expression](#guarded_expression)
-- [Classes](#classes)
-  - [Pre-built Guard Functions](#pre-built-guard-functions)
-- [Error Classes](#error-classes)
-- [Guard Registry Functions](#guard-registry-functions)
-- [Type Definitions](#type-definitions)
+- [🧩 Pre-built Guard Functions](#pre-built-guard-functions)
+- [🚨 Error Classes](#error-classes)
+- [📝 Guard Registry Functions](#guard-registry-functions)
+- [📐 Type Definitions](#type-definitions)
 
 ---
 
-## Module Overview
+## 📦 Module Overview
 
 ```python
 from modgud import (
@@ -64,7 +73,7 @@ from modgud import (
 
 ---
 
-## Primary Decorator
+## 🎖️ Primary Decorator
 
 ### guarded_expression
 
@@ -186,9 +195,7 @@ process_items([])  # Logs: "INFO: Guard failed: items must not be empty"
 
 ---
 
-## Classes
-
-### Pre-built Guard Functions
+## 🧩 Pre-built Guard Functions
 
 Pre-defined guard validators for common validation scenarios. These functions are imported directly from modgud.
 
@@ -459,7 +466,7 @@ update_status("active")       # Raises: GuardClauseError
 
 ---
 
-## Error Classes
+## 🚨 Error Classes
 
 ### GuardClauseError
 
@@ -541,7 +548,7 @@ class UnsupportedConstructError(ImplicitReturnError):
 
 ---
 
-## Guard Registry Functions
+## 📝 Guard Registry Functions
 
 Functions for managing custom guard registration and retrieval.
 
@@ -641,7 +648,7 @@ get_registry() -> dict[str, dict[str, Callable]]
 
 ---
 
-## Type Definitions
+## 📐 Type Definitions
 
 ### GuardFunction
 

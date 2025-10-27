@@ -42,3 +42,6 @@ logs
 .python-version
 
 junk.txt
+
+# Temporarily ignored
+docs/architecture/
