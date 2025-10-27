@@ -167,7 +167,7 @@ Pre-built guard validators for common validation scenarios.
 #### not_none
 
 ```python
-CommonGuards.not_none(param_name='parameter', position=0) -> GuardFunction
+not_none(param_name='parameter', position=0) -> GuardFunction
 ```
 
 Ensures parameter is not None.
@@ -179,7 +179,9 @@ Ensures parameter is not None.
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.not_none("user_id"))
+from modgud import guarded_expression, not_none
+
+@guarded_expression(not_none("user_id"))
 def get_user(user_id):
     # user_id guaranteed not None
     fetch_from_db(user_id)
@@ -188,7 +190,7 @@ def get_user(user_id):
 #### not_empty
 
 ```python
-CommonGuards.not_empty(param_name='parameter', position=None) -> GuardFunction
+not_empty(param_name='parameter', position=None) -> GuardFunction
 ```
 
 Ensures collection/string parameter is not empty.
@@ -200,7 +202,9 @@ Ensures collection/string parameter is not empty.
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.not_empty("items", position=1))
+from modgud import guarded_expression, not_empty
+
+@guarded_expression(not_empty("items", position=1))
 def process_list(user, items):
     # items guaranteed to have length > 0
     [process(item) for item in items]
@@ -209,7 +213,7 @@ def process_list(user, items):
 #### positive
 
 ```python
-CommonGuards.positive(param_name='parameter', position=0) -> GuardFunction
+positive(param_name='parameter', position=0) -> GuardFunction
 ```
 
 Ensures numeric parameter is positive (> 0).
@@ -221,7 +225,9 @@ Ensures numeric parameter is positive (> 0).
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.positive("amount"))
+from modgud import guarded_expression, positive
+
+@guarded_expression(positive("amount"))
 def calculate_tax(amount):
     # amount guaranteed > 0
     amount * 0.08
@@ -230,7 +236,7 @@ def calculate_tax(amount):
 #### in_range
 
 ```python
-CommonGuards.in_range(min_val, max_val, param_name='parameter', position=0) -> GuardFunction
+in_range(min_val, max_val, param_name='parameter', position=0) -> GuardFunction
 ```
 
 Ensures parameter is within inclusive range [min_val, max_val].
@@ -244,7 +250,9 @@ Ensures parameter is within inclusive range [min_val, max_val].
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.in_range(1, 100, "page"))
+from modgud import guarded_expression, in_range
+
+@guarded_expression(in_range(1, 100, "page"))
 def get_page(page):
     # page guaranteed between 1 and 100
     fetch_page_data(page)
@@ -253,7 +261,7 @@ def get_page(page):
 #### type_check
 
 ```python
-CommonGuards.type_check(expected_type, param_name='parameter', position=0) -> GuardFunction
+type_check(expected_type, param_name='parameter', position=0) -> GuardFunction
 ```
 
 Ensures parameter matches expected type.
@@ -266,7 +274,9 @@ Ensures parameter matches expected type.
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.type_check(dict, "config"))
+from modgud import guarded_expression, type_check
+
+@guarded_expression(type_check(dict, "config"))
 def load_config(config):
     # config guaranteed to be a dict
     {**defaults, **config}
@@ -275,7 +285,7 @@ def load_config(config):
 #### matches_pattern
 
 ```python
-CommonGuards.matches_pattern(pattern, param_name='parameter', position=0) -> GuardFunction
+matches_pattern(pattern, param_name='parameter', position=0) -> GuardFunction
 ```
 
 Ensures string parameter matches regex pattern.
@@ -288,8 +298,10 @@ Ensures string parameter matches regex pattern.
 
 **Example:**
 ```python
+from modgud import guarded_expression, matches_pattern
+
 @guarded_expression(
-    CommonGuards.matches_pattern(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', "email")
+    matches_pattern(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', "email")
 )
 def send_email(email):
     # email guaranteed to match email pattern
@@ -423,7 +435,9 @@ print(double(5))  # Returns 10
 #### Implicit Return with Conditionals
 
 ```python
-@guarded_expression(CommonGuards.not_none("value"))
+from modgud import guarded_expression, not_none
+
+@guarded_expression(not_none("value"))
 def classify_number(value):
     if value > 0:
         "positive"
@@ -453,8 +467,10 @@ def process_data(data):
 When you need traditional Python return behavior:
 
 ```python
+from modgud import guarded_expression, positive
+
 @guarded_expression(
-    CommonGuards.positive("x"),
+    positive("x"),
     implicit_return=False  # Disable implicit returns
 )
 def calculate(x):
@@ -471,9 +487,11 @@ print(calculate(5))  # Returns 10.0
 #### Return Custom Values
 
 ```python
+from modgud import guarded_expression, positive, not_empty
+
 # Return None on failure
 @guarded_expression(
-    CommonGuards.positive("x"),
+    positive("x"),
     on_error=None
 )
 def safe_sqrt(x):
@@ -485,7 +503,7 @@ print(safe_sqrt(-1))  # Returns None
 
 # Return error dict
 @guarded_expression(
-    CommonGuards.not_empty("data"),
+    not_empty("data"),
     on_error={"success": False, "error": "Invalid input"}
 )
 def process_data(data):
@@ -498,12 +516,14 @@ print(process_data(""))       # Returns {"success": False, "error": "Invalid inp
 #### Custom Exception Classes
 
 ```python
+from modgud import guarded_expression, positive
+
 class ValidationError(Exception):
     """Custom validation exception."""
     pass
 
 @guarded_expression(
-    CommonGuards.positive("amount"),
+    positive("amount"),
     on_error=ValidationError
 )
 def withdraw(amount):
@@ -518,6 +538,8 @@ except ValidationError as e:
 #### Handler Functions
 
 ```python
+from modgud import guarded_expression, in_range
+
 def log_and_default(error_msg, *args, **kwargs):
     """Log error and return default value."""
     print(f"Guard failed: {error_msg}")
@@ -525,7 +547,7 @@ def log_and_default(error_msg, *args, **kwargs):
     return {"error": True, "message": error_msg}
 
 @guarded_expression(
-    CommonGuards.in_range(1, 10, "level"),
+    in_range(1, 10, "level"),
     on_error=log_and_default
 )
 def set_level(level):
@@ -544,10 +566,12 @@ result = set_level(15)
 CommonGuards intelligently extract parameters from both positional and keyword arguments:
 
 ```python
+from modgud import guarded_expression, not_none, positive, not_empty
+
 @guarded_expression(
-    CommonGuards.not_none("user_id"),      # First positional or kwargs["user_id"]
-    CommonGuards.positive("amount"),        # Second positional or kwargs["amount"]
-    CommonGuards.not_empty("description", position=2)  # Third positional
+    not_none("user_id"),      # First positional or kwargs["user_id"]
+    positive("amount"),        # Second positional or kwargs["amount"]
+    not_empty("description", position=2)  # Third positional
 )
 def create_transaction(user_id, amount, description=""):
     {"user": user_id, "amount": amount, "desc": description}
@@ -565,17 +589,19 @@ create_transaction(123, amount=50.0, description="Payment")
 #### Combining Multiple Guards
 
 ```python
+from modgud import guarded_expression, not_none, matches_pattern, type_check, in_range, not_empty
+
 @guarded_expression(
     # User validation
-    CommonGuards.not_none("email"),
-    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
+    not_none("email"),
+    matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
 
     # Age validation
-    CommonGuards.type_check(int, "age", position=1),
-    CommonGuards.in_range(13, 120, "age", position=1),
+    type_check(int, "age", position=1),
+    in_range(13, 120, "age", position=1),
 
     # Password validation
-    CommonGuards.not_empty("password", position=2),
+    not_empty("password", position=2),
 
     log=True  # Log all validation failures
 )
@@ -594,6 +620,8 @@ def register_user(email, age, password):
 #### Composable Guard Sets
 
 ```python
+from modgud import guarded_expression, not_none
+
 # Define reusable guard combinations
 pagination_guards = [
     lambda page=1: page >= 1 or "Page must be at least 1",
@@ -602,7 +630,7 @@ pagination_guards = [
 ]
 
 auth_guards = [
-    CommonGuards.not_none("api_key"),
+    not_none("api_key"),
     lambda api_key: validate_api_key(api_key) or "Invalid API key"
 ]
 
@@ -615,6 +643,8 @@ def get_user_posts(api_key, page=1, limit=10):
 #### Dynamic Guard Generation
 
 ```python
+from modgud import guarded_expression, not_empty
+
 def max_length(max_len, param_name="param", position=0):
     """Create a guard for maximum string length."""
     def check_length(*args, **kwargs):
@@ -623,7 +653,7 @@ def max_length(max_len, param_name="param", position=0):
     return check_length
 
 @guarded_expression(
-    CommonGuards.not_empty("username"),
+    not_empty("username"),
     max_length(20, "username"),
     max_length(100, "bio", position=1)
 )
@@ -634,6 +664,8 @@ def create_profile(username, bio=""):
 #### Conditional Guards
 
 ```python
+from modgud import guarded_expression, not_none, type_check
+
 def conditional_guard(condition, guard):
     """Apply guard only if condition is met."""
     def check(*args, **kwargs):
@@ -643,10 +675,10 @@ def conditional_guard(condition, guard):
     return check
 
 @guarded_expression(
-    CommonGuards.not_none("data"),
+    not_none("data"),
     conditional_guard(
         lambda data, validate=False, **kw: validate,
-        CommonGuards.type_check(dict, "data")
+        type_check(dict, "data")
     )
 )
 def process(data, validate=False):
@@ -665,13 +697,14 @@ process({"key": "value"}, validate=True)
 #### Guard with Logging
 
 ```python
+from modgud import guarded_expression, positive, in_range
 import logging
 
 logging.basicConfig(level=logging.INFO)
 
 @guarded_expression(
-    CommonGuards.positive("amount"),
-    CommonGuards.in_range(1, 10000, "amount"),
+    positive("amount"),
+    in_range(1, 10000, "amount"),
     log=True  # Enable automatic logging
 )
 def transfer_funds(amount):
@@ -1059,8 +1092,10 @@ def limited_operation(data):
 For async functions, guards are still synchronous (evaluated before the async function runs):
 
 ```python
+from modgud import guarded_expression, not_none
+
 @guarded_expression(
-    CommonGuards.not_none("url"),
+    not_none("url"),
     lambda url: url.startswith("https://") or "URL must use HTTPS"
 )
 async def fetch_secure(url):
@@ -1085,8 +1120,10 @@ async def fetch_secure(url):
 #### Validation-Only (No Implicit Returns)
 
 ```python
+from modgud import guarded_expression, positive
+
 @guarded_expression(
-    CommonGuards.positive("x"),
+    positive("x"),
     implicit_return=False,
     on_error=None
 )
@@ -1108,10 +1145,12 @@ def expression_oriented(x):
 #### Safe Operations (Return Default on Error)
 
 ```python
+from modgud import guarded_expression, positive
+
 DEFAULT_USER = {"id": 0, "name": "Guest"}
 
 @guarded_expression(
-    CommonGuards.positive("user_id"),
+    positive("user_id"),
     on_error=DEFAULT_USER
 )
 def get_user(user_id):
@@ -1121,12 +1160,14 @@ def get_user(user_id):
 #### Audit Trail (Custom Handler)
 
 ```python
+from modgud import guarded_expression, not_none
+
 def audit_handler(error_msg, *args, **kwargs):
     audit_log.write(f"Failed: {error_msg}, Args: {args}")
     return None
 
 @guarded_expression(
-    CommonGuards.not_none("sensitive_data"),
+    not_none("sensitive_data"),
     on_error=audit_handler,
     log=True
 )
@@ -1137,8 +1178,10 @@ def sensitive_operation(sensitive_data):
 #### API Response Pattern
 
 ```python
+from modgud import guarded_expression, type_check
+
 @guarded_expression(
-    CommonGuards.type_check(dict, "payload"),
+    type_check(dict, "payload"),
     on_error={"status": 400, "error": "Invalid request"},
     log=True
 )
@@ -1152,6 +1195,7 @@ def api_endpoint(payload):
 When `log=True`, failures are logged using Python's standard logging:
 
 ```python
+from modgud import guarded_expression, positive
 import logging
 
 # Configure logging
@@ -1161,7 +1205,7 @@ logging.basicConfig(
 )
 
 @guarded_expression(
-    CommonGuards.positive("value"),
+    positive("value"),
     log=True  # Failures logged at WARNING level
 )
 def logged_function(value):
@@ -1202,10 +1246,10 @@ def test_implicit_return():
 
 ```python
 import pytest
-from modgud import guarded_expression, CommonGuards, GuardClauseError
+from modgud import guarded_expression, positive, GuardClauseError
 
 @guarded_expression(
-    CommonGuards.positive("x"),
+    positive("x"),
     on_error=GuardClauseError
 )
 def needs_positive(x):
@@ -1222,15 +1266,17 @@ def test_guard_failure():
 ### Testing Different Error Behaviors
 
 ```python
+from modgud import guarded_expression, not_none
+
 @guarded_expression(
-    CommonGuards.not_none("value"),
+    not_none("value"),
     on_error=None
 )
 def returns_none_on_failure(value):
     value.upper()
 
 @guarded_expression(
-    CommonGuards.not_none("value"),
+    not_none("value"),
     on_error={"error": True}
 )
 def returns_dict_on_failure(value):
@@ -1363,14 +1409,16 @@ def calculate(x):
 #### Both Decorators → guarded_expression
 
 ```python
+from modgud import positive, guarded_expression
+
 # Old
-@guard_clause(CommonGuards.positive("x"))
+@guard_clause(positive("x"))
 @implicit_return
 def process(x):
     x * 2
 
 # New
-@guarded_expression(CommonGuards.positive("x"))
+@guarded_expression(positive("x"))
 def process(x):
     x * 2
 ```

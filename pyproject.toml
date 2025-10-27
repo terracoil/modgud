@@ -8,9 +8,9 @@ requires-python = ">=3.6"
 version = "1.0.0" # Uses poetry-dynamic-versioning
 
 [project.urls]
-Homepage = "https://github.com/terracoil/freyja"
-Repository = "https://github.com/terracoil/freyja"
-Documentation = "https://github.com/terracoil/freyja/tree/main/docs"
+Homepage = "https://github.com/terracoil/modgud?tab=readme-ov-file#modgud"
+Repository = "https://github.com/terracoil/modgud"
+Documentation = "https://github.com/terracoil/modgud/tree/main/docs"
 
 [tool.poetry]
 classifiers = [
@@ -21,8 +21,8 @@ classifiers = [
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: System :: Software Enginering",
-    "Topic :: System :: Expression-oriented programming",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Quality Assurance",
     "Topic :: Utilities",
 ]
 include = ["LICENSE", "README.md", "modgud/py.typed"]

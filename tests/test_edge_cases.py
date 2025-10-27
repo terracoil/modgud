@@ -5,6 +5,7 @@ from threading import Thread
 from typing import List
 
 import pytest
+from modgud import positive
 from modgud.guarded_expression import CommonGuards, guarded_expression
 from modgud.guarded_expression.errors import GuardClauseError
 from modgud.guarded_expression.guard_registry import GuardRegistry
@@ -18,7 +19,7 @@ class TestThreadSafety:
     results: List[int] = []
     errors: List[Exception] = []
 
-    @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
+    @guarded_expression(positive('x'), implicit_return=False)
     def process(x):
       time.sleep(0.001)  # Simulate processing
       return x * 2

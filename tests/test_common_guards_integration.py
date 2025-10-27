@@ -1,19 +1,27 @@
-"""Integration tests for CommonGuards with guarded_expression decorator."""
+"""Integration tests for common guards with guarded_expression decorator."""
 
 import pytest
-from modgud.guarded_expression import CommonGuards, guarded_expression
+from modgud import (
+  guarded_expression,
+  in_range,
+  matches_pattern,
+  not_empty,
+  not_none,
+  positive,
+  type_check,
+)
 from modgud.guarded_expression.errors import GuardClauseError
 
 
 @pytest.mark.parametrize(
   'guard_factory,valid_value,invalid_value,error_message',
   [
-    (CommonGuards.not_none('x'), 5, None, 'cannot be None'),
-    (CommonGuards.positive('x'), 5, -5, 'positive'),
-    (CommonGuards.not_empty('x'), 'hello', '', 'empty'),
-    (CommonGuards.type_check(int, 'x'), 5, '5', 'must be of type int'),
-    (CommonGuards.in_range(1, 10, 'x'), 5, 15, 'between 1 and 10'),
-    (CommonGuards.matches_pattern(r'^\d+$', 'x'), '123', 'abc', 'must match pattern'),
+    (not_none('x'), 5, None, 'cannot be None'),
+    (positive('x'), 5, -5, 'positive'),
+    (not_empty('x'), 'hello', '', 'empty'),
+    (type_check(int, 'x'), 5, '5', 'must be of type int'),
+    (in_range(1, 10, 'x'), 5, 15, 'between 1 and 10'),
+    (matches_pattern(r'^\d+$', 'x'), '123', 'abc', 'must match pattern'),
   ],
 )
 def test_common_guard_validation(guard_factory, valid_value, invalid_value, error_message):
@@ -37,7 +45,7 @@ def test_common_guard_validation(guard_factory, valid_value, invalid_value, erro
 def test_common_guards_kwargs_precedence():
   """Named parameters should take precedence over positional mapping."""
 
-  @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
+  @guarded_expression(positive('x'), implicit_return=False)
   def add(x, y):
     return x + y
 
@@ -53,7 +61,7 @@ def test_common_guards_kwargs_precedence():
 def test_extract_param_out_of_bounds():
   """Guard should fail when parameter index is out of bounds and default is invalid."""
 
-  @guarded_expression(CommonGuards.positive('y', 1), implicit_return=False)
+  @guarded_expression(positive('y', 1), implicit_return=False)
   def single_param(x):
     return x * 2
 
@@ -63,7 +71,7 @@ def test_extract_param_out_of_bounds():
   assert 'positive' in str(exc_info.value)
 
   # Test with named parameter
-  @guarded_expression(CommonGuards.positive('y'), implicit_return=False)
+  @guarded_expression(positive('y'), implicit_return=False)
   def with_named(x, y=10):
     return x + y
 
@@ -75,7 +83,7 @@ def test_extract_param_out_of_bounds():
 def test_not_empty_with_object_lacking_len():
   """not_empty guard should handle objects without len() gracefully."""
 
-  @guarded_expression(CommonGuards.not_empty('x'), implicit_return=False)
+  @guarded_expression(not_empty('x'), implicit_return=False)
   def process(x):
     return str(x)
 

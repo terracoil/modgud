@@ -100,11 +100,11 @@ Decorated function with guard validation and optional implicit returns.
 ##### Basic Guard Validation
 
 ```python
-from modgud import guarded_expression, CommonGuards
+from modgud import guarded_expression, not_none, positive
 
 @guarded_expression(
-    CommonGuards.not_none("x"),
-    CommonGuards.positive("x")
+    not_none("x"),
+    positive("x")
 )
 def calculate(x):
     return x * 2
@@ -130,9 +130,11 @@ def get_status(user):
 ##### Custom Error Handling
 
 ```python
+from modgud import guarded_expression, positive
+
 # Return None on failure
 @guarded_expression(
-    CommonGuards.positive("amount"),
+    positive("amount"),
     on_error=None
 )
 def process_payment(amount):
@@ -146,7 +148,7 @@ def log_and_default(msg, *args, **kwargs):
     return 0
 
 @guarded_expression(
-    CommonGuards.positive("x"),
+    positive("x"),
     on_error=log_and_default
 )
 def safe_divide(x):
@@ -158,8 +160,10 @@ safe_divide(-5)  # Prints error, returns 0
 ##### With Logging
 
 ```python
+from modgud import guarded_expression, not_empty
+
 @guarded_expression(
-    CommonGuards.not_empty("items"),
+    not_empty("items"),
     log=True  # Enables logging
 )
 def process_items(items):
@@ -194,7 +198,9 @@ not_empty(param_name: str = 'parameter', position: Optional[int] = None) -> Guar
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.not_empty("items"))
+from modgud import guarded_expression, not_empty
+
+@guarded_expression(not_empty("items"))
 def process(items):
     return len(items)
 ```
@@ -215,7 +221,9 @@ not_none(param_name: str = 'parameter', position: int = 0) -> GuardFunction
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.not_none("user"))
+from modgud import guarded_expression, not_none
+
+@guarded_expression(not_none("user"))
 def greet(user):
     return f"Hello, {user.name}"
 ```
@@ -236,7 +244,9 @@ positive(param_name: str = 'parameter', position: int = 0) -> GuardFunction
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.positive("amount"))
+from modgud import guarded_expression, positive
+
+@guarded_expression(positive("amount"))
 def calculate_tax(amount):
     return amount * 0.1
 ```
@@ -264,7 +274,9 @@ in_range(
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.in_range(1, 10, "rating"))
+from modgud import guarded_expression, in_range
+
+@guarded_expression(in_range(1, 10, "rating"))
 def save_rating(rating):
     return {"rating": rating}
 
@@ -293,7 +305,9 @@ type_check(
 
 **Example:**
 ```python
-@guarded_expression(CommonGuards.type_check(str, "name"))
+from modgud import guarded_expression, type_check
+
+@guarded_expression(type_check(str, "name"))
 def create_user(name):
     return {"name": name.upper()}
 
@@ -322,8 +336,10 @@ matches_pattern(
 
 **Example:**
 ```python
+from modgud import guarded_expression, matches_pattern
+
 @guarded_expression(
-    CommonGuards.matches_pattern(r'^\d{3}-\d{3}-\d{4}$', "phone")
+    matches_pattern(r'^\d{3}-\d{3}-\d{4}$', "phone")
 )
 def save_phone(phone):
     return {"phone": phone}
@@ -356,7 +372,7 @@ valid_file_path(
 **Example:**
 ```python
 @guarded_expression(
-    CommonGuards.valid_file_path("config_path", exists_required=True, is_file=True)
+    valid_file_path("config_path", exists_required=True, is_file=True)
 )
 def load_config(config_path):
     with open(config_path) as f:
@@ -385,7 +401,7 @@ valid_url(
 **Example:**
 ```python
 @guarded_expression(
-    CommonGuards.valid_url("endpoint", schemes=['https'])
+    valid_url("endpoint", schemes=['https'])
 )
 def fetch_data(endpoint):
     # Fetch from HTTPS endpoint
@@ -420,7 +436,7 @@ class Status(Enum):
     INACTIVE = "inactive"
 
 @guarded_expression(
-    CommonGuards.valid_enum(Status, "status")
+    valid_enum(Status, "status")
 )
 def update_status(status):
     return {"status": status.value}

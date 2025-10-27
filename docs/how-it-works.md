@@ -126,9 +126,11 @@ Modgud follows clean architecture principles with three distinct layers:
 When you decorate a function with `@guarded_expression`, here's what happens at runtime:
 
 ```python
+from modgud import guarded_expression, not_none
+
 # User code
 @guarded_expression(
-    CommonGuards.not_none("x"),
+    not_none("x"),
     on_error=ValueError
 )
 def divide_100_by(x):
@@ -442,12 +444,14 @@ ImplicitReturnError (base)
 You can provide custom error handling logic:
 
 ```python
+from modgud import guarded_expression, positive
+
 def my_error_handler(error_msg, *args, **kwargs):
     logger.error(f"Guard failed: {error_msg}")
     return {"error": error_msg, "args": args}
 
 @guarded_expression(
-    CommonGuards.positive("amount"),
+    positive("amount"),
     on_error=my_error_handler
 )
 def process_payment(amount):
@@ -460,8 +464,10 @@ def process_payment(amount):
 Enable built-in logging with `log=True`:
 
 ```python
+from modgud import guarded_expression, not_none
+
 @guarded_expression(
-    CommonGuards.not_none("user"),
+    not_none("user"),
     log=True  # Logs failures at INFO level
 )
 def greet_user(user):
@@ -546,11 +552,13 @@ assert my_function(-5) == 0
 4. **Prefer CommonGuards**: Optimized implementations
 
 ```python
+from modgud import guarded_expression, not_none, not_empty, type_check
+
 # Optimized guard ordering
 @guarded_expression(
-    CommonGuards.not_none("data"),      # Fails fast on None
-    CommonGuards.not_empty("data"),     # Then check if empty
-    CommonGuards.type_check(list, "data"),  # Finally validate type
+    not_none("data"),      # Fails fast on None
+    not_empty("data"),     # Then check if empty
+    type_check(list, "data"),  # Finally validate type
 )
 def process_data(data):
     len(data) * 100

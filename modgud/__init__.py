@@ -4,16 +4,17 @@ A library for implementing guard clause decorators with single return point arch
 
 Primary API:
   - guarded_expression: Unified decorator combining guards + implicit return
-  - CommonGuards: Pre-built guard validators
+  - Pre-built guard validators: positive, not_none, not_empty, type_check, etc.
 
 Usage Examples:
 
     Basic guard validation:
-        from modgud import guarded_expression, CommonGuards
+        from modgud import guarded_expression, positive, type_check
 
         @guarded_expression(
-            CommonGuards.positive("x"),
-            CommonGuards.type_check(int, "x")
+            positive("x"),
+            type_check(int, "x"),
+            implicit_return=False
         )
         def calculate(x):
             return x * 2
@@ -38,7 +39,8 @@ Usage Examples:
         register_guard("valid_email", valid_email, namespace="validators")
 """
 
-from .guarded_expression import CommonGuards, guarded_expression
+from .guarded_expression import guarded_expression
+from .guarded_expression.common_guards import CommonGuards
 from .guarded_expression.errors import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
@@ -56,15 +58,37 @@ from .guarded_expression.guard_registry import (
   unregister_guard,
 )
 
+# Export guards as module-level functions for convenient direct import
+not_empty = CommonGuards.not_empty
+not_none = CommonGuards.not_none
+positive = CommonGuards.positive
+in_range = CommonGuards.in_range
+type_check = CommonGuards.type_check
+matches_pattern = CommonGuards.matches_pattern
+valid_file_path = CommonGuards.valid_file_path
+valid_url = CommonGuards.valid_url
+valid_enum = CommonGuards.valid_enum
+
 __version__ = '0.2.0'
 __all__ = [
   'guarded_expression',
-  'CommonGuards',
+  # Guard validators
+  'not_empty',
+  'not_none',
+  'positive',
+  'in_range',
+  'type_check',
+  'matches_pattern',
+  'valid_file_path',
+  'valid_url',
+  'valid_enum',
+  # Error classes
   'GuardClauseError',
   'ImplicitReturnError',
   'ExplicitReturnDisallowedError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
+  # Registry functions
   'register_guard',
   'get_guard',
   'has_custom_guard',

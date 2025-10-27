@@ -188,11 +188,11 @@ The v0.2.0 refactoring implements clean architecture with clear separation of co
 
 **Primary API:**
 ```python
-from modgud import guarded_expression, CommonGuards, GuardClauseError
+from modgud import guarded_expression, positive, GuardClauseError
 
 # With guards and implicit return (default behavior)
 @guarded_expression(
-    CommonGuards.positive("x"),
+    positive("x"),
     implicit_return=True,  # default
     on_error=GuardClauseError  # default
 )
@@ -202,7 +202,7 @@ def process(x):
 
 # Guards only, explicit return
 @guarded_expression(
-    CommonGuards.positive("x"),
+    positive("x"),
     implicit_return=False,
     on_error=None
 )

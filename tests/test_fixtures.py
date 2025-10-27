@@ -4,7 +4,8 @@ These functions are defined at module level so their source can be inspected
 by the implicit_return transformer.
 """
 
-from modgud.guarded_expression import CommonGuards, guarded_expression
+from modgud import not_none, positive
+from modgud.guarded_expression import guarded_expression
 from modgud.guarded_expression.errors import GuardClauseError
 
 
@@ -42,7 +43,7 @@ def safe_divide_with_guard(x):
 
 
 # CommonGuards with implicit return
-@guarded_expression(CommonGuards.not_none('x'), CommonGuards.positive('x'), implicit_return=True)
+@guarded_expression(not_none('x'), positive('x'), implicit_return=True)
 def double_with_guards(x):
   x * 2
 
@@ -63,7 +64,7 @@ async def async_double(x):
   x * 2
 
 
-@guarded_expression(CommonGuards.not_none('x'), implicit_return=True)
+@guarded_expression(not_none('x'), implicit_return=True)
 async def async_classify(x):
   await asyncio.sleep(0)
   if x > 0:

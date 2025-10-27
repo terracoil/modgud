@@ -81,7 +81,11 @@ class CommonGuards:
 
     def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
       value = CommonGuards._extract_param(param_name, position, args, kwargs, default)
-      return validator(value) or error_template.format(param_name=param_name, value=value)
+      # Single return point
+      result: Union[bool, str] = True
+      if not validator(value):
+        result = error_template.format(param_name=param_name, value=value)
+      return result
 
     return check
 
@@ -95,16 +99,11 @@ class CommonGuards:
 
     """
 
-    def check_not_empty(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default='')
+    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      # Single return point - delegate to static method
+      return CommonGuards._check_not_empty(param_name, position, args, kwargs)
 
-      # Check if value is empty (works for strings and collections)
-      if hasattr(value, '__len__'):
-        return len(value) > 0 or f'{param_name} cannot be empty'
-
-      return bool(value) or f'{param_name} cannot be empty'
-
-    return check_not_empty
+    return check
 
   @staticmethod
   def not_none(param_name: str = 'parameter', position: int = 0) -> GuardFunction:
@@ -146,11 +145,11 @@ class CommonGuards:
 
     """
 
-    def check_in_range(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=min_val - 1)
-      return min_val <= value <= max_val or f'{param_name} must be between {min_val} and {max_val}'
+    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      # Single return point - delegate to static method
+      return CommonGuards._check_in_range(min_val, max_val, param_name, position, args, kwargs)
 
-    return check_in_range
+    return check
 
   @staticmethod
   def type_check(
@@ -165,13 +164,11 @@ class CommonGuards:
 
     """
 
-    def check_type(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
-      return (
-        isinstance(value, expected_type) or f'{param_name} must be of type {expected_type.__name__}'
-      )
+    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      # Single return point - delegate to static method
+      return CommonGuards._check_type(expected_type, param_name, position, args, kwargs)
 
-    return check_type
+    return check
 
   @staticmethod
   def matches_pattern(
@@ -186,11 +183,11 @@ class CommonGuards:
 
     """
 
-    def check_pattern(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = str(CommonGuards._extract_param(param_name, position, args, kwargs, default=''))
-      return re.match(pattern, value) is not None or f'{param_name} must match pattern {pattern}'
+    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      # Single return point - delegate to static method
+      return CommonGuards._check_pattern(pattern, param_name, position, args, kwargs)
 
-    return check_pattern
+    return check
 
   @staticmethod
   def valid_file_path(
@@ -211,26 +208,13 @@ class CommonGuards:
 
     """
 
-    def check_file_path(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      # Single return point - delegate to static method
+      return CommonGuards._check_file_path(
+        param_name, position, must_exist, must_be_file, must_be_dir, args, kwargs
+      )
 
-      if value is None:
-        return f'{param_name} is required'
-
-      path = Path(value)
-
-      if must_exist and not path.exists():
-        return f'{param_name} does not exist: {value}'
-
-      if must_be_file and not path.is_file():
-        return f'{param_name} must be a file: {value}'
-
-      if must_be_dir and not path.is_dir():
-        return f'{param_name} must be a directory: {value}'
-
-      return True
-
-    return check_file_path
+    return check
 
   @staticmethod
   def valid_url(
@@ -245,23 +229,11 @@ class CommonGuards:
 
     """
 
-    def check_url(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      # Single return point - delegate to static method
+      return CommonGuards._check_url(param_name, position, require_scheme, args, kwargs)
 
-      if value is None:
-        return f'{param_name} is required'
-
-      parsed = urlparse(str(value))
-
-      if require_scheme and not parsed.scheme:
-        return f'{param_name} must include a scheme (http/https): {value}'
-
-      if not parsed.netloc and not parsed.path:
-        return f'{param_name} is not a valid URL: {value}'
-
-      return True
-
-    return check_url
+    return check
 
   @staticmethod
   def valid_enum(
@@ -276,28 +248,165 @@ class CommonGuards:
 
     """
 
-    def check_enum(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+      # Single return point - delegate to static method
+      return CommonGuards._check_enum(enum_class, param_name, position, args, kwargs)
 
-      if value is None:
-        return f'{param_name} is required'
+    return check
 
-      # Check if value is already an enum instance
-      if isinstance(value, enum_class):
-        return True
+  # ============= Private Static Check Methods =============
+  # These methods implement the actual validation logic with single return point
 
+  @staticmethod
+  def _check_not_empty(
+    param_name: str,
+    position: Optional[int],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+  ) -> Union[bool, str]:
+    """Check if parameter is not empty (single return point)."""
+    value = CommonGuards._extract_param(param_name, position, args, kwargs, default='')
+    result: Union[bool, str] = True
+
+    # Check if value is empty (works for strings and collections)
+    if hasattr(value, '__len__'):
+      if len(value) == 0:
+        result = f'{param_name} cannot be empty'
+    elif not bool(value):
+      result = f'{param_name} cannot be empty'
+
+    return result
+
+  @staticmethod
+  def _check_in_range(
+    min_val: float,
+    max_val: float,
+    param_name: str,
+    position: int,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+  ) -> Union[bool, str]:
+    """Check if parameter is within range (single return point)."""
+    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=min_val - 1)
+    result: Union[bool, str] = True
+
+    if not (min_val <= value <= max_val):
+      result = f'{param_name} must be between {min_val} and {max_val}'
+
+    return result
+
+  @staticmethod
+  def _check_type(
+    expected_type: type,
+    param_name: str,
+    position: int,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+  ) -> Union[bool, str]:
+    """Check if parameter matches expected type (single return point)."""
+    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    result: Union[bool, str] = True
+
+    if not isinstance(value, expected_type):
+      result = f'{param_name} must be of type {expected_type.__name__}'
+
+    return result
+
+  @staticmethod
+  def _check_pattern(
+    pattern: str,
+    param_name: str,
+    position: int,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+  ) -> Union[bool, str]:
+    """Check if parameter matches regex pattern (single return point)."""
+    value = str(CommonGuards._extract_param(param_name, position, args, kwargs, default=''))
+    result: Union[bool, str] = True
+
+    if re.match(pattern, value) is None:
+      result = f'{param_name} must match pattern {pattern}'
+
+    return result
+
+  @staticmethod
+  def _check_file_path(
+    param_name: str,
+    position: int,
+    must_exist: bool,
+    must_be_file: bool,
+    must_be_dir: bool,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+  ) -> Union[bool, str]:
+    """Check if parameter is a valid file path (single return point)."""
+    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    result: Union[bool, str] = True
+
+    if value is None:
+      result = f'{param_name} is required'
+    else:
+      path = Path(value)
+      if must_exist and not path.exists():
+        result = f'{param_name} does not exist: {value}'
+      elif must_be_file and not path.is_file():
+        result = f'{param_name} must be a file: {value}'
+      elif must_be_dir and not path.is_dir():
+        result = f'{param_name} must be a directory: {value}'
+
+    return result
+
+  @staticmethod
+  def _check_url(
+    param_name: str,
+    position: int,
+    require_scheme: bool,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+  ) -> Union[bool, str]:
+    """Check if parameter is a valid URL (single return point)."""
+    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    result: Union[bool, str] = True
+
+    if value is None:
+      result = f'{param_name} is required'
+    else:
+      parsed = urlparse(str(value))
+      if require_scheme and not parsed.scheme:
+        result = f'{param_name} must include a scheme (http/https): {value}'
+      elif not parsed.netloc and not parsed.path:
+        result = f'{param_name} is not a valid URL: {value}'
+
+    return result
+
+  @staticmethod
+  def _check_enum(
+    enum_class: type[Enum],
+    param_name: str,
+    position: int,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+  ) -> Union[bool, str]:
+    """Check if parameter is a valid enum value (single return point)."""
+    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    result: Union[bool, str] = True
+
+    if value is None:
+      result = f'{param_name} is required'
+    elif isinstance(value, enum_class):
+      # Value is already an enum instance
+      pass  # result stays True
+    elif isinstance(value, str):
       # Try to convert string to enum
-      if isinstance(value, str):
-        try:
-          enum_class(value)
-          return True
-        except ValueError:
-          valid_values = [e.value for e in enum_class]
-          return f'{param_name} must be one of {valid_values}: got {value}'
+      try:
+        enum_class(value)
+      except ValueError:
+        valid_values = [e.value for e in enum_class]
+        result = f'{param_name} must be one of {valid_values}: got {value}'
+    else:
+      result = f'{param_name} must be a valid {enum_class.__name__} value'
 
-      return f'{param_name} must be a valid {enum_class.__name__} value'
-
-    return check_enum
+    return result
 
 
 def _register_common_guards() -> None:

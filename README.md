@@ -56,14 +56,14 @@ Multiple return points everywhere. Business logic buried at the bottom. Error ha
 **modgud** gives you guard clauses and expression-oriented programming in Python:
 
 ```python
-from modgud import guarded_expression, CommonGuards
+from modgud import guarded_expression, positive, type_check, in_range, not_empty
 
 @guarded_expression(
-    CommonGuards.positive("user_id"),
-    CommonGuards.type_check(int, "user_id"),
-    CommonGuards.positive("amount"),
-    CommonGuards.in_range(1, 10000, "amount"),
-    CommonGuards.not_empty("payment_method"),
+    positive("user_id"),
+    type_check(int, "user_id"),
+    positive("amount"),
+    in_range(1, 10000, "amount"),
+    not_empty("payment_method"),
     lambda pm: pm in ["card", "bank", "crypto"] or "Invalid payment method",
     on_error={"success": False, "error": "Validation failed"}
 )
@@ -100,9 +100,11 @@ def withdraw(account_id, amount):
 
 **After:**
 ```python
+from modgud import guarded_expression, not_none, positive
+
 @guarded_expression(
-    CommonGuards.not_none("account_id"),
-    CommonGuards.positive("amount"),
+    not_none("account_id"),
+    positive("amount"),
     lambda account_id, amount: amount <= get_balance(account_id) or "Insufficient funds"
 )
 def withdraw(account_id, amount):
@@ -128,7 +130,9 @@ def classify_user(age, premium):
 
 **After:**
 ```python
-@guarded_expression(CommonGuards.positive("age"))
+from modgud import guarded_expression, positive
+
+@guarded_expression(positive("age"))
 def classify_user(age, premium):
     if age < 18:
         "minor"
@@ -151,15 +155,15 @@ Guards handle early exits. Your function handles business logic. Separation of c
 Stop writing the same validations over and over:
 
 ```python
-from modgud import CommonGuards
+from modgud import guarded_expression, not_none, matches_pattern, positive, in_range, not_empty, type_check
 
 @guarded_expression(
-    CommonGuards.not_none("email"),
-    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
-    CommonGuards.positive("age"),
-    CommonGuards.in_range(13, 120, "age"),
-    CommonGuards.not_empty("username"),
-    CommonGuards.type_check(str, "username")
+    not_none("email"),
+    matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
+    positive("age"),
+    in_range(13, 120, "age"),
+    not_empty("username"),
+    type_check(str, "username")
 )
 def register_user(email, age, username):
     user_id = create_user_record(email, age, username)
@@ -183,8 +187,10 @@ Your code, your rules. Choose how guards fail:
 
 **Return custom values:**
 ```python
+from modgud import guarded_expression, positive
+
 @guarded_expression(
-    CommonGuards.positive("amount"),
+    positive("amount"),
     on_error={"error": "Invalid amount", "code": 400}
 )
 def process(amount):
@@ -193,8 +199,10 @@ def process(amount):
 
 **Raise exceptions:**
 ```python
+from modgud import guarded_expression, not_empty
+
 @guarded_expression(
-    CommonGuards.not_empty("username"),
+    not_empty("username"),
     on_error=ValueError
 )
 def create_account(username):
@@ -242,11 +250,11 @@ pip install modgud
 ### Your First Guarded Function
 
 ```python
-from modgud import guarded_expression, CommonGuards
+from modgud import guarded_expression, positive, in_range
 
 @guarded_expression(
-    CommonGuards.positive("x"),
-    CommonGuards.in_range(1, 100, "x")
+    positive("x"),
+    in_range(1, 100, "x")
 )
 def calculate_discount(x):
     if x >= 50:
@@ -314,14 +322,16 @@ def create_user(email, age, username, password):
 **With modgud:**
 
 ```python
+from modgud import guarded_expression, not_empty, matches_pattern, type_check, in_range
+
 @guarded_expression(
-    CommonGuards.not_empty("email"),
-    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
-    CommonGuards.type_check(int, "age"),
-    CommonGuards.in_range(13, 120, "age"),
-    CommonGuards.not_empty("username"),
+    not_empty("email"),
+    matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
+    type_check(int, "age"),
+    in_range(13, 120, "age"),
+    not_empty("username"),
     lambda username: 3 <= len(username) <= 20 or "Username must be 3-20 chars",
-    CommonGuards.not_empty("password"),
+    not_empty("password"),
     on_error={"status": 400, "error": "Validation failed"}
 )
 def create_user(email, age, username, password):
@@ -422,9 +432,11 @@ With modgud, Python developers can finally write in an expression-oriented style
 
 ```python
 # Complex business logic, expression style
+from modgud import guarded_expression, not_none, positive
+
 @guarded_expression(
-    CommonGuards.not_none("order"),
-    CommonGuards.positive("discount_rate")
+    not_none("order"),
+    positive("discount_rate")
 )
 def calculate_final_price(order, discount_rate, is_premium):
     base_price = order.total

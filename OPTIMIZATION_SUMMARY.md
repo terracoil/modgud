@@ -32,7 +32,7 @@ if guard_result is not True:
 
 ```python
 def check_not_empty(*args: Any, **kwargs: Any) -> Union[bool, str]:
-  value = CommonGuards._extract_param(param_name, position, args, kwargs, default='')
+  value = _extract_param(param_name, position, args, kwargs, default='')
   is_valid = len(value) > 0 if hasattr(value, '__len__') else bool(value)
   return is_valid or f'{param_name} cannot be empty'
 ```
@@ -98,9 +98,11 @@ Provides pre-built guard functions through the CommonGuards class for
 common validation patterns like not_none, positive, in_range, etc.
 
 Example:
+    from modgud import guarded_expression, not_none, positive
+
     @guarded_expression(
-        CommonGuards.not_none("user_id"),
-        CommonGuards.positive("amount")
+        not_none("user_id"),
+        positive("amount")
     )
     def process_payment(user_id, amount):
         {"status": "success"}
