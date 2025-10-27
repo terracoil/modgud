@@ -18,7 +18,6 @@ from .errors import (
 
 
 class _NoExplicitReturnChecker(ast.NodeVisitor):
-
   """Check for explicit return statements in top-level function body.
 
   Ensures no explicit `return` appears in the *top-level* body of the decorated
@@ -29,23 +28,22 @@ class _NoExplicitReturnChecker(ast.NodeVisitor):
   def __init__(self) -> None:
     self.found: Optional[Tuple[int, int]] = None  # (lineno, col)
 
-  def visit_Return(self, node: ast.Return) -> None:  # type: ignore[override]
+  def visit_Return(self, node: ast.Return) -> None:
     # If we are called, it means we're at top-level (we never recurse into nested defs)
     self.found = (getattr(node, 'lineno', 0), getattr(node, 'col_offset', 0))
 
   # Block traversal into nested defs/lambdas
-  def visit_FunctionDef(self, node: ast.FunctionDef) -> None:  # type: ignore[override]
+  def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
     return
 
-  def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:  # type: ignore[override]
+  def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
     return
 
-  def visit_Lambda(self, node: ast.Lambda) -> None:  # type: ignore[override]
+  def visit_Lambda(self, node: ast.Lambda) -> None:
     return
 
 
 class _TailRewriter:
-
   """Rewrite tail positions to assign to implicit result variable.
 
   Rewrites *tail positions* (the final statement of a block that determines the
@@ -112,11 +110,13 @@ class _TailRewriter:
       return [stmt]
 
     if isinstance(stmt, ast.Pass):
-      raise MissingImplicitReturnError(
-        'Pass statement cannot yield a value.',
-        getattr(stmt, 'lineno', None),
-        getattr(stmt, 'col_offset', None),
-      )
+      # Pass statement yields None (mimics Python's implicit return None)
+      return [self._assign(ast.Constant(value=None))]
+
+    if isinstance(stmt, ast.Raise):
+      # Raise statement doesn't produce a value, but that's OK - execution transfers
+      # We assign None before the raise so the variable is always initialized
+      return [self._assign(ast.Constant(value=None)), stmt]
 
     raise UnsupportedConstructError(
       f'Unsupported tail construct: {type(stmt).__name__}',
@@ -126,7 +126,8 @@ class _TailRewriter:
 
   def rewrite_block(self, body: List[ast.stmt]) -> List[ast.stmt]:
     if not body:
-      raise MissingImplicitReturnError('Empty block where a value is required.')
+      # Empty block yields None (mimics Python's implicit return None)
+      return [self._assign(ast.Constant(value=None))]
     *init, last = body
     new_last = self.rewrite_tail_stmt(last)
     return [*init, *new_last]
@@ -178,7 +179,31 @@ class ImplicitReturnTransformer:
 
     result_name = '__implicit_result'
     rewriter = _TailRewriter(result_name)
-    new_body = rewriter.rewrite_block(body)
+
+    # Skip docstring if it's the first statement
+    actual_body = body
+    docstring_stmt = None
+    if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
+      if isinstance(body[0].value.value, str):
+        # First statement is a docstring, skip it
+        docstring_stmt = body[0]
+        actual_body = body[1:]
+
+    # Transform the actual body (excluding docstring)
+    if actual_body:
+      new_body = rewriter.rewrite_block(actual_body)
+    else:
+      # Only docstring, no actual code - return None
+      new_body = [
+        ast.Assign(
+          targets=[ast.Name(id=result_name, ctx=ast.Store())], value=ast.Constant(value=None)
+        )
+      ]
+
+    # Prepend docstring if it existed
+    if docstring_stmt:
+      new_body.insert(0, docstring_stmt)
+
     # Append the single return
     new_body.append(ast.Return(value=ast.Name(id=result_name, ctx=ast.Load())))
     fn_node.body = new_body
@@ -218,18 +243,18 @@ class _TopLevelTransformer(ast.NodeTransformer):
   Strips all decorators to prevent re-application during exec.
   """
 
-  def __init__(self, target_name: str, transformer_cls: type) -> None:
+  def __init__(self, target_name: str, transformer_cls: type[ImplicitReturnTransformer]) -> None:
     self.target_name = target_name
     self.transformer_cls = transformer_cls
     super().__init__()
 
-  def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:  # type: ignore[override]
+  def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:
     if node.name == self.target_name:
       node.decorator_list = []
       return self.transformer_cls.transform_function_ast(node, node.name)
     return node
 
-  def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:  # type: ignore[override]
+  def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:
     if node.name == self.target_name:
       node.decorator_list = []
       return self.transformer_cls.transform_function_ast(node, node.name)

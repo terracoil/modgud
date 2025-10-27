@@ -5,7 +5,6 @@ from enum import Enum
 from pathlib import Path
 
 import pytest
-
 from modgud import CommonGuards, guarded_expression
 from modgud.guarded_expression.errors import GuardClauseError
 
@@ -24,10 +23,10 @@ class TestValidFilePathGuard:
         CommonGuards.valid_file_path('filepath', must_be_file=True), implicit_return=False
       )
       def process_file(filepath: str):
-        return f"Processing {filepath}"
+        return f'Processing {filepath}'
 
       result = process_file(tmp_path)
-      assert "Processing" in result
+      assert 'Processing' in result
     finally:
       Path(tmp_path).unlink()
 
@@ -36,7 +35,7 @@ class TestValidFilePathGuard:
 
     @guarded_expression(CommonGuards.valid_file_path('filepath'), implicit_return=False)
     def process_file(filepath: str):
-      return f"Processing {filepath}"
+      return f'Processing {filepath}'
 
     with pytest.raises(GuardClauseError, match='does not exist'):
       process_file('/nonexistent/path/to/file.txt')
@@ -49,10 +48,10 @@ class TestValidFilePathGuard:
         CommonGuards.valid_file_path('dirpath', must_be_dir=True), implicit_return=False
       )
       def process_dir(dirpath: str):
-        return f"Processing {dirpath}"
+        return f'Processing {dirpath}'
 
       result = process_dir(tmp_dir)
-      assert "Processing" in result
+      assert 'Processing' in result
 
   def test_file_when_directory_required_fails(self):
     """Test guard fails when file provided but directory required."""
@@ -65,7 +64,7 @@ class TestValidFilePathGuard:
         CommonGuards.valid_file_path('dirpath', must_be_dir=True), implicit_return=False
       )
       def process_dir(dirpath: str):
-        return f"Processing {dirpath}"
+        return f'Processing {dirpath}'
 
       with pytest.raises(GuardClauseError, match='must be a directory'):
         process_dir(tmp_path)
@@ -79,10 +78,10 @@ class TestValidFilePathGuard:
       CommonGuards.valid_file_path('filepath', must_exist=False), implicit_return=False
     )
     def create_file(filepath: str):
-      return f"Creating {filepath}"
+      return f'Creating {filepath}'
 
     result = create_file('/path/to/new/file.txt')
-    assert "Creating" in result
+    assert 'Creating' in result
 
 
 class TestValidUrlGuard:
@@ -93,27 +92,27 @@ class TestValidUrlGuard:
 
     @guarded_expression(CommonGuards.valid_url('url'), implicit_return=False)
     def fetch_url(url: str):
-      return f"Fetching {url}"
+      return f'Fetching {url}'
 
     result = fetch_url('http://example.com')
-    assert "Fetching" in result
+    assert 'Fetching' in result
 
   def test_valid_https_url(self):
     """Test guard passes for valid HTTPS URL."""
 
     @guarded_expression(CommonGuards.valid_url('url'), implicit_return=False)
     def fetch_url(url: str):
-      return f"Fetching {url}"
+      return f'Fetching {url}'
 
     result = fetch_url('https://example.com/path?query=value')
-    assert "Fetching" in result
+    assert 'Fetching' in result
 
   def test_url_without_scheme_fails(self):
     """Test guard fails for URL without scheme when require_scheme=True."""
 
     @guarded_expression(CommonGuards.valid_url('url', require_scheme=True), implicit_return=False)
     def fetch_url(url: str):
-      return f"Fetching {url}"
+      return f'Fetching {url}'
 
     with pytest.raises(GuardClauseError, match='must include a scheme'):
       fetch_url('example.com')
@@ -123,17 +122,17 @@ class TestValidUrlGuard:
 
     @guarded_expression(CommonGuards.valid_url('url', require_scheme=False), implicit_return=False)
     def fetch_url(url: str):
-      return f"Fetching {url}"
+      return f'Fetching {url}'
 
     result = fetch_url('example.com/path')
-    assert "Fetching" in result
+    assert 'Fetching' in result
 
   def test_invalid_url_fails(self):
     """Test guard fails for completely invalid URL."""
 
     @guarded_expression(CommonGuards.valid_url('url'), implicit_return=False)
     def fetch_url(url: str):
-      return f"Fetching {url}"
+      return f'Fetching {url}'
 
     with pytest.raises(GuardClauseError, match='must include a scheme'):
       fetch_url('   ')
@@ -152,10 +151,10 @@ class TestValidEnumGuard:
 
     @guarded_expression(CommonGuards.valid_enum(Color, 'color'), implicit_return=False)
     def set_color(color: str):
-      return f"Color set to {color}"
+      return f'Color set to {color}'
 
     result = set_color('red')
-    assert "Color set to" in result
+    assert 'Color set to' in result
 
   def test_enum_instance_passes(self):
     """Test guard passes when enum instance provided."""
@@ -166,10 +165,10 @@ class TestValidEnumGuard:
 
     @guarded_expression(CommonGuards.valid_enum(Status, 'status'), implicit_return=False)
     def set_status(status):
-      return f"Status: {status.value if isinstance(status, Status) else status}"
+      return f'Status: {status.value if isinstance(status, Status) else status}'
 
     result = set_status(Status.ACTIVE)
-    assert "active" in result
+    assert 'active' in result
 
   def test_invalid_enum_value_fails(self):
     """Test guard fails for invalid enum value."""
@@ -181,7 +180,7 @@ class TestValidEnumGuard:
 
     @guarded_expression(CommonGuards.valid_enum(Priority, 'priority'), implicit_return=False)
     def set_priority(priority: str):
-      return f"Priority: {priority}"
+      return f'Priority: {priority}'
 
     with pytest.raises(GuardClauseError, match='must be one of'):
       set_priority('urgent')
@@ -195,7 +194,7 @@ class TestValidEnumGuard:
 
     @guarded_expression(CommonGuards.valid_enum(Mode, 'mode'), implicit_return=False)
     def set_mode(mode: str):
-      return f"Mode: {mode}"
+      return f'Mode: {mode}'
 
     with pytest.raises(GuardClauseError, match='is required'):
       set_mode(None)
@@ -238,10 +237,10 @@ class TestCombinedGuards:
       implicit_return=False,
     )
     def call_api(api_url: str):
-      return f"Calling {api_url}"
+      return f'Calling {api_url}'
 
     result = call_api('https://api.example.com/endpoint')
-    assert "Calling" in result
+    assert 'Calling' in result
 
     # Valid URL but wrong pattern
     with pytest.raises(GuardClauseError, match='must match pattern'):

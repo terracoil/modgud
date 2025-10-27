@@ -8,6 +8,13 @@ Primary API:
 """
 
 from .guarded_expression import CommonGuards, guarded_expression
+from .guarded_expression.errors import (
+  ExplicitReturnDisallowedError,
+  GuardClauseError,
+  ImplicitReturnError,
+  MissingImplicitReturnError,
+  UnsupportedConstructError,
+)
 from .guarded_expression.guard_registry import (
   get_guard,
   get_registry,
@@ -16,13 +23,6 @@ from .guarded_expression.guard_registry import (
   list_guard_namespaces,
   register_guard,
   unregister_guard,
-)
-from .guarded_expression.errors import (
-  ExplicitReturnDisallowedError,
-  GuardClauseError,
-  ImplicitReturnError,
-  MissingImplicitReturnError,
-  UnsupportedConstructError,
 )
 
 __version__ = '0.2.0'

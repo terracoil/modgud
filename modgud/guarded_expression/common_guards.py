@@ -14,7 +14,6 @@ from .types import GuardFunction
 
 
 class CommonGuards:
-
   """Pre-defined common guard clauses.
 
   Usage:
@@ -28,7 +27,11 @@ class CommonGuards:
 
   @staticmethod
   def _extract_param(
-    param_name: str, position: Optional[int], args: tuple, kwargs: dict, default: Any = None
+    param_name: str,
+    position: Optional[int],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    default: Any = None,
   ) -> Any:
     """Extract parameter value from args or kwargs.
 
@@ -207,7 +210,9 @@ class CommonGuards:
     return check_file_path
 
   @staticmethod
-  def valid_url(param_name: str = 'url', position: int = 0, require_scheme: bool = True) -> GuardFunction:
+  def valid_url(
+    param_name: str = 'url', position: int = 0, require_scheme: bool = True
+  ) -> GuardFunction:
     """Guard ensuring parameter is a valid URL.
 
     Args:

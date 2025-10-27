@@ -4,7 +4,7 @@ Allows external packages to register custom guard validators that can be
 accessed through the CommonGuards interface or separately.
 """
 
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Callable, Dict, Optional
 
 from .types import GuardFunction
 
@@ -17,7 +17,7 @@ class GuardRegistry:
   for organizational purposes.
   """
 
-  def __init__(self):
+  def __init__(self) -> None:
     """Initialize the guard registry."""
     self._guards: Dict[str, Callable[..., GuardFunction]] = {}
     self._namespaces: Dict[str, Dict[str, Callable[..., GuardFunction]]] = {}
@@ -53,7 +53,9 @@ class GuardRegistry:
         raise ValueError(f"Guard '{name}' is already registered in namespace '{namespace}'")
       self._namespaces[namespace][name] = guard_factory
 
-  def get(self, name: str, namespace: Optional[str] = None) -> Optional[Callable[..., GuardFunction]]:
+  def get(
+    self, name: str, namespace: Optional[str] = None
+  ) -> Optional[Callable[..., GuardFunction]]:
     """Retrieve a registered guard factory.
 
     Args:

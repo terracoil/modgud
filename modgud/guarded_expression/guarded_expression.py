@@ -13,13 +13,12 @@ from textwrap import dedent
 from typing import Any, Callable, Optional
 
 from .errors import GuardClauseError, UnsupportedConstructError
-from .types import FailureBehavior, GuardFunction
-from .implicit_return import ImplicitReturnTransformer
 from .guard_runtime import GuardRuntime
+from .implicit_return import ImplicitReturnTransformer
+from .types import FailureBehavior, GuardFunction
 
 
 class guarded_expression:
-
   """Unified decorator combining guard clauses with optional implicit return.
 
   Guards are callables that return True (pass) or a string error message (fail).

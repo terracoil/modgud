@@ -1,19 +1,14 @@
 """Tests for custom guard registration system."""
 
 import pytest
-
 from modgud import (
   get_guard,
   get_registry,
   guarded_expression,
-  has_custom_guard,
-  list_custom_guards,
-  list_guard_namespaces,
   register_guard,
-  unregister_guard,
 )
-from modgud.guarded_expression.guard_registry import GuardRegistry
 from modgud.guarded_expression.errors import GuardClauseError
+from modgud.guarded_expression.guard_registry import GuardRegistry
 
 
 class TestGuardRegistry:
@@ -25,7 +20,8 @@ class TestGuardRegistry:
 
     def sample_guard_factory(param_name: str = 'param'):
       def check(*args, **kwargs):
-        return True
+        result = True
+        return result
 
       return check
 
@@ -41,7 +37,8 @@ class TestGuardRegistry:
 
     def sample_guard_factory(param_name: str = 'param'):
       def check(*args, **kwargs):
-        return True
+        result = True
+        return result
 
       return check
 
@@ -58,13 +55,14 @@ class TestGuardRegistry:
 
     def sample_guard_factory():
       def check(*args, **kwargs):
-        return True
+        result = True
+        return result
 
       return check
 
     registry.register('sample_guard', sample_guard_factory)
 
-    with pytest.raises(ValueError, match="already registered"):
+    with pytest.raises(ValueError, match='already registered'):
       registry.register('sample_guard', sample_guard_factory)
 
   def test_unregister_global_guard(self):
@@ -100,7 +98,8 @@ class TestGlobalRegistryFunctions:
     def positive_number_factory(param_name: str = 'num', position: int = 0):
       def check(*args, **kwargs):
         value = args[position] if position < len(args) else kwargs.get(param_name)
-        return value > 0 or f'{param_name} must be positive'
+        result = value > 0 or f'{param_name} must be positive'
+        return result
 
       return check
 

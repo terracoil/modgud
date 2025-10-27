@@ -20,6 +20,24 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 
 **IMPORTANT: Always use `poetry run` prefix** - This is a Poetry project. ALWAYS use `poetry run` before commands like `pytest`, `ruff`, `mypy`, etc. Do NOT use `.venv/bin/` paths directly.
 
+### 🚨 MANDATORY LINTING REQUIREMENT 🚨
+
+**CRITICAL**: You MUST run `bin/devtools build lint --fix` BEFORE:
+- Making ANY code changes
+- Performing code reviews
+- Starting refactoring work.  If there are linting and/or mypy typing issues found, fix those first before refactoring.  
+- Committing changes
+- Creating pull requests
+
+This command runs:
+1. **Ruff linting** - catches code quality issues
+2. **Ruff formatting** - ensures consistent code style
+3. **MyPy type checking** - validates type annotations with strict settings
+
+**FAILURE TO RUN LINTING = INVALID CODE SUBMISSION**
+
+The `--fix` flag automatically corrects fixable issues. If linting fails after auto-fix, you MUST resolve all errors before proceeding. No exceptions.
+
 ### Package Management
 **This is a Poetry project** - use Poetry for all dependency management:
 

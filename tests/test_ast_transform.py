@@ -1,9 +1,13 @@
 """Unit tests for AST transformation logic."""
+
 import ast
 
 import pytest
+from modgud.guarded_expression.errors import (
+  ExplicitReturnDisallowedError,
+  MissingImplicitReturnError,
+)
 from modgud.guarded_expression.implicit_return import ImplicitReturnTransformer
-from modgud.guarded_expression.errors import ExplicitReturnDisallowedError, MissingImplicitReturnError
 
 
 def test_simple_expression_transform():
@@ -13,9 +17,9 @@ def foo():
     x = 10
     x + 5
 """
-  tree, filename = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+  tree, filename = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
   assert isinstance(tree, ast.Module)
-  assert filename == "<foo-implicit>"
+  assert filename == '<foo-implicit>'
 
 
 def test_if_else_transform():
@@ -27,7 +31,7 @@ def foo(x):
     else:
         "negative"
 """
-  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
   assert isinstance(tree, ast.Module)
 
 
@@ -40,7 +44,7 @@ def foo(x):
     except ZeroDivisionError:
         0
 """
-  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
   assert isinstance(tree, ast.Module)
 
 
@@ -51,7 +55,7 @@ def foo():
     return 10
 """
   with pytest.raises(ExplicitReturnDisallowedError):
-    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
 
 
 def test_if_without_else_raises_error():
@@ -62,17 +66,18 @@ def foo(x):
         "positive"
 """
   with pytest.raises(MissingImplicitReturnError):
-    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
 
 
-def test_empty_block_raises_error():
-  """Test that empty block raises error."""
+def test_empty_block_returns_none():
+  """Test that function with only pass returns None gracefully."""
   source = """
 def foo():
     pass
 """
-  with pytest.raises(MissingImplicitReturnError):
-    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+  # Should transform successfully and return None
+  assert isinstance(tree, ast.Module)
 
 
 def test_nested_function_allows_return():
@@ -84,21 +89,22 @@ def outer():
     x = inner()
     x + 5
 """
-  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "outer")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'outer')
   assert isinstance(tree, ast.Module)
 
 
 # Match statement tests (coverage improvement)
-def test_match_empty_case_raises_error():
-  """Test match with empty case body raises error."""
+def test_match_pass_returns_none():
+  """Test match with pass in case body returns None gracefully."""
   source = """
 def foo(x):
     match x:
         case 1:
             pass
 """
-  with pytest.raises(MissingImplicitReturnError, match="Pass statement cannot yield"):
-    ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+  # Should transform successfully, pass case returns None
+  assert isinstance(tree, ast.Module)
 
 
 def test_match_all_cases_transform():
@@ -113,14 +119,14 @@ def foo(x):
         case _:
             "other"
 """
-  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
   # Compile and verify it works
-  code = compile(tree, "<test>", "exec")
+  code = compile(tree, '<test>', 'exec')
   env = {}
   exec(code, env)
-  assert env['foo'](1) == "one"
-  assert env['foo'](2) == "two"
-  assert env['foo'](99) == "other"
+  assert env['foo'](1) == 'one'
+  assert env['foo'](2) == 'two'
+  assert env['foo'](99) == 'other'
 
 
 # Visitor edge case tests (coverage improvement)
@@ -132,10 +138,10 @@ def foo(x):
     result = f(x)
     result * 2
 """
-  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
   assert isinstance(tree, ast.Module)
   # Verify it compiles and works
-  code = compile(tree, "<test>", "exec")
+  code = compile(tree, '<test>', 'exec')
   env = {}
   exec(code, env)
   assert env['foo'](5) == 12
@@ -149,7 +155,7 @@ async def foo(x):
     x + 1
 """
   # async functions should work but not be transformed
-  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
   assert isinstance(tree, ast.Module)
 
 
@@ -166,10 +172,10 @@ def foo(x):
     finally:
         pass
 """
-  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), "foo")
+  tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
   assert isinstance(tree, ast.Module)
   # Verify it compiles and works
-  code = compile(tree, "<test>", "exec")
+  code = compile(tree, '<test>', 'exec')
   env = {}
   exec(code, env)
   assert env['foo'](2) == 3  # No exception, try succeeds (10/2=5), else runs (2+1=3)

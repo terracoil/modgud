@@ -26,6 +26,11 @@ select = [
     "I",   # isort - import sorting and organization
 ]
 
+[lint.per-file-ignores]
+# Test fixtures intentionally have useless expressions (for implicit return testing)
+# and non-top-level imports, and don't need docstrings
+"tests/test_fixtures.py" = ["B018", "D103", "E402"]
+
 [format]
 # Format docstrings to have a consistent code block
 docstring-code-format = true

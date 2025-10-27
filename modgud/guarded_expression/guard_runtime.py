@@ -17,7 +17,7 @@ class GuardRuntime:
 
   @classmethod
   def check_guards(
-    cls, guards: Tuple[GuardFunction, ...], args: Tuple[Any, ...], kwargs: dict
+    cls, guards: Tuple[GuardFunction, ...], args: Tuple[Any, ...], kwargs: dict[str, Any]
   ) -> Optional[str]:
     """Evaluate all guards sequentially.
 
@@ -46,7 +46,7 @@ class GuardRuntime:
     on_error: FailureBehavior,
     func_name: str,
     args: Tuple[Any, ...],
-    kwargs: dict,
+    kwargs: dict[str, Any],
     log_enabled: bool,
   ) -> Tuple[Any, Optional[BaseException]]:
     """Handle guard failure based on on_error configuration.

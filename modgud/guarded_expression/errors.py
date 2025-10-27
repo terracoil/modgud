@@ -25,9 +25,9 @@ class ImplicitReturnError(SyntaxError):
     """
     super().__init__(message)
     if lineno is not None:
-      self.lineno = lineno  # type: ignore[attr-defined]
+      self.lineno = lineno
     if col_offset is not None:
-      self.offset = col_offset  # type: ignore[attr-defined]
+      self.offset = col_offset
 
 
 class ExplicitReturnDisallowedError(ImplicitReturnError):

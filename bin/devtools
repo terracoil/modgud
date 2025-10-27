@@ -150,12 +150,13 @@ class FreyjaDevTools:
           parent._print("Development environment setup complete!", 'success')
           print()
           print("Available commands:")
-          print("  python bin/dev-tools build compile     # Compile/build package")
-          print("  python bin/dev-tools build lint        # Run linters")
-          print("  python bin/dev-tools test run          # Run tests")
-          print("  python bin/dev-tools build autocommit  # Commit changes with Claude-generated message")
-          print("  python bin/dev-tools build tag-version    # Create git tag for HEAD commit")
-          print("  python bin/dev-tools build publish     # Publish to PyPI")
+          print("  python bin/devtools build compile      # Compile/build package")
+          print("  python bin/devtools build lint         # Run linters (ruff + mypy)")
+          print("  python bin/devtools build lint --fix   # Auto-fix linting issues")
+          print("  python bin/devtools test run           # Run tests with coverage")
+          print("  python bin/devtools build autocommit   # Commit changes with Claude-generated message")
+          print("  python bin/devtools build tag-version  # Create git tag for HEAD commit")
+          print("  python bin/devtools build publish      # Publish to PyPI")
         else:
           parent._print("Failed to install pre-commit hooks", 'error')
       else:
@@ -267,26 +268,27 @@ class FreyjaDevTools:
 
       success: bool = True
 
-      # Run Ruff
+      # Run Ruff linting
       ruff_cmd = "poetry run ruff check ."
       if fix:
         ruff_cmd += " --fix"
-      if not parent._run_command(ruff_cmd, "📝 Running Ruff..."):
+      if not parent._run_command(ruff_cmd, "📝 Running Ruff linting..."):
         success = False
 
-      # Run Black
-      black_cmd = "poetry run black ."
+      # Run Ruff formatting
+      ruff_format_cmd = "poetry run ruff format ."
       if not fix:
-        black_cmd += " --check"
-      if not parent._run_command(black_cmd, "⚫ Running Black..."):
+        ruff_format_cmd += " --check"
+      if not parent._run_command(ruff_format_cmd, "🎨 Running Ruff formatting..."):
         success = False
 
-      # Run MyPy
-      if not parent._run_command(f"poetry run mypy {parent.project_name} --ignore-missing-imports", "🔧 Running MyPy..."):
-        success = False
-
-      # Run Pylint
-      if not parent._run_command(f"poetry run pylint {parent.project_name}", "🐍 Running Pylint..."):
+      # Run MyPy with strict type checking
+      mypy_cmd = f"poetry run mypy {parent.project_name}"
+      # Generate reports if directories exist
+      reports_dir = parent.project_root / "reports" / "mypy"
+      if reports_dir.exists():
+        mypy_cmd += f" --html-report {reports_dir} --linecount-report {reports_dir} --linecoverage-report {reports_dir}"
+      if not parent._run_command(mypy_cmd, "🔧 Running MyPy type checking..."):
         success = False
 
       if success:
@@ -373,7 +375,7 @@ class FreyjaDevTools:
       parent._print("🤖 Generating commit message with Claude...", 'info')
       commit_message: Optional[str] = None
       result = parent._run_command(
-        ['claude', '-p', 'Review the git changes and generate ONLY a clean git commit message. Return the commit message as plain text with no markdown formatting, no code blocks, no preamble, and no explanatory text. The message should follow conventional commit format with a clear subject line and detailed body. Do not mention Claude, AI, or co-authorship.'],
+        ['claude', '-p', 'You are a git commit message generator. Output ONLY the commit message, nothing else.\n\nRules:\n- NO preamble like "Here\'s the message" or "Based on the changes"\n- NO markdown code blocks\n- NO explanations before or after\n- NO mentions of AI, Claude, or automated generation\n- First line: short summary (50-72 chars) following conventional commits format (type: description)\n- Blank line\n- Body: detailed explanation of WHAT changed and WHY\n\nYour response must START with the commit type (feat:/fix:/refactor:/etc). Example:\n\nfeat: add user authentication\n\nImplemented JWT-based authentication with refresh tokens.\nAdded middleware for protected routes.\n\nNow analyze the git changes and output ONLY the commit message:'],
         capture_output=True
       )
       if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
@@ -389,9 +391,11 @@ class FreyjaDevTools:
           # Skip lines that look like explanations
           filtered_lines = []
           skip_patterns = [
-            r'^(I need to|Here\'s|This|The changes|Let me)',
+            r'^(I need to|Here\'s|This|The changes|Let me|Based on)',
+            r'.*generate.*commit.*message',  # Catches "I can now generate a clean commit message"
             r'^\*\*',  # Markdown headers
             r'^-',     # Bullet points at start
+            r'^#',     # Markdown headers
           ]
 
           capturing = False
