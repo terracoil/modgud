@@ -8,12 +8,14 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 
 **IMPORTANT: This is a NEW project with NO existing users. No backward compatibility requirements. Breaking changes are acceptable. Clean, simple architecture is prioritized over legacy support.**
 
-**Core Architecture (v0.2.0):**
+**Core Architecture (v0.4.0 - LPA):**
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
 - **Implicit return by default**: `implicit_return=True` enables Ruby-style expression-oriented code
 - **GuardClauseError by default**: `on_error=GuardClauseError` raises exception on guard failure
 - **Failure handling**: Configurable via `on_error` parameter (exception classes, custom values, callables)
-- **Pre-built guards**: Standard validation patterns available as individual functions (not_none, positive, type_check, etc.)
+- **Pre-built guards**: `CommonGuards` class provides standard validation patterns (not_none, positive, type_check, etc.)
+- **Layered Ports Architecture (LPA)**: Ports at every layer boundary (Domain↔Infrastructure and Infrastructure↔Application)
+- **Strict Layer Isolation**: Application imports ONLY from Infrastructure gateway, never from Domain
 - **NO LEGACY SUPPORT NEEDED**: Old `guard_clause` and `implicit_return` packages should be removed, not maintained as wrappers
 
 ## Development Commands
@@ -91,30 +93,42 @@ poetry run twine check dist/*
 
 ## Code Architecture
 
-### Core Module Structure (v0.3.0 - LPA-Lite Architecture)
+### Core Module Structure (v0.4.0 - LPA)
 
-modgud follows a simplified 3-layer Layered Ports Architecture (LPA-Lite) for clear separation of concerns and dependency management.
+modgud follows a 3-layer Layered Ports Architecture (LPA) with ports at every layer boundary for maximum flexibility and testability.
 
 **Layer 1 - Domain (Innermost):**
-- `modgud/domain/` - Core types, errors, and port interfaces
+- `modgud/domain/` - Core types, errors, messages, and port definitions
   - `types.py` - Type definitions (`GuardFunction`, `FailureBehavior`)
   - `errors.py` - All exception classes (`GuardClauseError`, `ImplicitReturnError`, etc.)
-  - `messages.py` - Error message constants
-  - `ports.py` - Port interfaces (`GuardCheckerPort`, `AstTransformerPort`)
+  - `messages.py` - Error message constants and info messages
+  - `ports/` - Port interfaces that Infrastructure must implement
+    - `guard_checker_port.py` - `GuardCheckerPort` interface
+    - `ast_transformer_port.py` - `AstTransformerPort` interface
 
-**Layer 2 - Infrastructure:**
-- `modgud/infrastructure/` - System boundaries and AST transformation
-  - `ast_transformer.py` - AST transformation implementation (implements `AstTransformerPort`)
+**Layer 2 - Infrastructure (Middle):**
+- `modgud/infrastructure/` - System boundaries, services, and adapters
+  - `ports/` - Port interfaces that Application uses
+    - `guard_service_port.py` - `GuardServicePort` interface
+    - `transform_service_port.py` - `TransformServicePort` interface
+    - `validation_service_port.py` - `ValidationServicePort` interface
+  - `services/` - Service implementations (implement infrastructure ports)
+    - `guard_service.py` - Guard validation service
+    - `transform_service.py` - AST transformation service
+    - `validation_service.py` - Validation orchestration service
+  - `adapters/` - Low-level implementations (implement domain ports)
+    - `guard_checker.py` - Guard checking adapter (implements `GuardCheckerPort`)
+    - `ast_transformer.py` - AST transformation adapter (implements `AstTransformerPort`)
+  - `__init__.py` - **Infrastructure Gateway** - Re-exports domain types/errors for Application
 
 **Layer 3 - Application (Outermost):**
 - `modgud/application/` - Business logic and decorator orchestration
-  - `decorator.py` - Main `guarded_expression` decorator with dependency injection
-  - `guard_checker.py` - Guard validation logic (implements `GuardCheckerPort`)
+  - `decorator.py` - Main `guarded_expression` decorator (uses infrastructure service ports)
   - `validators.py` - Pre-built guard factories (`CommonGuards` class)
   - `registry.py` - Custom guard registration (`GuardRegistry` class)
 
 **Public API Exports:**
-- `modgud/__init__.py` - Primary exports (`guarded_expression`, guard functions, error classes)
+- `modgud/__init__.py` - Primary exports (`guarded_expression`, `CommonGuards`, error classes)
 
 ### Key Design Patterns
 
@@ -178,29 +192,35 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 - Logging functionality
 - Guard parameter handling (positional vs named)
 - Metadata preservation (__name__, __doc__, __signature__, __annotations__)
-- Legacy compatibility (guard_clause and implicit_return wrappers)
 
 ## Architecture Notes
 
-### LPA-Lite Architecture Principles
+### LPA Architecture Principles
 
-The v0.3.0 refactoring implements a simplified Layered Ports Architecture with clear separation of concerns:
+The v0.4.0 architecture implements Layered Ports Architecture (LPA) with ports at every layer boundary:
 
-1. **Port-Based Boundaries**: Communication between layers uses explicit port interfaces (`GuardCheckerPort`, `AstTransformerPort`)
-2. **Dependency Injection**: The decorator accepts optional port implementations via constructor, defaulting to concrete implementations
-3. **Layered Dependencies**: Dependencies flow inward (Application → Infrastructure → Domain)
-4. **Testability**: Port interfaces enable easy mocking and testing in isolation
-5. **Flexibility**: Can swap implementations without modifying decorator code
+1. **Port Layers**:
+   - Domain defines ports for Infrastructure adapters (`GuardCheckerPort`, `AstTransformerPort`)
+   - Infrastructure defines ports for Application services (`GuardServicePort`, `TransformServicePort`, `ValidationServicePort`)
+2. **Inner Layer Owns Ports**: Following Dependency Inversion Principle, inner layers define ports that outer layers implement
+3. **Strict Layer Isolation**: Application NEVER imports from Domain directly - all imports go through Infrastructure gateway
+4. **Service Layer Pattern**: High-level abstractions (`GuardService`, `TransformService`) simplify Application code
+5. **Adapter Pattern**: Low-level implementations in `infrastructure/adapters/` implement domain ports
+6. **Infrastructure Gateway**: `infrastructure/__init__.py` controls access and re-exports domain types/errors for Application
+7. **Dependency Injection**: Services accept optional port implementations via constructor, defaulting to concrete implementations
+8. **Layered Dependencies**: Dependencies flow strictly inward (Application → Infrastructure → Domain)
+9. **Testability**: Port interfaces at every boundary enable comprehensive mocking and isolated testing
+10. **Flexibility**: Can swap implementations at any boundary without modifying dependent layers
 
 ### Import Examples
 
 **Primary API:**
 ```python
-from modgud import guarded_expression, positive, not_none, type_check, GuardClauseError
+from modgud import guarded_expression, CommonGuards, GuardClauseError
 
 # With guards and implicit return (default behavior)
 @guarded_expression(
-    positive("x"),
+    CommonGuards.positive("x"),
     implicit_return=True,  # default
     on_error=GuardClauseError  # default
 )
@@ -210,9 +230,9 @@ def process(x):
 
 # Multiple guards with different validators
 @guarded_expression(
-    not_none("user"),
-    type_check(str, "name"),
-    positive("amount")
+    CommonGuards.not_none("user"),
+    CommonGuards.type_check(str, "name"),
+    CommonGuards.positive("amount")
 )
 def create_transaction(user, name, amount):
     transaction = Transaction(user, name, amount)
@@ -220,7 +240,7 @@ def create_transaction(user, name, amount):
 
 # Guards only, explicit return
 @guarded_expression(
-    positive("x"),
+    CommonGuards.positive("x"),
     implicit_return=False,
     on_error=None
 )
@@ -232,6 +252,20 @@ def calculate(x):
 def compute(x):
     result = x * 2
     result  # implicit return
+
+# Using infrastructure services directly (advanced usage)
+from modgud.infrastructure import GuardService, TransformService
+
+guard_service = GuardService()
+transform_service = TransformService()
+
+@guarded_expression(
+    CommonGuards.not_none("x"),
+    guard_service=guard_service,
+    transform_service=transform_service
+)
+def advanced_function(x):
+    x * 2
 ```
 
 ### Error Hierarchy

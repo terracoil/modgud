@@ -10,12 +10,12 @@ from __future__ import annotations
 import ast
 from typing import Any, List, Optional, Tuple
 
-from ..domain.errors import (
+from ...domain.errors import (
   ExplicitReturnDisallowedError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from ..domain.ports import AstTransformerPort
+from ...domain.ports import AstTransformerPort
 
 
 class _NoExplicitReturnChecker(ast.NodeVisitor):
@@ -264,7 +264,3 @@ class _TopLevelTransformer(ast.NodeTransformer):
       node.decorator_list = []  # Strip decorators to prevent infinite recursion during exec
       return self.transformer_cls.transform_function_ast(node, node.name)
     return node
-
-
-# Alias for backward compatibility with tests
-ImplicitReturnTransformer = DefaultAstTransformer

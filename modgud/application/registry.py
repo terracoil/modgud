@@ -3,11 +3,13 @@ Custom guard registration system for extending CommonGuards.
 
 Allows external packages to register custom guard validators that can be
 accessed through the CommonGuards interface or separately.
+
+Application layer only imports from infrastructure layer gateway.
 """
 
 from typing import Callable, Dict, Optional
 
-from ..domain.types import GuardFunction
+from ..infrastructure import GuardFunction
 
 
 class GuardRegistry:

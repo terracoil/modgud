@@ -7,7 +7,7 @@ from modgud.domain.errors import (
   ExplicitReturnDisallowedError,
   MissingImplicitReturnError,
 )
-from modgud.infrastructure.ast_transformer import ImplicitReturnTransformer
+from modgud.infrastructure.adapters import DefaultAstTransformer
 
 
 class TestBasicTransformations:
@@ -20,9 +20,7 @@ def foo():
     x = 10
     x + 5
 """
-    tree, filename = ImplicitReturnTransformer.apply_implicit_return_transform(
-      source.strip(), 'foo'
-    )
+    tree, filename = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
     assert filename == '<foo-implicit>'
 
@@ -35,7 +33,7 @@ def foo(x):
     else:
         "negative"
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
 
   def test_try_except_transform(self):
@@ -47,7 +45,7 @@ def foo(x):
     except ZeroDivisionError:
         0
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
 
 
@@ -61,7 +59,7 @@ def foo():
     return 10
 """
     with pytest.raises(ExplicitReturnDisallowedError):
-      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+      DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
 
   def test_if_without_else_raises_error(self):
     """Test that if without else at tail raises error."""
@@ -71,7 +69,7 @@ def foo(x):
         "positive"
 """
     with pytest.raises(MissingImplicitReturnError):
-      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+      DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
 
 
 class TestEdgeCases:
@@ -83,7 +81,7 @@ class TestEdgeCases:
 def foo():
     pass
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
     # Should transform successfully and return None
     assert isinstance(tree, ast.Module)
 
@@ -96,7 +94,7 @@ def outer():
     x = inner()
     x + 5
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'outer')
+    tree, _ = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'outer')
     assert isinstance(tree, ast.Module)
 
   def test_nested_lambda_not_transformed(self):
@@ -107,7 +105,7 @@ def foo(x):
     result = f(x)
     result * 2
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
     # Verify it compiles and works
     code = compile(tree, '<test>', 'exec')
@@ -123,7 +121,7 @@ async def foo(x):
     x + 1
 """
     # async functions should work but not be transformed
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
 
 
@@ -138,7 +136,7 @@ def foo(x):
         case 1:
             pass
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
     # Should transform successfully, pass case returns None
     assert isinstance(tree, ast.Module)
 
@@ -154,7 +152,7 @@ def foo(x):
         case _:
             "other"
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
     # Compile and verify it works
     code = compile(tree, '<test>', 'exec')
     env = {}
@@ -180,7 +178,7 @@ def foo(x):
     finally:
         pass
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = DefaultAstTransformer.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
     # Verify it compiles and works
     code = compile(tree, '<test>', 'exec')

@@ -1,4 +1,9 @@
-"""Domain layer - Core types, errors, and contracts."""
+"""
+Domain layer - Core types, errors, messages, and ports.
+
+Ports are in domain.ports subpackage and define contracts for
+infrastructure implementations.
+"""
 
 from .errors import (
   ExplicitReturnDisallowedError,
@@ -7,7 +12,7 @@ from .errors import (
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .ports import AstTransformerPort, GuardCheckerPort
+from .messages import ErrorMessages, InfoMessages
 from .types import FailureBehavior, GuardFunction
 
 __all__ = [
@@ -20,7 +25,7 @@ __all__ = [
   'ExplicitReturnDisallowedError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
-  # Ports
-  'GuardCheckerPort',
-  'AstTransformerPort',
+  # Messages
+  'ErrorMessages',
+  'InfoMessages',
 ]

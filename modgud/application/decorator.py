@@ -1,21 +1,29 @@
 """
 Unified guarded_expression decorator combining guards and implicit returns.
 
-Unified guarded_expression decorator that combines guard clause validation
-with optional implicit return transformation using port-based dependency injection.
+This is the primary decorator for the modgud library, using infrastructure
+services via LPA architecture with strict layer boundaries.
 
-This is the primary decorator for the modgud library, unifying the functionality
-of guard_clause and implicit_return into a single, composable decorator.
+Application layer only imports from infrastructure layer gateway.
 """
 
 import functools
 import inspect
-from textwrap import dedent
 from typing import Any, Callable, Optional
 
-from ..domain.errors import GuardClauseError, UnsupportedConstructError
-from ..domain.ports import AstTransformerPort, GuardCheckerPort
-from ..domain.types import FailureBehavior, GuardFunction
+from ..infrastructure import (
+  # Domain types/errors (re-exported by infrastructure)
+  FailureBehavior,
+  GuardClauseError,
+  GuardFunction,
+  # Default service implementations
+  GuardService,
+  # Infrastructure service ports
+  GuardServicePort,
+  TransformService,
+  TransformServicePort,
+  UnsupportedConstructError,
+)
 
 
 class guarded_expression:
@@ -35,8 +43,8 @@ class guarded_expression:
           - Callable: Invoked with (error_msg, *args, **kwargs), return value used
           - Exception class: Instantiated with error message and raised
       log: If True, log guard failures at INFO level (default: False)
-      guard_checker: Optional GuardCheckerPort implementation (uses default if not provided)
-      ast_transformer: Optional AstTransformerPort implementation (uses default if not provided)
+      guard_service: Optional GuardServicePort implementation (uses default if not provided)
+      transform_service: Optional TransformServicePort implementation (uses default if not provided)
 
   Usage:
       @guarded_expression(
@@ -56,8 +64,8 @@ class guarded_expression:
     implicit_return: bool = True,
     on_error: FailureBehavior = GuardClauseError,
     log: bool = False,
-    guard_checker: Optional[GuardCheckerPort] = None,
-    ast_transformer: Optional[AstTransformerPort] = None,
+    guard_service: Optional[GuardServicePort] = None,
+    transform_service: Optional[TransformServicePort] = None,
   ):
     """
     Initialize the guarded_expression decorator.
@@ -67,8 +75,8 @@ class guarded_expression:
         implicit_return: Enable implicit return transformation
         on_error: Behavior on guard failure
         log: Enable logging of guard failures
-        guard_checker: Optional port implementation for guard checking (uses default if None)
-        ast_transformer: Optional port implementation for AST transformation (uses default if None)
+        guard_service: Optional service for guard operations (uses default if None)
+        transform_service: Optional service for transformation operations (uses default if None)
 
     """
     self.guards = guards
@@ -76,27 +84,23 @@ class guarded_expression:
     self.on_error = on_error
     self.log = log
 
-    # Dependency injection with lazy defaults - avoid circular imports
-    self._guard_checker = guard_checker
-    self._ast_transformer = ast_transformer
+    # Dependency injection with lazy defaults
+    self._guard_service = guard_service
+    self._transform_service = transform_service
 
   @property
-  def guard_checker(self) -> GuardCheckerPort:
-    """Get guard checker implementation, lazily loading default if needed."""
-    if self._guard_checker is None:
-      from .guard_checker import DefaultGuardChecker
-
-      self._guard_checker = DefaultGuardChecker()
-    return self._guard_checker
+  def guard_service(self) -> GuardServicePort:
+    """Get guard service implementation, lazily loading default if needed."""
+    if self._guard_service is None:
+      self._guard_service = GuardService()
+    return self._guard_service
 
   @property
-  def ast_transformer(self) -> AstTransformerPort:
-    """Get AST transformer implementation, lazily loading default if needed."""
-    if self._ast_transformer is None:
-      from ..infrastructure.ast_transformer import DefaultAstTransformer
-
-      self._ast_transformer = DefaultAstTransformer()
-    return self._ast_transformer
+  def transform_service(self) -> TransformServicePort:
+    """Get transform service implementation, lazily loading default if needed."""
+    if self._transform_service is None:
+      self._transform_service = TransformService()
+    return self._transform_service
 
   def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
     """Apply guard wrapping and optional implicit return transformation."""
@@ -108,24 +112,17 @@ class guarded_expression:
     )
 
   def _apply_implicit_return(self, func: Callable[..., Any]) -> Callable[..., Any]:
-    """Apply implicit return transformation to the function."""
-    # Extract and parse source
+    """Apply implicit return transformation to the function using transform service."""
+    # Validate source availability
     try:
-      source = dedent(inspect.getsource(func))
+      inspect.getsource(func)
     except OSError as e:
       raise UnsupportedConstructError(
         'Source unavailable — guarded_expression with implicit_return=True requires importable source code.'
       ) from e
 
-    # Transform the AST using injected transformer
-    new_tree, filename = self.ast_transformer.apply_implicit_return_transform(source, func.__name__)
-
-    # Execute in copy of original scope - preserves imports/closures
-    env = func.__globals__.copy()
-    code = compile(new_tree, filename=filename, mode='exec')
-    exec(code, env)
-
-    transformed = env[func.__name__]  # Extract the redefined function
+    # Transform using infrastructure service
+    transformed = self.transform_service.transform_to_implicit_return(func, func.__name__)
 
     # Wrap with guards and return
     return self._wrap_with_guards(transformed, preserve_metadata_from=func)
@@ -133,7 +130,7 @@ class guarded_expression:
   def _wrap_with_guards(
     self, func: Callable[..., Any], preserve_metadata_from: Optional[Callable[..., Any]] = None
   ) -> Callable[..., Any]:
-    """Wrap the function with guard checking logic."""
+    """Wrap the function with guard checking logic using guard service."""
     # Use original for metadata when transforming - transformed lacks source context
     metadata_source = preserve_metadata_from if preserve_metadata_from is not None else func
 
@@ -141,15 +138,15 @@ class guarded_expression:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
       # Check guards if any are defined
       if self.guards:
-        error_msg = self.guard_checker.check_guards(self.guards, args, kwargs)
-        if error_msg is not None:
-          # Handle failure using injected guard checker
-          result, exception_to_raise = self.guard_checker.handle_failure(
-            error_msg, self.on_error, func.__name__, args, kwargs, self.log
-          )
+        # Validate using infrastructure service
+        success, result, exception = self.guard_service.validate_inputs(
+          self.guards, args, kwargs, self.on_error, self.log
+        )
+
+        if not success:
           # Exception path prioritized for clean error propagation
-          if exception_to_raise:
-            raise exception_to_raise
+          if exception:
+            raise exception
           return result
 
       # All guards passed - execute the function

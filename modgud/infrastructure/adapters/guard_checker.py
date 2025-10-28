@@ -7,8 +7,8 @@ Implements GuardCheckerPort to provide guard evaluation and failure handling log
 import logging
 from typing import Any, Optional, Tuple
 
-from ..domain.ports import GuardCheckerPort
-from ..domain.types import FailureBehavior, GuardFunction
+from ...domain.ports import GuardCheckerPort
+from ...domain.types import FailureBehavior, GuardFunction
 
 
 class DefaultGuardChecker(GuardCheckerPort):
@@ -75,7 +75,3 @@ class DefaultGuardChecker(GuardCheckerPort):
       return (None, on_error(error_msg))
     # Callables get full context for recovery logic, values are simple fallbacks
     return (on_error(error_msg, *args, **kwargs) if callable(on_error) else on_error, None)  # type: ignore[call-arg]
-
-
-# Alias for backward compatibility with tests
-GuardRuntime = DefaultGuardChecker

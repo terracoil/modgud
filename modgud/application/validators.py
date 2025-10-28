@@ -3,6 +3,8 @@ Common guard validators for typical validation scenarios.
 
 Provides pre-built guard functions through the CommonGuards class for
 common validation patterns like not_none, positive, in_range, etc.
+
+Application layer only imports from infrastructure layer gateway.
 """
 
 import re
@@ -11,8 +13,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 from urllib.parse import urlparse
 
-from ..domain.messages import ErrorMessages
-from ..domain.types import GuardFunction
+from ..infrastructure import ErrorMessages, GuardFunction
 
 
 class CommonGuards:
