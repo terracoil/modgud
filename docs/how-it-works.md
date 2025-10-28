@@ -93,7 +93,7 @@ Modgud follows **LPA-Lite** principles with three distinct layers and port-based
 
 ```
 ┌─────────────────────────────────────┐
-│      Application Layer              │
+│      Surface Layer                  │
 │  (decorator, guard_checker,         │
 │   validators, registry)             │
 ├─────────────────────────────────────┤
@@ -108,7 +108,7 @@ Modgud follows **LPA-Lite** principles with three distinct layers and port-based
 
 ### Layer Responsibilities
 
-**Application Layer** (`modgud/application/`)
+**Surface Layer** (`modgud/surface/`)
 - `decorator.py`: Main `guarded_expression` decorator (public API)
 - `guard_checker.py`: Implements `GuardCheckerPort` for guard validation
 - `validators.py`: `CommonGuards` factory for pre-built validators

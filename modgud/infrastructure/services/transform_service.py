@@ -4,8 +4,8 @@ import inspect
 import textwrap
 from typing import Any, Callable, Optional
 
-from ...domain.ports import AstTransformerPort
-from ..ports import TransformServicePort
+from modgud.domain.ports import AstTransformerPort
+from modgud.infrastructure.ports import TransformServicePort
 
 
 class TransformService(TransformServicePort):

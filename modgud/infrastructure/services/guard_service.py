@@ -2,9 +2,9 @@
 
 from typing import Any, Optional, Tuple
 
-from ...domain.ports import GuardCheckerPort
-from ...domain.types import FailureBehavior, GuardFunction
-from ..ports import GuardServicePort
+from modgud.domain.ports import GuardCheckerPort
+from modgud.domain.types import FailureBehavior, GuardFunction
+from modgud.infrastructure.ports import GuardServicePort
 
 
 class GuardService(GuardServicePort):

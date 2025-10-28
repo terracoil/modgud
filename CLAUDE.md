@@ -14,8 +14,8 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 - **GuardClauseError by default**: `on_error=GuardClauseError` raises exception on guard failure
 - **Failure handling**: Configurable via `on_error` parameter (exception classes, custom values, callables)
 - **Pre-built guards**: `CommonGuards` class provides standard validation patterns (not_none, positive, type_check, etc.)
-- **Layered Ports Architecture (LPA)**: Ports at every layer boundary (Domain↔Infrastructure and Infrastructure↔Application)
-- **Strict Layer Isolation**: Application imports ONLY from Infrastructure gateway, never from Domain
+- **Layered Ports Architecture (LPA)**: Ports at every layer boundary (Domain↔Infrastructure and Infrastructure↔Surface)
+- **Strict Layer Isolation**: Surface imports ONLY from Infrastructure gateway, never from Domain
 - **NO LEGACY SUPPORT NEEDED**: Old `guard_clause` and `implicit_return` packages should be removed, not maintained as wrappers
 
 ## Development Commands

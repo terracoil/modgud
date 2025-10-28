@@ -183,7 +183,7 @@ class FreyjaDevTools:
           print("  python bin/devtools build lint --fix   # Auto-fix linting issues")
           print("  python bin/devtools test run           # Run tests with coverage")
           print("  python bin/devtools build autocommit   # Commit changes with Claude-generated message")
-          print("  python bin/devtools build tag-version  # Create git tag for HEAD commit")
+          print("  python bin/devtools build autotag      # Create git tag for HEAD commit")
           print("  python bin/devtools build publish      # Publish to PyPI")
         else:
           parent._print("Failed to install pre-commit hooks", 'error')
@@ -561,7 +561,7 @@ class FreyjaDevTools:
       parent._print(f"Failed to create tag: {error_msg}", 'error')
       return False
 
-    def tag_version(self, version: Optional[str] = None, auto_increment: bool = True) -> None:
+    def autotag(self, version: Optional[str] = None, auto_increment: bool = True) -> None:
       """Create git tag with Claude-generated message, auto-incrementing version if needed."""
       parent = self.parent
       parent._print(f"🏷️  Creating {parent.project_name} version tag...", 'info')

@@ -2,9 +2,9 @@
 
 from typing import Any, Callable, Union
 
-from ...domain.messages import ErrorMessages
-from ...domain.types import GuardFunction
-from ..ports import ValidationServicePort
+from modgud.domain.messages import ErrorMessages
+from modgud.domain.types import GuardFunction
+from modgud.infrastructure.ports import ValidationServicePort
 
 
 class ValidationService(ValidationServicePort):
