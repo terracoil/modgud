@@ -6,10 +6,10 @@ from typing import Any, Callable
 
 class TransformServicePort(ABC):
   """
-  High-level AST transformation service for Application layer.
+  High-level AST transformation service for Surface layer.
 
   This port defines the contract for transformation operations that
-  the application layer uses. Infrastructure services implement this port.
+  the surface layer uses. Infrastructure services implement this port.
   """
 
   @abstractmethod

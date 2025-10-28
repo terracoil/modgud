@@ -6,8 +6,8 @@ from typing import List
 
 import pytest
 from modgud import CommonGuards, guarded_expression, positive
-from modgud.application.registry import GuardRegistry
 from modgud.domain.errors import GuardClauseError
+from modgud.surface.registry import GuardRegistry
 
 
 class TestThreadSafety:

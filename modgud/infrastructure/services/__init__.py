@@ -1,4 +1,4 @@
-"""Infrastructure services - implement infrastructure ports for application layer."""
+"""Infrastructure services - implement infrastructure ports for surface layer."""
 
 from .guard_service import GuardService
 from .transform_service import TransformService

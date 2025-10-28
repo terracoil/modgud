@@ -1,7 +1,7 @@
 """
-Application layer - Business logic and orchestration.
+Surface layer - Public API and orchestration.
 
-Implements high-level business workflows using infrastructure services.
+Implements the public decorator API using infrastructure services.
 """
 
 from .decorator import guarded_expression

@@ -108,7 +108,7 @@ modgud follows a 3-layer Layered Ports Architecture (LPA) with ports at every la
 
 **Layer 2 - Infrastructure (Middle):**
 - `modgud/infrastructure/` - System boundaries, services, and adapters
-  - `ports/` - Port interfaces that Application uses
+  - `ports/` - Port interfaces that Surface uses
     - `guard_service_port.py` - `GuardServicePort` interface
     - `transform_service_port.py` - `TransformServicePort` interface
     - `validation_service_port.py` - `ValidationServicePort` interface
@@ -119,10 +119,10 @@ modgud follows a 3-layer Layered Ports Architecture (LPA) with ports at every la
   - `adapters/` - Low-level implementations (implement domain ports)
     - `guard_checker.py` - Guard checking adapter (implements `GuardCheckerPort`)
     - `ast_transformer.py` - AST transformation adapter (implements `AstTransformerPort`)
-  - `__init__.py` - **Infrastructure Gateway** - Re-exports domain types/errors for Application
+  - `__init__.py` - **Infrastructure Gateway** - Re-exports domain types/errors for Surface
 
-**Layer 3 - Application (Outermost):**
-- `modgud/application/` - Business logic and decorator orchestration
+**Layer 3 - Surface (Outermost):**
+- `modgud/surface/` - Public API and decorator orchestration
   - `decorator.py` - Main `guarded_expression` decorator (uses infrastructure service ports)
   - `validators.py` - Pre-built guard factories (`CommonGuards` class)
   - `registry.py` - Custom guard registration (`GuardRegistry` class)
@@ -201,14 +201,14 @@ The v0.4.0 architecture implements Layered Ports Architecture (LPA) with ports a
 
 1. **Port Layers**:
    - Domain defines ports for Infrastructure adapters (`GuardCheckerPort`, `AstTransformerPort`)
-   - Infrastructure defines ports for Application services (`GuardServicePort`, `TransformServicePort`, `ValidationServicePort`)
+   - Infrastructure defines ports for Surface services (`GuardServicePort`, `TransformServicePort`, `ValidationServicePort`)
 2. **Inner Layer Owns Ports**: Following Dependency Inversion Principle, inner layers define ports that outer layers implement
-3. **Strict Layer Isolation**: Application NEVER imports from Domain directly - all imports go through Infrastructure gateway
-4. **Service Layer Pattern**: High-level abstractions (`GuardService`, `TransformService`) simplify Application code
+3. **Strict Layer Isolation**: Surface NEVER imports from Domain directly - all imports go through Infrastructure gateway
+4. **Service Layer Pattern**: High-level abstractions (`GuardService`, `TransformService`) simplify Surface code
 5. **Adapter Pattern**: Low-level implementations in `infrastructure/adapters/` implement domain ports
-6. **Infrastructure Gateway**: `infrastructure/__init__.py` controls access and re-exports domain types/errors for Application
+6. **Infrastructure Gateway**: `infrastructure/__init__.py` controls access and re-exports domain types/errors for Surface
 7. **Dependency Injection**: Services accept optional port implementations via constructor, defaulting to concrete implementations
-8. **Layered Dependencies**: Dependencies flow strictly inward (Application → Infrastructure → Domain)
+8. **Layered Dependencies**: Dependencies flow strictly inward (Surface → Infrastructure → Domain)
 9. **Testability**: Port interfaces at every boundary enable comprehensive mocking and isolated testing
 10. **Flexibility**: Can swap implementations at any boundary without modifying dependent layers
 

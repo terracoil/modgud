@@ -1,21 +1,21 @@
 """
-Infrastructure layer - Gateway for application layer.
+Infrastructure layer - Gateway for surface layer.
 
-This module serves as the single import point for the application layer,
-enforcing strict layer isolation. Application layer ONLY imports from here,
+This module serves as the single import point for the surface layer,
+enforcing strict layer isolation. Surface layer ONLY imports from here,
 never directly from domain layer.
 
 Following LPA principles:
-- Infrastructure (inner layer) defines ports for Application
-- Infrastructure exports domain types/errors for Application convenience
-- Application (outer layer) depends only on infrastructure contracts
+- Infrastructure (inner layer) defines ports for Surface
+- Infrastructure exports domain types/errors for Surface convenience
+- Surface (outer layer) depends only on infrastructure contracts
 """
 
 # ==============================================================================
-# INFRASTRUCTURE PORTS (for Application to use)
+# INFRASTRUCTURE PORTS (for Surface to use)
 # ==============================================================================
 # ==============================================================================
-# DOMAIN ERRORS (re-exported for Application convenience)
+# DOMAIN ERRORS (re-exported for Surface convenience)
 # ==============================================================================
 from ..domain.errors import (
   ExplicitReturnDisallowedError,
@@ -26,12 +26,12 @@ from ..domain.errors import (
 )
 
 # ==============================================================================
-# DOMAIN MESSAGES (re-exported for Application convenience)
+# DOMAIN MESSAGES (re-exported for Surface convenience)
 # ==============================================================================
 from ..domain.messages import ErrorMessages, InfoMessages
 
 # ==============================================================================
-# DOMAIN TYPES (re-exported for Application convenience)
+# DOMAIN TYPES (re-exported for Surface convenience)
 # ==============================================================================
 from ..domain.types import FailureBehavior, GuardFunction
 from .ports import GuardServicePort, TransformServicePort, ValidationServicePort
@@ -45,7 +45,7 @@ from .services import GuardService, TransformService, ValidationService
 # PUBLIC API
 # ==============================================================================
 __all__ = [
-  # Infrastructure ports (Application uses these)
+  # Infrastructure ports (Surface uses these)
   'GuardServicePort',
   'TransformServicePort',
   'ValidationServicePort',

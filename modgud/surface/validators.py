@@ -4,7 +4,7 @@ Common guard validators for typical validation scenarios.
 Provides pre-built guard functions through the CommonGuards class for
 common validation patterns like not_none, positive, in_range, etc.
 
-Application layer only imports from infrastructure layer gateway.
+Surface layer only imports from infrastructure layer gateway.
 """
 
 import re

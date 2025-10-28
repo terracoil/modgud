@@ -245,7 +245,7 @@ class _TopLevelTransformer(ast.NodeTransformer):
 
   Applies transformation only to the *decorated* function definition that we parsed.
   We rely on inspect.getsource(func) returning just that function (common in modules).
-  Strips all decorators to prevent re-application during exec.
+  Strips all decorators to prevent re-surface during exec.
   """
 
   def __init__(self, target_name: str, transformer_cls: type[DefaultAstTransformer]) -> None:

@@ -8,10 +8,10 @@ from ...domain.types import FailureBehavior, GuardFunction
 
 class GuardServicePort(ABC):
   """
-  High-level guard validation service for Application layer.
+  High-level guard validation service for Surface layer.
 
   This port defines the contract for guard validation operations that
-  the application layer uses. Infrastructure services implement this port.
+  the surface layer uses. Infrastructure services implement this port.
   """
 
   @abstractmethod
@@ -27,7 +27,7 @@ class GuardServicePort(ABC):
     Validate inputs against guards and handle failures.
 
     This is a high-level operation that combines guard checking and
-    failure handling in a single call for application convenience.
+    failure handling in a single call for surface convenience.
 
     Args:
         guards: Tuple of guard functions to evaluate

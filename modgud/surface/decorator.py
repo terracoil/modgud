@@ -4,7 +4,7 @@ Unified guarded_expression decorator combining guards and implicit returns.
 This is the primary decorator for the modgud library, using infrastructure
 services via LPA architecture with strict layer boundaries.
 
-Application layer only imports from infrastructure layer gateway.
+Surface layer only imports from infrastructure layer gateway.
 """
 
 import functools

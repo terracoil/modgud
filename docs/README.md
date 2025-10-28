@@ -1479,7 +1479,7 @@ modgud follows Layered Ports Architecture (LPA) with clear separation of concern
 
 1. **Ports at Every Boundary**: Domain and Infrastructure layers define ports for outer layers
 2. **Inner Layer Owns Ports**: Following Dependency Inversion Principle
-3. **Strict Layer Isolation**: Application imports only from Infrastructure gateway
+3. **Strict Layer Isolation**: Surface imports only from Infrastructure gateway
 4. **Pure Functions**: Core logic uses pure, composable functions
 5. **Dependency Injection**: Services and adapters are injectable
 6. **Immutability**: Transformed functions preserve original metadata
@@ -1500,26 +1500,26 @@ modgud/
 │       └── ast_transformer_port.py
 │
 ├── infrastructure/             # Layer 2 (Middle) - Services and adapters
-│   ├── ports/                 # Port interfaces for Application
+│   ├── ports/                 # Port interfaces for Surface
 │   │   ├── guard_service_port.py
 │   │   ├── transform_service_port.py
 │   │   └── validation_service_port.py
-│   ├── services/              # High-level business operations
+│   ├── services/              # High-level operations
 │   │   ├── guard_service.py
 │   │   ├── transform_service.py
 │   │   └── validation_service.py
 │   ├── adapters/              # Low-level technical implementations
 │   │   ├── guard_checker.py
 │   │   └── ast_transformer.py
-│   └── __init__.py            # Gateway - controls Application access
+│   └── __init__.py            # Gateway - controls Surface access
 │
-└── application/                # Layer 3 (Outermost) - Business logic
+└── surface/                    # Layer 3 (Outermost) - Public API
     ├── decorator.py           # Main guarded_expression decorator
     ├── validators.py          # CommonGuards factory methods
     └── registry.py            # Custom guard registration
 ```
 
-**Dependencies flow inward:** Application → Infrastructure → Domain
+**Dependencies flow inward:** Surface → Infrastructure → Domain
 
 ### AST Transformation Process
 
