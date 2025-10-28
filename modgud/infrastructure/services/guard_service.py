@@ -2,9 +2,9 @@
 
 from typing import Any, Optional, Tuple
 
-from modgud.domain.ports import GuardCheckerPort
-from modgud.domain.types import FailureBehavior, GuardFunction
-from modgud.infrastructure.ports import GuardServicePort
+from modgud.domain.models.types import FailureBehavior, GuardFunction
+from modgud.domain.ports.guard_checker_port import GuardCheckerPort
+from modgud.infrastructure.ports.guard_service_port import GuardServicePort
 
 
 class GuardService(GuardServicePort):
@@ -29,9 +29,9 @@ class GuardService(GuardServicePort):
   def checker(self) -> GuardCheckerPort:
     """Lazy-load default guard checker if not injected."""
     if self._checker is None:
-      from ..adapters.guard_checker import DefaultGuardChecker
+      from ..adapters.guard_checker_adapter import GuardCheckerAdapter
 
-      self._checker = DefaultGuardChecker()
+      self._checker = GuardCheckerAdapter()
     return self._checker
 
   def validate_inputs(

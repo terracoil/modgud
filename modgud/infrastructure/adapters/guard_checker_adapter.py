@@ -7,12 +7,12 @@ Implements GuardCheckerPort to provide guard evaluation and failure handling log
 import logging
 from typing import Any, Optional, Tuple
 
-from ...domain.ports import GuardCheckerPort
-from ...domain.types import FailureBehavior, GuardFunction
+from ...domain.models.types import FailureBehavior, GuardFunction
+from ...domain.ports.guard_checker_port import GuardCheckerPort
 
 
-class DefaultGuardChecker(GuardCheckerPort):
-  """Default runtime guard checking and failure handling implementation."""
+class GuardCheckerAdapter(GuardCheckerPort):
+  """Runtime guard checking and failure handling adapter implementation."""
 
   _logger: logging.Logger = logging.getLogger(__name__)
 

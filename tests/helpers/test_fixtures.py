@@ -5,8 +5,13 @@ These functions are defined at module level so their source can be inspected
 by the implicit_return transformer.
 """
 
+# ruff: noqa: D103, B018, E402
+# D103: Test fixtures don't need docstrings
+# B018: "Useless expressions" are actually implicit return tests
+# E402: asyncio import after decorators is intentional for test organization
+
 from modgud import guarded_expression, not_none, positive
-from modgud.domain.errors import GuardClauseError
+from modgud.domain.models.errors import GuardClauseError
 
 
 # Simple implicit return

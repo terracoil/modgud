@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 from urllib.parse import urlparse
 
-from ..infrastructure import ErrorMessages, GuardFunction
+from ..infrastructure import ErrorMessagesModel, GuardFunction
 
 
 class CommonGuards:
@@ -136,7 +136,7 @@ class CommonGuards:
 
     """
     return CommonGuards._make_guard(
-      param_name, position, lambda v: v > 0, ErrorMessages.PARAM_MUST_BE_POSITIVE, default=0
+      param_name, position, lambda v: v > 0, ErrorMessagesModel.PARAM_MUST_BE_POSITIVE, default=0
     )
 
   @staticmethod

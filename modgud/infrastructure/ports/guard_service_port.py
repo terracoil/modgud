@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Tuple
 
-from ...domain.types import FailureBehavior, GuardFunction
+from ...domain.models.types import FailureBehavior, GuardFunction
 
 
 class GuardServicePort(ABC):

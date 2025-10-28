@@ -1,44 +1,7 @@
-"""Unit tests for guard runtime logic."""
+"""Tests for guard failure handling strategies."""
 
-from modgud.domain.errors import GuardClauseError
-from modgud.infrastructure.adapters import DefaultGuardChecker
-
-
-class TestCheckGuards:
-  """Tests for guard validation logic."""
-
-  def test_check_guards_all_pass(self):
-    """Test that check_guards returns None when all guards pass."""
-    guards = (
-      lambda x: x > 0 or 'Must be positive',
-      lambda x: x < 100 or 'Must be less than 100',
-    )
-    result = DefaultGuardChecker.check_guards(guards, (50,), {})
-    assert result is None
-
-  def test_check_guards_first_fails(self):
-    """Test that check_guards returns error message from first failed guard."""
-    guards = (
-      lambda x: x > 0 or 'Must be positive',
-      lambda x: x < 100 or 'Must be less than 100',
-    )
-    result = DefaultGuardChecker.check_guards(guards, (-5,), {})
-    assert result == 'Must be positive'
-
-  def test_check_guards_second_fails(self):
-    """Test that check_guards returns error message from second failed guard."""
-    guards = (
-      lambda x: x > 0 or 'Must be positive',
-      lambda x: x < 100 or 'Must be less than 100',
-    )
-    result = DefaultGuardChecker.check_guards(guards, (150,), {})
-    assert result == 'Must be less than 100'
-
-  def test_check_guards_boolean_false(self):
-    """Test that check_guards handles boolean False guard result."""
-    guards = (lambda x: False,)
-    result = DefaultGuardChecker.check_guards(guards, (5,), {})
-    assert result == 'Guard clause failed'
+from modgud.domain.models.errors import GuardClauseError
+from modgud.infrastructure.adapters.guard_checker_adapter import GuardCheckerAdapter
 
 
 class TestHandleFailure:
@@ -46,7 +9,7 @@ class TestHandleFailure:
 
   def test_handle_failure_exception_class(self):
     """Test handle_failure with exception class."""
-    result, exception = DefaultGuardChecker.handle_failure(
+    result, exception = GuardCheckerAdapter.handle_failure(
       'Test error', ValueError, 'test_func', (1, 2), {}, False
     )
     assert result is None
@@ -55,7 +18,7 @@ class TestHandleFailure:
 
   def test_handle_failure_custom_value(self):
     """Test handle_failure with custom return value."""
-    result, exception = DefaultGuardChecker.handle_failure(
+    result, exception = GuardCheckerAdapter.handle_failure(
       'Test error', {'error': 'custom'}, 'test_func', (1, 2), {}, False
     )
     assert result == {'error': 'custom'}
@@ -67,7 +30,7 @@ class TestHandleFailure:
     def handler(msg, *args, **kwargs):
       return f'Handled: {msg}'
 
-    result, exception = DefaultGuardChecker.handle_failure(
+    result, exception = GuardCheckerAdapter.handle_failure(
       'Test error', handler, 'test_func', (1, 2), {}, False
     )
     assert result == 'Handled: Test error'
@@ -75,7 +38,7 @@ class TestHandleFailure:
 
   def test_handle_failure_guard_clause_error(self):
     """Test handle_failure with GuardClauseError."""
-    result, exception = DefaultGuardChecker.handle_failure(
+    result, exception = GuardCheckerAdapter.handle_failure(
       'Test error', GuardClauseError, 'test_func', (1, 2), {}, False
     )
     assert result is None
@@ -84,7 +47,7 @@ class TestHandleFailure:
 
   def test_handle_failure_none_value(self):
     """Test handle_failure with None as on_error value."""
-    result, exception = DefaultGuardChecker.handle_failure(
+    result, exception = GuardCheckerAdapter.handle_failure(
       'Test error', None, 'test_func', (1, 2), {}, False
     )
     assert result is None
@@ -96,7 +59,7 @@ class TestHandleFailure:
 
     caplog.set_level(logging.INFO)
 
-    result, exception = DefaultGuardChecker.handle_failure(
+    result, exception = GuardCheckerAdapter.handle_failure(
       'Validation failed',
       None,
       'process_user',

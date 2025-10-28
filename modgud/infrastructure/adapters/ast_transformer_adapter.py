@@ -10,12 +10,12 @@ from __future__ import annotations
 import ast
 from typing import Any, List, Optional, Tuple
 
-from ...domain.errors import (
+from ...domain.models.errors import (
   ExplicitReturnDisallowedError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from ...domain.ports import AstTransformerPort
+from ...domain.ports.ast_transformer_port import AstTransformerPort
 
 
 class _NoExplicitReturnChecker(ast.NodeVisitor):
@@ -135,8 +135,8 @@ class _TailRewriter:
     return [*init, *new_last]
 
 
-class DefaultAstTransformer(AstTransformerPort):
-  """Default AST transformation implementation for implicit return functionality."""
+class AstTransformerAdapter(AstTransformerPort):
+  """AST transformation adapter implementation for implicit return functionality."""
 
   @classmethod
   def transform_function_ast(cls, fn_node: Any, func_name: str) -> Any:
@@ -248,7 +248,7 @@ class _TopLevelTransformer(ast.NodeTransformer):
   Strips all decorators to prevent re-surface during exec.
   """
 
-  def __init__(self, target_name: str, transformer_cls: type[DefaultAstTransformer]) -> None:
+  def __init__(self, target_name: str, transformer_cls: type[AstTransformerAdapter]) -> None:
     self.target_name = target_name
     self.transformer_cls = transformer_cls
     super().__init__()

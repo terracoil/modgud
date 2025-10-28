@@ -1,7 +1,7 @@
-"""Centralized error and validation message templates."""
+"""Error message templates model."""
 
 
-class ErrorMessages:
+class ErrorMessagesModel:
   """Common error message templates used throughout the library."""
 
   # Parameter validation messages
@@ -32,17 +32,3 @@ class ErrorMessages:
   GUARD_FAILED_GENERIC = 'Guard clause failed'
   VALUE_NOT_EMPTY = '{param_name} cannot be empty'
   VALUE_NOT_NONE = '{param_name} cannot be None'
-
-
-class InfoMessages:
-  """Common informational message templates."""
-
-  # Version control messages
-  TAG_CREATED = 'Created tag {tag} on HEAD'
-  VERSION_UPDATED = 'Updated pyproject.toml version to {version}'
-  COMMIT_CREATED = 'Changes committed successfully!'
-
-  # Build messages
-  BUILD_SUCCESS = 'Build completed successfully'
-  TESTS_PASSED = 'All tests passed'
-  LINTING_COMPLETE = 'Linting completed successfully'

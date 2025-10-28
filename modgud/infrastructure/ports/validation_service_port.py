@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable
 
-from ...domain.types import GuardFunction
+from ...domain.models.types import GuardFunction
 
 
 class ValidationServicePort(ABC):

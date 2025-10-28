@@ -4,8 +4,8 @@ import inspect
 import textwrap
 from typing import Any, Callable, Optional
 
-from modgud.domain.ports import AstTransformerPort
-from modgud.infrastructure.ports import TransformServicePort
+from modgud.domain.ports.ast_transformer_port import AstTransformerPort
+from modgud.infrastructure.ports.transform_service_port import TransformServicePort
 
 
 class TransformService(TransformServicePort):
@@ -30,9 +30,9 @@ class TransformService(TransformServicePort):
   def transformer(self) -> AstTransformerPort:
     """Lazy-load default AST transformer if not injected."""
     if self._transformer is None:
-      from ..adapters.ast_transformer import DefaultAstTransformer
+      from ..adapters.ast_transformer_adapter import AstTransformerAdapter
 
-      self._transformer = DefaultAstTransformer()
+      self._transformer = AstTransformerAdapter()
     return self._transformer
 
   def transform_to_implicit_return(

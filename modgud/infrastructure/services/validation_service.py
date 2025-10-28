@@ -2,9 +2,9 @@
 
 from typing import Any, Callable, Union
 
-from modgud.domain.messages import ErrorMessages
-from modgud.domain.types import GuardFunction
-from modgud.infrastructure.ports import ValidationServicePort
+from modgud.domain.models.error_messages_model import ErrorMessagesModel
+from modgud.domain.models.types import GuardFunction
+from modgud.infrastructure.ports.validation_service_port import ValidationServicePort
 
 
 class ValidationService(ValidationServicePort):
@@ -27,7 +27,7 @@ class ValidationService(ValidationServicePort):
         Formatted error message string
 
     """
-    template: str = getattr(ErrorMessages, message_key)
+    template: str = getattr(ErrorMessagesModel, message_key)
     result: str = template.format(**kwargs)
     return result
 

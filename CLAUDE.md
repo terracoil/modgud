@@ -8,7 +8,7 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 
 **IMPORTANT: This is a NEW project with NO existing users. No backward compatibility requirements. Breaking changes are acceptable. Clean, simple architecture is prioritized over legacy support.**
 
-**Core Architecture (v0.4.0 - LPA):**
+**Core Architecture (v2.1.0 - Strict LPA with Architecture Validation):**
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
 - **Implicit return by default**: `implicit_return=True` enables Ruby-style expression-oriented code
 - **GuardClauseError by default**: `on_error=GuardClauseError` raises exception on guard failure
@@ -16,7 +16,9 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 - **Pre-built guards**: `CommonGuards` class provides standard validation patterns (not_none, positive, type_check, etc.)
 - **Layered Ports Architecture (LPA)**: Ports at every layer boundary (Domain↔Infrastructure and Infrastructure↔Surface)
 - **Strict Layer Isolation**: Surface imports ONLY from Infrastructure gateway, never from Domain
-- **NO LEGACY SUPPORT NEEDED**: Old `guard_clause` and `implicit_return` packages should be removed, not maintained as wrappers
+- **Naming Conventions**: Adapter suffix for adapters, Model suffix for domain models, Service suffix for services, Port suffix for interfaces
+- **One Class Per File**: Single responsibility (except errors.py, types.py which group related items)
+- **NO LEGACY SUPPORT NEEDED**: Old `guard_clause` and `implicit_return` packages removed in v0.2.0
 
 ## Development Commands
 
@@ -93,33 +95,36 @@ poetry run twine check dist/*
 
 ## Code Architecture
 
-### Core Module Structure (v0.4.0 - LPA)
+### Core Module Structure (v2.0.0 - Strict LPA)
 
 modgud follows a 3-layer Layered Ports Architecture (LPA) with ports at every layer boundary for maximum flexibility and testability.
 
 **Layer 1 - Domain (Innermost):**
 - `modgud/domain/` - Core types, errors, messages, and port definitions
-  - `types.py` - Type definitions (`GuardFunction`, `FailureBehavior`)
-  - `errors.py` - All exception classes (`GuardClauseError`, `ImplicitReturnError`, etc.)
-  - `messages.py` - Error message constants and info messages
-  - `ports/` - Port interfaces that Infrastructure must implement
+  - `models/` - Domain models (one class per file, except grouped collections)
+    - `errors.py` - All exception classes (`GuardClauseError`, `ImplicitReturnError`, etc.)
+    - `types.py` - Type definitions (`GuardFunction`, `FailureBehavior`)
+    - `error_messages_model.py` - `ErrorMessagesModel` class with error message templates
+    - `info_messages_model.py` - `InfoMessagesModel` class with informational message templates
+  - `ports/` - Port interfaces that Infrastructure must implement (no `__init__.py`)
     - `guard_checker_port.py` - `GuardCheckerPort` interface
     - `ast_transformer_port.py` - `AstTransformerPort` interface
+  - `__init__.py` - Domain gateway with backward compatibility aliases (`ErrorMessages`, `InfoMessages`)
 
 **Layer 2 - Infrastructure (Middle):**
 - `modgud/infrastructure/` - System boundaries, services, and adapters
-  - `ports/` - Port interfaces that Surface uses
+  - `ports/` - Port interfaces that Surface uses (no `__init__.py`)
     - `guard_service_port.py` - `GuardServicePort` interface
     - `transform_service_port.py` - `TransformServicePort` interface
     - `validation_service_port.py` - `ValidationServicePort` interface
-  - `services/` - Service implementations (implement infrastructure ports)
-    - `guard_service.py` - Guard validation service
-    - `transform_service.py` - AST transformation service
-    - `validation_service.py` - Validation orchestration service
-  - `adapters/` - Low-level implementations (implement domain ports)
-    - `guard_checker.py` - Guard checking adapter (implements `GuardCheckerPort`)
-    - `ast_transformer.py` - AST transformation adapter (implements `AstTransformerPort`)
-  - `__init__.py` - **Infrastructure Gateway** - Re-exports domain types/errors for Surface
+  - `services/` - Service implementations (implement infrastructure ports, no `__init__.py`)
+    - `guard_service.py` - `GuardService` class - guard validation service
+    - `transform_service.py` - `TransformService` class - AST transformation service
+    - `validation_service.py` - `ValidationService` class - validation orchestration service
+  - `adapters/` - Low-level implementations (implement domain ports, no `__init__.py`)
+    - `guard_checker_adapter.py` - `GuardCheckerAdapter` class (implements `GuardCheckerPort`)
+    - `ast_transformer_adapter.py` - `AstTransformerAdapter` class (implements `AstTransformerPort`)
+  - `__init__.py` - **Infrastructure Gateway** - Re-exports domain types/errors/models AND infrastructure ports/services for Surface
 
 **Layer 3 - Surface (Outermost):**
 - `modgud/surface/` - Public API and decorator orchestration
@@ -127,8 +132,31 @@ modgud follows a 3-layer Layered Ports Architecture (LPA) with ports at every la
   - `validators.py` - Pre-built guard factories (`CommonGuards` class)
   - `registry.py` - Custom guard registration (`GuardRegistry` class)
 
+**Tests:**
+- `tests/` - Test suite organized by architectural layer **(99 total tests)**
+  - `infrastructure/` - Infrastructure layer tests (7 files, 22 tests)
+    - AST transformation tests (basic, errors, edge cases, match, complex try)
+    - Guard checking and failure handling tests
+  - `surface/` - Surface layer tests (6 files, 21 tests)
+    - Validator tests (file path, URL, enum, combined)
+    - Registry tests (GuardRegistry, global functions)
+  - `integration/` - Integration tests (8 files, 26 tests)
+    - Basic guard execution and failure handling
+    - Async function support
+    - Common guard validation and parameter handling
+    - Implicit return integration tests
+  - `general/` - Multi-layer tests (9 files, 30 tests)
+    - **Architecture validation tests (10 tests)** - Enforces LPA compliance
+    - Thread safety and performance tests
+    - Error conditions and edge cases
+    - Guard composition and metadata preservation
+  - `helpers/` - Test helpers and fixtures package
+    - `helpers.py` - Test helper functions (`assert_guard_fails`, `create_temp_file`)
+    - `test_fixtures.py` - Module-level test fixtures for implicit return tests
+    - `__init__.py` - Re-exports all helpers and fixtures
+
 **Public API Exports:**
-- `modgud/__init__.py` - Primary exports (`guarded_expression`, `CommonGuards`, error classes)
+- `modgud/__init__.py` - Primary exports (`guarded_expression`, `CommonGuards`, guard validators, error classes)
 
 ### Key Design Patterns
 
@@ -173,13 +201,64 @@ modgud follows a 3-layer Layered Ports Architecture (LPA) with ports at every la
 
 Tests should be placed in `tests/` directory following pytest conventions (`test_*.py` or `*_test.py`). The library uses extensive examples in `modgud/README.md` which can guide test case development.
 
-**Test Files:**
-- `tests/test_guarded_expression.py` - Integration tests for the main decorator (30+ tests)
-- `tests/test_ast_transform.py` - Unit tests for AST transformation logic
-- `tests/test_guard_runtime.py` - Unit tests for guard checking and failure handling
-- `tests/test_fixtures.py` - Module-level test fixtures for implicit return tests
+**Test Organization (v2.0.0):**
+Tests are organized by architectural layer with one test class per file:
 
-**IMPORTANT:** Functions decorated with `implicit_return=True` must be defined at module level (not inside test functions) because `inspect.getsource()` cannot extract source from nested functions. Use `tests/test_fixtures.py` for these cases.
+- `tests/infrastructure/` - **7 files, 22 tests** - Infrastructure layer components
+  - `test_basic_transformations.py` - Basic AST transformation patterns
+  - `test_transformation_errors.py` - AST transformation error conditions
+  - `test_ast_edge_cases.py` - AST edge cases (nested functions, lambdas, async)
+  - `test_match_statements.py` - Match statement transformations
+  - `test_complex_try_statements.py` - Complex try-except-else-finally
+  - `test_check_guards.py` - Guard validation logic
+  - `test_handle_failure.py` - Guard failure handling strategies
+
+- `tests/surface/` - **6 files, 21 tests** - Surface layer validators and registry
+  - `test_valid_file_path_guard.py` - File path validation guard
+  - `test_valid_url_guard.py` - URL validation guard
+  - `test_valid_enum_guard.py` - Enum validation guard
+  - `test_combined_guards.py` - Multiple guard combinations
+  - `test_guard_registry.py` - GuardRegistry functionality
+  - `test_global_registry_functions.py` - Global registry helpers
+
+- `tests/integration/` - **8 files, 26 tests** - Full integration scenarios
+  - `test_basic_guard_execution.py` - Basic guard success/failure
+  - `test_guard_failure_handling.py` - Failure handling strategies
+  - `test_multiple_guards.py` - Multiple guard execution
+  - `test_async_function_support.py` - Async compatibility
+  - `test_common_guard_validation.py` - Built-in validators
+  - `test_guard_parameter_handling.py` - Parameter extraction
+  - `test_implicit_return_basics.py` - Basic implicit return behavior
+  - `test_implicit_return_with_guards.py` - Implicit returns + guards
+
+- `tests/general/` - **9 files, 30 tests** - Multi-layer and cross-cutting tests
+  - `test_architecture.py` - **Architecture validation tests (10 tests)** - Enforces LPA compliance
+  - `test_thread_safety.py` - Thread safety of guards and registry
+  - `test_performance.py` - Performance benchmarks
+  - `test_error_conditions.py` - Various error conditions
+  - `test_guard_composition.py` - Guard composition and chaining
+  - `test_implicit_return_edge_cases.py` - Implicit return edge cases
+  - `test_metadata_preservation.py` - Function metadata preservation
+  - `test_decorator_without_guards.py` - Decorator with no guards
+  - `test_decorator_edge_cases.py` - Decorator edge cases
+
+- `tests/helpers/` - Test helpers and fixtures
+  - `test_fixtures.py` - Module-level test fixtures for implicit return tests
+  - `helpers.py` - Test helper functions and assertions
+  - `__init__.py` - Re-exports all helpers and fixtures
+
+**IMPORTANT:** Functions decorated with `implicit_return=True` must be defined at module level (not inside test functions) because `inspect.getsource()` cannot extract source from nested functions. Use `tests/helpers/test_fixtures.py` for these cases.
+
+**Architecture Validation (v2.1.0):**
+
+The `test_architecture.py` file contains automated tests that enforce LPA compliance:
+- **Surface layer isolation**: Verifies no direct domain imports (must use infrastructure gateway)
+- **Naming conventions**: Enforces Adapter, Service, Port, Model suffixes on all classes
+- **One public class per file**: Validates single responsibility (private helpers allowed)
+- **Layer dependencies**: Ensures proper dependency flow (Surface → Infrastructure → Domain)
+- **Infrastructure gateway**: Confirms proper re-export of domain types/errors
+
+These tests run automatically with `pytest` and will fail if LPA principles are violated.
 
 **Key test scenarios**:
 - Guard success/failure paths
@@ -197,7 +276,7 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 
 ### LPA Architecture Principles
 
-The v0.4.0 architecture implements Layered Ports Architecture (LPA) with ports at every layer boundary:
+The v2.0.0 architecture implements strict Layered Ports Architecture (LPA) with ports at every layer boundary:
 
 1. **Port Layers**:
    - Domain defines ports for Infrastructure adapters (`GuardCheckerPort`, `AstTransformerPort`)
@@ -205,12 +284,15 @@ The v0.4.0 architecture implements Layered Ports Architecture (LPA) with ports a
 2. **Inner Layer Owns Ports**: Following Dependency Inversion Principle, inner layers define ports that outer layers implement
 3. **Strict Layer Isolation**: Surface NEVER imports from Domain directly - all imports go through Infrastructure gateway
 4. **Service Layer Pattern**: High-level abstractions (`GuardService`, `TransformService`) simplify Surface code
-5. **Adapter Pattern**: Low-level implementations in `infrastructure/adapters/` implement domain ports
-6. **Infrastructure Gateway**: `infrastructure/__init__.py` controls access and re-exports domain types/errors for Surface
+5. **Adapter Pattern**: Low-level implementations in `infrastructure/adapters/` implement domain ports (e.g., `GuardCheckerAdapter`, `AstTransformerAdapter`)
+6. **Infrastructure Gateway**: `infrastructure/__init__.py` controls access and re-exports domain types/errors/models for Surface
 7. **Dependency Injection**: Services accept optional port implementations via constructor, defaulting to concrete implementations
 8. **Layered Dependencies**: Dependencies flow strictly inward (Surface → Infrastructure → Domain)
 9. **Testability**: Port interfaces at every boundary enable comprehensive mocking and isolated testing
 10. **Flexibility**: Can swap implementations at any boundary without modifying dependent layers
+11. **Naming Conventions**: Consistent suffixes (Adapter, Service, Port, Model) make architecture self-documenting
+12. **Single Responsibility**: One class per file (except grouped collections like errors.py, types.py)
+13. **Minimal Re-exports**: Only layer root `__init__.py` files re-export; subdirectories have no `__init__.py` or minimal ones
 
 ### Import Examples
 

@@ -11,35 +11,45 @@ Following LPA principles:
 - Surface (outer layer) depends only on infrastructure contracts
 """
 
+# ruff: noqa: E402
+
 # ==============================================================================
 # INFRASTRUCTURE PORTS (for Surface to use)
 # ==============================================================================
 # ==============================================================================
 # DOMAIN ERRORS (re-exported for Surface convenience)
 # ==============================================================================
-from ..domain.errors import (
+# ==============================================================================
+# DOMAIN MESSAGES (re-exported for Surface convenience)
+# ==============================================================================
+from ..domain.models.error_messages_model import ErrorMessagesModel
+from ..domain.models.errors import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-
-# ==============================================================================
-# DOMAIN MESSAGES (re-exported for Surface convenience)
-# ==============================================================================
-from ..domain.messages import ErrorMessages, InfoMessages
+from ..domain.models.info_messages_model import InfoMessagesModel
 
 # ==============================================================================
 # DOMAIN TYPES (re-exported for Surface convenience)
 # ==============================================================================
-from ..domain.types import FailureBehavior, GuardFunction
-from .ports import GuardServicePort, TransformServicePort, ValidationServicePort
+from ..domain.models.types import FailureBehavior, GuardFunction
+
+# ==============================================================================
+# INFRASTRUCTURE PORTS (for Surface to use)
+# ==============================================================================
+from .ports.guard_service_port import GuardServicePort
+from .ports.transform_service_port import TransformServicePort
+from .ports.validation_service_port import ValidationServicePort
 
 # ==============================================================================
 # INFRASTRUCTURE SERVICES (default implementations of ports)
 # ==============================================================================
-from .services import GuardService, TransformService, ValidationService
+from .services.guard_service import GuardService
+from .services.transform_service import TransformService
+from .services.validation_service import ValidationService
 
 # ==============================================================================
 # PUBLIC API
@@ -63,6 +73,6 @@ __all__ = [
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
   # Domain messages (re-exported)
-  'ErrorMessages',
-  'InfoMessages',
+  'ErrorMessagesModel',
+  'InfoMessagesModel',
 ]

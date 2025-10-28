@@ -40,7 +40,7 @@ Usage Examples:
         GuardRegistry.register("valid_email", valid_email, namespace="validators")
 """
 
-from .domain.errors import (
+from .domain.models.errors import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
@@ -62,7 +62,7 @@ valid_file_path = CommonGuards.valid_file_path
 valid_url = CommonGuards.valid_url
 valid_enum = CommonGuards.valid_enum
 
-__version__ = '1.1.0'
+__version__ = '2.1.0'
 __all__ = [
   # Primary decorator
   'guarded_expression',

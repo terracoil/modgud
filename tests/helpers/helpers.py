@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 import pytest
-from modgud.domain.errors import GuardClauseError
+from modgud.domain.models.errors import GuardClauseError
 
 
 def assert_guard_fails(

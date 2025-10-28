@@ -1,19 +1,21 @@
 """
-Domain layer - Core types, errors, messages, and ports.
+Domain layer - Core models and ports.
 
-Ports are in domain.ports subpackage and define contracts for
-infrastructure implementations.
+Models contain errors, types, messages.
+Ports define contracts for infrastructure implementations.
 """
 
-from .errors import (
+# Models
+from .models.error_messages_model import ErrorMessagesModel
+from .models.errors import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .messages import ErrorMessages, InfoMessages
-from .types import FailureBehavior, GuardFunction
+from .models.info_messages_model import InfoMessagesModel
+from .models.types import FailureBehavior, GuardFunction
 
 __all__ = [
   # Types
@@ -26,6 +28,6 @@ __all__ = [
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
   # Messages
-  'ErrorMessages',
-  'InfoMessages',
+  'ErrorMessagesModel',
+  'InfoMessagesModel',
 ]
