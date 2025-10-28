@@ -14,6 +14,7 @@
 **Children**:
 - [📖 API Reference](api-reference.md) - Complete API documentation
 - [⚙️ How It Works](how-it-works.md) - Technical deep-dive into AST transformation
+- [🏛️ Architecture](architecture/README.md) - LPA architecture documentation
 
 **External Links**:
 - [GitHub Repository](https://github.com/terracoil/modgud)
@@ -1470,31 +1471,55 @@ def implicit_return(func):
 
 ## 🏛️ Architecture Details
 
-### Clean Architecture Principles
+> **For detailed architecture documentation**, see [Architecture Documentation](architecture/README.md).
 
-modgud follows clean architecture with clear separation of concerns:
+### LPA Architecture Principles
 
-1. **Pure Functions**: Core logic uses pure, composable functions
-2. **Dependency Injection**: Decorators compose functions rather than creating dependencies
-3. **Immutability**: Transformed functions preserve original metadata
-4. **Functional Composition**: Guards are composable pure functions
+modgud follows Layered Ports Architecture (LPA) with clear separation of concerns:
+
+1. **Ports at Every Boundary**: Domain and Infrastructure layers define ports for outer layers
+2. **Inner Layer Owns Ports**: Following Dependency Inversion Principle
+3. **Strict Layer Isolation**: Surface imports only from Infrastructure gateway
+4. **Pure Functions**: Core logic uses pure, composable functions
+5. **Dependency Injection**: Services and adapters are injectable
+6. **Immutability**: Transformed functions preserve original metadata
 
 ### Module Structure
+
+**v0.4.0 LPA Architecture:**
 
 ```
 modgud/
 ├── __init__.py                 # Public API exports
-├── guarded_expression/         # Primary decorator package
-│   ├── __init__.py
-│   ├── decorator.py           # Main guarded_expression class
-│   ├── ast_transform.py       # Pure AST transformation functions
-│   ├── guard_runtime.py       # Pure guard checking functions
-│   └── common_guards.py       # Pre-built guard factories
-└── shared/                     # Shared infrastructure
-    ├── __init__.py
-    ├── types.py               # Type definitions
-    └── errors.py              # Exception classes
+├── domain/                     # Layer 1 (Innermost) - Core types and ports
+│   ├── types.py               # GuardFunction, FailureBehavior types
+│   ├── errors.py              # Exception hierarchy
+│   ├── messages.py            # Error message constants
+│   └── ports/                 # Port interfaces for Infrastructure
+│       ├── guard_checker_port.py
+│       └── ast_transformer_port.py
+│
+├── infrastructure/             # Layer 2 (Middle) - Services and adapters
+│   ├── ports/                 # Port interfaces for Surface
+│   │   ├── guard_service_port.py
+│   │   ├── transform_service_port.py
+│   │   └── validation_service_port.py
+│   ├── services/              # High-level operations
+│   │   ├── guard_service.py
+│   │   ├── transform_service.py
+│   │   └── validation_service.py
+│   ├── adapters/              # Low-level technical implementations
+│   │   ├── guard_checker.py
+│   │   └── ast_transformer.py
+│   └── __init__.py            # Gateway - controls Surface access
+│
+└── surface/                    # Layer 3 (Outermost) - Public API
+    ├── decorator.py           # Main guarded_expression decorator
+    ├── validators.py          # CommonGuards factory methods
+    └── registry.py            # Custom guard registration
 ```
+
+**Dependencies flow inward:** Surface → Infrastructure → Domain
 
 ### AST Transformation Process
 
