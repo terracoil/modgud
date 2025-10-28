@@ -47,9 +47,9 @@ from .domain.models.errors import (
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
+from .surface.common_guards import CommonGuards
 from .surface.decorator import guarded_expression
 from .surface.registry import GuardRegistry
-from .surface.validators import CommonGuards
 
 # Export guards as module-level functions for convenient direct import
 not_empty = CommonGuards.not_empty
@@ -62,13 +62,18 @@ valid_file_path = CommonGuards.valid_file_path
 valid_url = CommonGuards.valid_url
 valid_enum = CommonGuards.valid_enum
 
-__version__ = '2.1.0'
+# Export utility for custom guard authors
+extract_param = CommonGuards.extract_param
+
+__version__ = '2.1.1'
 __all__ = [
   # Primary decorator
   'guarded_expression',
   # Classes
   'CommonGuards',
   'GuardRegistry',
+  # Utilities for custom guards
+  'extract_param',
   # Guard validators (convenience exports)
   'not_empty',
   'not_none',

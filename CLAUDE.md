@@ -298,7 +298,7 @@ The v2.0.0 architecture implements strict Layered Ports Architecture (LPA) with 
 
 **Primary API:**
 ```python
-from modgud import guarded_expression, CommonGuards, GuardClauseError
+from modgud import guarded_expression, CommonGuards, GuardClauseError, extract_param
 
 # With guards and implicit return (default behavior)
 @guarded_expression(
@@ -348,6 +348,22 @@ transform_service = TransformService()
 )
 def advanced_function(x):
     x * 2
+
+# Custom guard implementation using extract_param
+def valid_email(param_name="email", position=0):
+    """Custom guard for email validation."""
+    def check_email(*args, **kwargs):
+        value = extract_param(param_name, position, args, kwargs, default=None)
+        if value is None:
+            return f"{param_name} is required"
+        if "@" not in str(value):
+            return f"{param_name} must be a valid email address"
+        return True
+    return check_email
+
+@guarded_expression(valid_email("user_email"))
+def send_notification(user_email, message):
+    return f"Sending '{message}' to {user_email}"
 ```
 
 ### Error Hierarchy

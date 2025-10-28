@@ -30,7 +30,7 @@ class CommonGuards:
   """
 
   @staticmethod
-  def _extract_param(
+  def extract_param(
     param_name: str,
     position: Optional[int],
     args: tuple[Any, ...],
@@ -38,17 +38,25 @@ class CommonGuards:
     default: Any = None,
   ) -> Any:
     """
-    Extract parameter value from args or kwargs.
+    Extract parameter value from args or kwargs for custom guard implementations.
+
+    This is a public utility method for authors writing custom guards who need to
+    extract parameter values from function arguments.
 
     Args:
         param_name: Name of the parameter in kwargs
-        position: Position in args (None means first arg)
-        args: Positional arguments tuple
-        kwargs: Keyword arguments dict
-        default: Default value if not found
+        position: Position in args (None means first arg, position 0)
+        args: Positional arguments tuple from guard function
+        kwargs: Keyword arguments dict from guard function
+        default: Default value if parameter not found
 
     Returns:
         Parameter value or default
+
+    Example:
+        def check_positive_number(*args, **kwargs):
+            value = CommonGuards.extract_param('amount', 0, args, kwargs, default=0)
+            return value > 0 or f'amount must be positive, got {value}'
 
     """
     result = default
@@ -85,7 +93,7 @@ class CommonGuards:
     """
 
     def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default)
+      value = CommonGuards.extract_param(param_name, position, args, kwargs, default)
       # Single return point
       result: Union[bool, str] = True
       if not validator(value):
@@ -279,7 +287,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> Union[bool, str]:
     """Check if parameter is not empty (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default='')
+    value = CommonGuards.extract_param(param_name, position, args, kwargs, default='')
     result: Union[bool, str] = True
 
     # Check if value is empty (works for strings and collections)
@@ -301,7 +309,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> Union[bool, str]:
     """Check if parameter is within range (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=min_val - 1)
+    value = CommonGuards.extract_param(param_name, position, args, kwargs, default=min_val - 1)
     result: Union[bool, str] = True
 
     if not (min_val <= value <= max_val):
@@ -318,7 +326,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> Union[bool, str]:
     """Check if parameter matches expected type (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    value = CommonGuards.extract_param(param_name, position, args, kwargs, default=None)
     result: Union[bool, str] = True
 
     if not isinstance(value, expected_type):
@@ -335,7 +343,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> Union[bool, str]:
     """Check if parameter matches regex pattern (single return point)."""
-    value = str(CommonGuards._extract_param(param_name, position, args, kwargs, default=''))
+    value = str(CommonGuards.extract_param(param_name, position, args, kwargs, default=''))
     result: Union[bool, str] = True
 
     if re.match(pattern, value) is None:
@@ -354,7 +362,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> Union[bool, str]:
     """Check if parameter is a valid file path (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    value = CommonGuards.extract_param(param_name, position, args, kwargs, default=None)
     result: Union[bool, str] = True
 
     if value is None:
@@ -379,7 +387,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> Union[bool, str]:
     """Check if parameter is a valid URL (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    value = CommonGuards.extract_param(param_name, position, args, kwargs, default=None)
     result: Union[bool, str] = True
 
     if value is None:
@@ -402,7 +410,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> Union[bool, str]:
     """Check if parameter is a valid enum value (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    value = CommonGuards.extract_param(param_name, position, args, kwargs, default=None)
     result: Union[bool, str] = True
 
     if value is None:

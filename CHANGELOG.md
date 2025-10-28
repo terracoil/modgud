@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2025-10-28
+
+### Added
+
+- **Public `CommonGuards.extract_param()` static method** - For custom guard implementations:
+  - Extracts parameter values from `*args` and `**kwargs` in guard functions
+  - Available as `CommonGuards.extract_param()` or via convenience export `extract_param`
+  - Exported from main package: `from modgud import extract_param` or `from modgud import CommonGuards`
+  - Full test coverage with 8 tests (107 total tests now)
+  - Comprehensive documentation and examples for custom guard authors
+
+### Changed
+
+- **File renamed**: `modgud/surface/validators.py` → `modgud/surface/common_guards.py`
+- Updated all imports throughout codebase to use new filename
+- Internal methods now use `CommonGuards.extract_param()` instead of private `_extract_param()`
+
+### Removed
+
+- **BREAKING**: Removed private `CommonGuards._extract_param()` method (no backward compatibility)
+
+### Documentation
+
+- Created `/Users/windfox/plans/modgud/custom-guard-example-for-freyja.md` with migration guide
+- Updated CLAUDE.md with custom guard implementation examples
+- Added 8 comprehensive tests in `tests/surface/test_extract_param.py`
+
+---
+
 ## [2.1.0] - 2025-10-28
 
 ### Added
