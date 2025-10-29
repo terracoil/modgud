@@ -281,7 +281,10 @@ class FreyjaDevTools:
         "**/.pytest_cache",
         "build",
         "dist",
-        "*.egg-info"
+        "*.egg-info",
+        "**/.mypy_cache",
+        "**/.ruff_cache",
+        "**/pytest.log",
       ]
 
       removed_count = sum(
