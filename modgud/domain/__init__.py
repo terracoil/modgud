@@ -1,33 +1,18 @@
-"""
-Domain layer - Core models and ports.
+"""Domain layer for the ``modgud`` package.
 
-Models contain errors, types, messages.
-Ports define contracts for infrastructure implementations.
+The domain layer encapsulates the core business logic and models. It
+defines the objects and operations that represent the problem space.
+Nothing in this package depends on higher‑level layers such as
+infrastructure or presentation. Instead, the domain declares
+``ports``—abstract interfaces—which lower layers must implement.
 """
 
-# Models
-from .models.error_messages_model import ErrorMessagesModel
-from .models.errors import (
-  ExplicitReturnDisallowedError,
-  GuardClauseError,
-  ImplicitReturnError,
-  MissingImplicitReturnError,
-  UnsupportedConstructError,
-)
-from .models.info_messages_model import InfoMessagesModel
-from .models.types import FailureBehavior, GuardFunction
+from . import models as models
+from . import ports as ports
+from .services import DomainService
 
 __all__ = [
-  # Types
-  'GuardFunction',
-  'FailureBehavior',
-  # Errors
-  'GuardClauseError',
-  'ImplicitReturnError',
-  'ExplicitReturnDisallowedError',
-  'MissingImplicitReturnError',
-  'UnsupportedConstructError',
-  # Messages
-  'ErrorMessagesModel',
-  'InfoMessagesModel',
+    "models",
+    "ports",
+    "DomainService",
 ]
