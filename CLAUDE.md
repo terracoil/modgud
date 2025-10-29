@@ -129,7 +129,7 @@ modgud follows a 3-layer Layered Ports Architecture (LPA) with ports at every la
 **Layer 3 - Surface (Outermost):**
 - `modgud/surface/` - Public API and decorator orchestration
   - `decorator.py` - Main `guarded_expression` decorator (uses infrastructure service ports)
-  - `validators.py` - Pre-built guard factories (`CommonGuards` class)
+  - `common_guards.py` - Pre-built guard factories (`CommonGuards` class)
   - `registry.py` - Custom guard registration (`GuardRegistry` class)
 
 **Tests:**

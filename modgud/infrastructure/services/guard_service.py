@@ -4,7 +4,7 @@ from typing import Any, Optional, Tuple
 
 from modgud.domain.models.types import FailureBehavior, GuardFunction
 from modgud.domain.ports.guard_checker_port import GuardCheckerPort
-from modgud.infrastructure.ports.guard_service_port import GuardServicePort
+from modgud.domain.ports.guard_service_port import GuardServicePort
 
 
 class GuardService(GuardServicePort):

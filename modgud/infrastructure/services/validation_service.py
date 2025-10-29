@@ -4,7 +4,7 @@ from typing import Any, Callable, Union
 
 from modgud.domain.models.error_messages_model import ErrorMessagesModel
 from modgud.domain.models.types import GuardFunction
-from modgud.infrastructure.ports.validation_service_port import ValidationServicePort
+from modgud.domain.ports.validation_service_port import ValidationServicePort
 
 
 class ValidationService(ValidationServicePort):

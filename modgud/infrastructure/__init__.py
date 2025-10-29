@@ -40,9 +40,9 @@ from ..domain.models.types import FailureBehavior, GuardFunction
 # ==============================================================================
 # INFRASTRUCTURE PORTS (for Surface to use)
 # ==============================================================================
-from .ports.guard_service_port import GuardServicePort
-from .ports.transform_service_port import TransformServicePort
-from .ports.validation_service_port import ValidationServicePort
+from ..domain.ports.guard_service_port import GuardServicePort
+from ..domain.ports.transform_service_port import TransformServicePort
+from ..domain.ports.validation_service_port import ValidationServicePort
 
 # ==============================================================================
 # INFRASTRUCTURE SERVICES (default implementations of ports)

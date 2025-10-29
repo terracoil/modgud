@@ -40,7 +40,7 @@ Usage Examples:
         GuardRegistry.register("valid_email", valid_email, namespace="validators")
 """
 
-from .domain.models.errors import (
+from .infrastructure import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,

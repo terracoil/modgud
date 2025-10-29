@@ -5,7 +5,7 @@ import textwrap
 from typing import Any, Callable, Optional
 
 from modgud.domain.ports.ast_transformer_port import AstTransformerPort
-from modgud.infrastructure.ports.transform_service_port import TransformServicePort
+from modgud.domain.ports.transform_service_port import TransformServicePort
 
 
 class TransformService(TransformServicePort):
