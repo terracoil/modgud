@@ -1,3 +1,4 @@
+# moved from infrastructure/ports
 """Transform service port - high-level contract for AST transformation operations."""
 
 from abc import ABC, abstractmethod

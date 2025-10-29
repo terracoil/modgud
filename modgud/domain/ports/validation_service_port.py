@@ -1,3 +1,4 @@
+# moved from infrastructure/ports
 """Validation service port - high-level contract for guard factory operations."""
 
 from abc import ABC, abstractmethod

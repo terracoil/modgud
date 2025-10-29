@@ -7,7 +7,7 @@ from modgud.domain.models.types import GuardFunction
 from modgud.infrastructure.ports.validation_service_port import ValidationServicePort
 
 
-class ValidationService(ValidationServicePort):
+class ValidationService():
   """
   Production validation service implementation.
 

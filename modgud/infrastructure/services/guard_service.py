@@ -7,7 +7,7 @@ from modgud.domain.ports.guard_checker_port import GuardCheckerPort
 from modgud.infrastructure.ports.guard_service_port import GuardServicePort
 
 
-class GuardService(GuardServicePort):
+class GuardService():
   """
   Production guard service implementation.
 

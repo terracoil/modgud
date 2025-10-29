@@ -8,7 +8,7 @@ from modgud.domain.ports.ast_transformer_port import AstTransformerPort
 from modgud.infrastructure.ports.transform_service_port import TransformServicePort
 
 
-class TransformService(TransformServicePort):
+class TransformService():
   """
   Production transform service implementation.
 
