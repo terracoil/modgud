@@ -297,73 +297,84 @@ The v2.0.0 architecture implements strict Layered Ports Architecture (LPA) with 
 ### Import Examples
 
 **Primary API:**
+
 ```python
 from modgud import guarded_expression, CommonGuards, GuardClauseError, extract_param
 
+
 # With guards and implicit return (default behavior)
 @guarded_expression(
-    CommonGuards.positive("x"),
-    implicit_return=True,  # default
-    on_error=GuardClauseError  # default
+  CommonGuards.positive("x"),
+  implicit_return=True,  # default
+  on_error=GuardClauseError  # default
 )
 def process(x):
-    result = x * 2
-    result  # implicit return
+  result = x * 2
+  result  # implicit return
+
 
 # Multiple guards with different validators
 @guarded_expression(
-    CommonGuards.not_none("user"),
-    CommonGuards.type_check(str, "name"),
-    CommonGuards.positive("amount")
+  CommonGuards.not_none("user"),
+  CommonGuards.type_check(str, "name"),
+  CommonGuards.positive("amount")
 )
 def create_transaction(user, name, amount):
-    transaction = Transaction(user, name, amount)
-    transaction.id
+  transaction = Transaction(user, name, amount)
+  transaction.id
+
 
 # Guards only, explicit return
 @guarded_expression(
-    CommonGuards.positive("x"),
-    implicit_return=False,
-    on_error=None
+  CommonGuards.positive("x"),
+  implicit_return=False,
+  on_error=None
 )
 def calculate(x):
-    return x * 2
+  return x * 2
+
 
 # Implicit return only, no guards
 @guarded_expression()
 def compute(x):
-    result = x * 2
-    result  # implicit return
+  result = x * 2
+  result  # implicit return
+
 
 # Using infrastructure services directly (advanced usage)
-from modgud.infrastructure import GuardService, TransformService
+from modgud.infrastructure import GuardAdapter, TransformAdapter
 
-guard_service = GuardService()
-transform_service = TransformService()
+guard_service = GuardAdapter()
+transform_service = TransformAdapter()
+
 
 @guarded_expression(
-    CommonGuards.not_none("x"),
-    guard_service=guard_service,
-    transform_service=transform_service
+  CommonGuards.not_none("x"),
+  guard_service=guard_service,
+  transform_service=transform_service
 )
 def advanced_function(x):
-    x * 2
+  x * 2
+
 
 # Custom guard implementation using extract_param
 def valid_email(param_name="email", position=0):
-    """Custom guard for email validation."""
-    def check_email(*args, **kwargs):
-        value = extract_param(param_name, position, args, kwargs, default=None)
-        if value is None:
-            return f"{param_name} is required"
-        if "@" not in str(value):
-            return f"{param_name} must be a valid email address"
-        return True
-    return check_email
+  """Custom guard for email validation."""
+
+  def check_email(*args, **kwargs):
+    value = extract_param(param_name, position, args, kwargs, default=None)
+    if value is None:
+      return f"{param_name} is required"
+    if "@" not in str(value):
+      return f"{param_name} must be a valid email address"
+    return True
+
+  return check_email
+
 
 @guarded_expression(valid_email("user_email"))
 def send_notification(user_email, message):
-    return f"Sending '{message}' to {user_email}"
+  return f"Sending '{message}' to {user_email}"
 ```
 
 ### Error Hierarchy

@@ -17,11 +17,11 @@ from ..infrastructure import (
   GuardClauseError,
   GuardFunction,
   # Default service implementations
-  GuardService,
+  GuardAdapter,
   # Infrastructure service ports
-  GuardServicePort,
-  TransformService,
-  TransformServicePort,
+  GuardPort,
+  TransformAdapter,
+  TransformPort,
   UnsupportedConstructError,
 )
 
@@ -43,8 +43,8 @@ class guarded_expression:
           - Callable: Invoked with (error_msg, *args, **kwargs), return value used
           - Exception class: Instantiated with error message and raised
       log: If True, log guard failures at INFO level (default: False)
-      guard_service: Optional GuardServicePort implementation (uses default if not provided)
-      transform_service: Optional TransformServicePort implementation (uses default if not provided)
+      guard_service: Optional GuardPort implementation (uses default if not provided)
+      transform_service: Optional TransformPort implementation (uses default if not provided)
 
   Usage:
       @guarded_expression(
@@ -64,8 +64,8 @@ class guarded_expression:
     implicit_return: bool = True,
     on_error: FailureBehavior = GuardClauseError,
     log: bool = False,
-    guard_service: Optional[GuardServicePort] = None,
-    transform_service: Optional[TransformServicePort] = None,
+    guard_service: Optional[GuardPort] = None,
+    transform_service: Optional[TransformPort] = None,
   ):
     """
     Initialize the guarded_expression decorator.
@@ -89,17 +89,17 @@ class guarded_expression:
     self._transform_service = transform_service
 
   @property
-  def guard_service(self) -> GuardServicePort:
+  def guard_service(self) -> GuardPort:
     """Get guard service implementation, lazily loading default if needed."""
     if self._guard_service is None:
-      self._guard_service = GuardService()
+      self._guard_service = GuardAdapter()
     return self._guard_service
 
   @property
-  def transform_service(self) -> TransformServicePort:
+  def transform_service(self) -> TransformPort:
     """Get transform service implementation, lazily loading default if needed."""
     if self._transform_service is None:
-      self._transform_service = TransformService()
+      self._transform_service = TransformAdapter()
     return self._transform_service
 
   def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:

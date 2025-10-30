@@ -38,31 +38,31 @@ from ..domain.models.info_messages_model import InfoMessagesModel
 from ..domain.models.types import FailureBehavior, GuardFunction
 
 # ==============================================================================
-# INFRASTRUCTURE PORTS (for Surface to use)
+# DOMAIN PORTS (re-exported from domain for Surface convenience)
 # ==============================================================================
-from .ports.guard_service_port import GuardServicePort
-from .ports.transform_service_port import TransformServicePort
-from .ports.validation_service_port import ValidationServicePort
+from ..domain.ports.guard_port import GuardPort
+from ..domain.ports.transform_port import TransformPort
+from ..domain.ports.validation_port import ValidationPort
 
 # ==============================================================================
 # INFRASTRUCTURE SERVICES (default implementations of ports)
 # ==============================================================================
-from .services.guard_service import GuardService
-from .services.transform_service import TransformService
-from .services.validation_service import ValidationService
+from modgud.infrastructure.adapters.transform_adapter import TransformAdapter
+from modgud.infrastructure.adapters.guard_adapter import GuardAdapter
+from modgud.infrastructure.adapters.validation_adapter import ValidationAdapter
 
 # ==============================================================================
 # PUBLIC API
 # ==============================================================================
 __all__ = [
   # Infrastructure ports (Surface uses these)
-  'GuardServicePort',
-  'TransformServicePort',
-  'ValidationServicePort',
+  'GuardPort',
+  'TransformPort',
+  'ValidationPort',
   # Infrastructure services (default implementations)
-  'GuardService',
-  'TransformService',
-  'ValidationService',
+  'GuardAdapter',
+  'TransformAdapter',
+  'ValidationAdapter',
   # Domain types (re-exported)
   'GuardFunction',
   'FailureBehavior',

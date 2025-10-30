@@ -5,14 +5,14 @@ import textwrap
 from typing import Any, Callable, Optional
 
 from modgud.domain.ports.ast_transformer_port import AstTransformerPort
-from modgud.infrastructure.ports.transform_service_port import TransformServicePort
+from modgud.domain.ports.transform_port import TransformPort
 
 
-class TransformService(TransformServicePort):
+class TransformAdapter(TransformPort):
   """
   Production transform service implementation.
 
-  This service implements the high-level TransformServicePort interface
+  This service implements the high-level TransformPort interface
   by delegating to an AstTransformerPort implementation (adapter).
   """
 

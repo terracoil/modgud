@@ -3,10 +3,10 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Tuple
 
-from ...domain.models.types import FailureBehavior, GuardFunction
+from ..models.types import FailureBehavior, GuardFunction
 
 
-class GuardServicePort(ABC):
+class GuardPort(ABC):
   """
   High-level guard validation service for Surface layer.
 

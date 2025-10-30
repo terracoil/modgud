@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable
 
 
-class TransformServicePort(ABC):
+class TransformPort(ABC):
   """
   High-level AST transformation service for Surface layer.
 

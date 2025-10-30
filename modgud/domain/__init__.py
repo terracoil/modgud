@@ -17,6 +17,13 @@ from .models.errors import (
 from .models.info_messages_model import InfoMessagesModel
 from .models.types import FailureBehavior, GuardFunction
 
+# Ports
+from .ports.ast_transformer_port import AstTransformerPort
+from .ports.guard_checker_port import GuardCheckerPort
+from .ports.guard_port import GuardPort
+from .ports.transform_port import TransformPort
+from .ports.validation_port import ValidationPort
+
 __all__ = [
   # Types
   'GuardFunction',
@@ -30,4 +37,10 @@ __all__ = [
   # Messages
   'ErrorMessagesModel',
   'InfoMessagesModel',
+  # Ports
+  'AstTransformerPort',
+  'GuardCheckerPort',
+  'GuardPort',
+  'TransformPort',
+  'ValidationPort',
 ]

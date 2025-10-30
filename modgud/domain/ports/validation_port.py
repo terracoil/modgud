@@ -1,20 +1,20 @@
-"""Validation service implementation - provides guard factory helpers."""
+"""Validation service port - high-level contract for guard factory operations."""
 
-from typing import Any, Callable, Union
+from abc import ABC, abstractmethod
+from typing import Any, Callable
 
-from modgud.domain.models.error_messages_model import ErrorMessagesModel
-from modgud.domain.models.types import GuardFunction
-from modgud.infrastructure.ports.validation_service_port import ValidationServicePort
+from ..models.types import GuardFunction
 
 
-class ValidationService(ValidationServicePort):
+class ValidationPort(ABC):
   """
-  Production validation service implementation.
+  High-level validation operations for guard factories.
 
-  This service implements the high-level ValidationServicePort interface
-  to provide helper operations for guard factories.
+  This port defines the contract for validation helper operations that
+  guard factories (CommonGuards) use. Infrastructure services implement this port.
   """
 
+  @abstractmethod
   def get_error_message(self, message_key: str, **kwargs: Any) -> str:
     """
     Get formatted error message from domain messages.
@@ -27,10 +27,9 @@ class ValidationService(ValidationServicePort):
         Formatted error message string
 
     """
-    template: str = getattr(ErrorMessagesModel, message_key)
-    result: str = template.format(**kwargs)
-    return result
+    pass
 
+  @abstractmethod
   def create_guard_function(
     self,
     validation_logic: Callable[..., bool],
@@ -50,10 +49,4 @@ class ValidationService(ValidationServicePort):
         Guard function with signature (*args, **kwargs) -> Union[bool, str]
 
     """
-
-    def guard(*args: Any, **kwargs: Any) -> Union[bool, str]:
-      if validation_logic(*args, **kwargs):
-        return True
-      return error_message
-
-    return guard
+    pass

@@ -4,14 +4,14 @@ from typing import Any, Optional, Tuple
 
 from modgud.domain.models.types import FailureBehavior, GuardFunction
 from modgud.domain.ports.guard_checker_port import GuardCheckerPort
-from modgud.infrastructure.ports.guard_service_port import GuardServicePort
+from modgud.domain.ports.guard_port import GuardPort
 
 
-class GuardService(GuardServicePort):
+class GuardAdapter(GuardPort):
   """
   Production guard service implementation.
 
-  This service implements the high-level GuardServicePort interface
+  This service implements the high-level GuardPort interface
   by delegating to a GuardCheckerPort implementation (adapter).
   """
 
