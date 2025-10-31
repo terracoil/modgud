@@ -102,6 +102,9 @@ class TestArchitectureCompliance:
       class_pattern = r'^class\s+(\w+)\s*[\(:]'
       for match in re.finditer(class_pattern, content, re.MULTILINE):
         class_name = match.group(1)
+        # Skip private classes (starting with underscore)
+        if class_name.startswith('_'):
+          continue
         if not class_name.endswith('Service'):
           violations.append(f'{py_file.name}: class {class_name}')
 

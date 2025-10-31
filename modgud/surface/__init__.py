@@ -11,9 +11,9 @@ from ..infrastructure import (
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .common_guards import CommonGuards
-from .decorator import guarded_expression
-from .registry import GuardRegistry
+from .handlers.guarded_expression_handler import guarded_expression
+from .services.common_guard_service import CommonGuards
+from .services.guard_registry_service import GuardRegistry
 
 __all__ = [
   # Main decorator

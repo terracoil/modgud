@@ -6,7 +6,7 @@ from typing import List
 
 from modgud import guarded_expression, positive
 from modgud.domain.models.errors import GuardClauseError
-from modgud.surface.registry import GuardRegistry
+from modgud.surface.services.guard_registry_service import GuardRegistry
 
 
 class TestThreadSafety:

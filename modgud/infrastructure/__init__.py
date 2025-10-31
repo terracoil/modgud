@@ -17,11 +17,19 @@ Following LPA principles:
 # INFRASTRUCTURE PORTS (for Surface to use)
 # ==============================================================================
 # ==============================================================================
-# DOMAIN ERRORS (re-exported for Surface convenience)
+# INFRASTRUCTURE SERVICES (default implementations of ports)
 # ==============================================================================
+from modgud.infrastructure.services.guard_service import GuardService
+from modgud.infrastructure.services.transform_service import TransformService
+from modgud.infrastructure.services.validation_service import ValidationService
+
 # ==============================================================================
-# DOMAIN MESSAGES (re-exported for Surface convenience)
+# BACKWARD COMPATIBILITY ALIASES (for adapter names)
 # ==============================================================================
+GuardAdapter = GuardService  # Alias for backward compatibility
+TransformAdapter = TransformService  # Alias for backward compatibility
+ValidationAdapter = ValidationService  # Alias for backward compatibility
+
 from ..domain.models.error_messages_model import ErrorMessagesModel
 from ..domain.models.errors import (
   ExplicitReturnDisallowedError,
@@ -45,13 +53,6 @@ from ..domain.ports.transform_port import TransformPort
 from ..domain.ports.validation_port import ValidationPort
 
 # ==============================================================================
-# INFRASTRUCTURE SERVICES (default implementations of ports)
-# ==============================================================================
-from modgud.infrastructure.adapters.transform_adapter import TransformAdapter
-from modgud.infrastructure.adapters.guard_adapter import GuardAdapter
-from modgud.infrastructure.adapters.validation_adapter import ValidationAdapter
-
-# ==============================================================================
 # PUBLIC API
 # ==============================================================================
 __all__ = [
@@ -60,6 +61,10 @@ __all__ = [
   'TransformPort',
   'ValidationPort',
   # Infrastructure services (default implementations)
+  'GuardService',
+  'TransformService',
+  'ValidationService',
+  # Backward compatibility aliases
   'GuardAdapter',
   'TransformAdapter',
   'ValidationAdapter',

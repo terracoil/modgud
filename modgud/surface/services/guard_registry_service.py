@@ -9,7 +9,7 @@ Surface layer only imports from infrastructure layer gateway.
 
 from typing import Callable, Dict, Optional
 
-from ..infrastructure import GuardFunction
+from ...infrastructure import GuardFunction
 
 
 class GuardRegistry:

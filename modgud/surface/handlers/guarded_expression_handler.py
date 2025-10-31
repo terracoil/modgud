@@ -11,13 +11,13 @@ import functools
 import inspect
 from typing import Any, Callable, Optional
 
-from ..infrastructure import (
+from ...infrastructure import (
   # Domain types/errors (re-exported by infrastructure)
   FailureBehavior,
-  GuardClauseError,
-  GuardFunction,
   # Default service implementations
   GuardAdapter,
+  GuardClauseError,
+  GuardFunction,
   # Infrastructure service ports
   GuardPort,
   TransformAdapter,
