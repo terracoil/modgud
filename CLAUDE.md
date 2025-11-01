@@ -8,6 +8,22 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 
 **IMPORTANT: This is a NEW project with NO existing users. No backward compatibility requirements. Breaking changes are acceptable. Clean, simple architecture is prioritized over legacy support.**
 
+### 🚨 CRITICAL: Modgud is a "Fresh" Project - Zero Backward Compatibility Required 🚨
+
+**ABSOLUTE MANDATE: I am the ONLY current user of modgud. There are NO production deployments, NO external dependencies, NO legacy code to preserve.**
+
+**THEREFORE:**
+- **NEVER add backward compatibility code** - no aliases, deprecated functions, or compatibility shims
+- **NEVER deprecate anything** - just DELETE, RENAME, or REFACTOR with complete freedom
+- **BREAKING CHANGES ARE NOT JUST ACCEPTABLE - THEY ARE PREFERRED** when they improve the codebase
+- **Rename freely** - functions, classes, modules, parameters - whatever makes the code cleaner
+- **Delete dead code immediately** - no "soft deprecation" periods needed
+- **Restructure architecture aggressively** - optimize for clarity and maintainability, not compatibility
+
+**If you find yourself adding compatibility code, STOP. You are violating this core principle.**
+
+This is a greenfield project where we can implement the cleanest, most elegant solution without any legacy baggage. Use this freedom liberally.
+
 **Core Architecture (v2.1.0 - Strict LPA with Architecture Validation):**
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
 - **Implicit return by default**: `implicit_return=True` enables Ruby-style expression-oriented code
