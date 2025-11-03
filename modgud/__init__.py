@@ -5,11 +5,12 @@ A library for implementing guard clause decorators with single return point arch
 
 Primary API:
   - guarded_expression: Unified decorator combining guards + implicit return
+  - implicit_return: Standalone decorator for Ruby-style implicit returns
   - Pre-built guard validators: positive, not_none, not_empty, type_check, etc.
 
 Usage Examples:
 
-    Basic guard validation:
+    Basic guard validation (explicit return):
         from modgud import guarded_expression, positive, type_check
 
         @guarded_expression(
@@ -20,8 +21,19 @@ Usage Examples:
         def calculate(x):
             return x * 2
 
-    Implicit return (Ruby-style):
-        @guarded_expression()
+    Implicit return with guards (recommended approach):
+        from modgud import implicit_return, guarded_expression, positive
+
+        @implicit_return
+        @guarded_expression(positive("x"))
+        def process(x):
+            result = x * 2
+            result  # Implicit return
+
+    Standalone implicit return (Ruby-style):
+        from modgud import implicit_return
+
+        @implicit_return
         def process(x, y):
             if x > y:
                 x + y  # Implicit return
@@ -40,7 +52,7 @@ Usage Examples:
         GuardRegistry.register("valid_email", valid_email, namespace="validators")
 """
 
-from .guarded_expression import guarded_expression
+from .guarded_expression import guarded_expression, implicit_return
 from .guarded_expression.common_guards import CommonGuards
 from .guarded_expression.errors import (
   ExplicitReturnDisallowedError,
@@ -64,8 +76,9 @@ valid_enum = CommonGuards.valid_enum
 
 __version__ = '1.1.0'
 __all__ = [
-  # Primary decorator
+  # Primary decorators
   'guarded_expression',
+  'implicit_return',
   # Classes
   'CommonGuards',
   'GuardRegistry',

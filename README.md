@@ -115,7 +115,7 @@ Multiple return points everywhere. Business logic buried at the bottom. Error ha
 **modgud** gives you guard clauses and expression-oriented programming in Python:
 
 ```python
-from modgud import guarded_expression, positive, type_check, in_range, not_empty
+from modgud import guarded_expression, implicit_return, positive, type_check, in_range, not_empty
 
 @guarded_expression(
     positive("user_id"),
@@ -126,6 +126,7 @@ from modgud import guarded_expression, positive, type_check, in_range, not_empty
     lambda pm: pm in ["card", "bank", "crypto"] or "Invalid payment method",
     on_error={"success": False, "error": "Validation failed"}
 )
+@implicit_return
 def process_payment(user_id, amount, payment_method):
     transaction = create_transaction(user_id, amount, payment_method)
     {"success": True, "transaction_id": transaction.id}  # Implicit return!
@@ -159,13 +160,14 @@ def withdraw(account_id, amount):
 
 **After:**
 ```python
-from modgud import guarded_expression, not_none, positive
+from modgud import guarded_expression, implicit_return, not_none, positive
 
 @guarded_expression(
     not_none("account_id"),
     positive("amount"),
     lambda account_id, amount: amount <= get_balance(account_id) or "Insufficient funds"
 )
+@implicit_return
 def withdraw(account_id, amount):
     balance = get_balance(account_id) - amount
     update_balance(account_id, balance)
@@ -189,9 +191,10 @@ def classify_user(age, premium):
 
 **After:**
 ```python
-from modgud import guarded_expression, positive
+from modgud import guarded_expression, implicit_return, positive
 
 @guarded_expression(positive("age"))
+@implicit_return
 def classify_user(age, premium):
     if age < 18:
         "minor"
@@ -214,7 +217,7 @@ Guards handle early exits. Your function handles business logic. Separation of c
 Stop writing the same validations over and over:
 
 ```python
-from modgud import guarded_expression, not_none, matches_pattern, positive, in_range, not_empty, type_check
+from modgud import guarded_expression, implicit_return, not_none, matches_pattern, positive, in_range, not_empty, type_check
 
 @guarded_expression(
     not_none("email"),
@@ -224,6 +227,7 @@ from modgud import guarded_expression, not_none, matches_pattern, positive, in_r
     not_empty("username"),
     type_check(str, "username")
 )
+@implicit_return
 def register_user(email, age, username):
     user_id = create_user_record(email, age, username)
     send_welcome_email(email)
@@ -246,30 +250,34 @@ Your code, your rules. Choose how guards fail:
 
 **Return custom values:**
 ```python
-from modgud import guarded_expression, positive
+from modgud import guarded_expression, implicit_return, positive
 
 @guarded_expression(
     positive("amount"),
     on_error={"error": "Invalid amount", "code": 400}
 )
+@implicit_return
 def process(amount):
     {"success": True, "amount": amount}
 ```
 
 **Raise exceptions:**
 ```python
-from modgud import guarded_expression, not_empty
+from modgud import guarded_expression, implicit_return, not_empty
 
 @guarded_expression(
     not_empty("username"),
     on_error=ValueError
 )
+@implicit_return
 def create_account(username):
     Account(username)
 ```
 
 **Custom handlers:**
 ```python
+from modgud import guarded_expression, implicit_return
+
 def audit_and_return(error_msg, *args, **kwargs):
     log_security_event(error_msg)
     return None
@@ -278,6 +286,7 @@ def audit_and_return(error_msg, *args, **kwargs):
     lambda api_key: validate_key(api_key) or "Invalid key",
     on_error=audit_and_return
 )
+@implicit_return
 def sensitive_operation(api_key):
     perform_operation()
 ```
@@ -309,12 +318,13 @@ pip install modgud
 ### Your First Guarded Function
 
 ```python
-from modgud import guarded_expression, positive, in_range
+from modgud import guarded_expression, implicit_return, positive, in_range
 
 @guarded_expression(
     positive("x"),
     in_range(1, 100, "x")
 )
+@implicit_return
 def calculate_discount(x):
     if x >= 50:
         x * 0.2
@@ -381,7 +391,7 @@ def create_user(email, age, username, password):
 **With modgud:**
 
 ```python
-from modgud import guarded_expression, not_empty, matches_pattern, type_check, in_range
+from modgud import guarded_expression, implicit_return, not_empty, matches_pattern, type_check, in_range
 
 @guarded_expression(
     not_empty("email"),
@@ -393,6 +403,7 @@ from modgud import guarded_expression, not_empty, matches_pattern, type_check, i
     not_empty("password"),
     on_error={"status": 400, "error": "Validation failed"}
 )
+@implicit_return
 def create_user(email, age, username, password):
     user_id = db.create_user(email, age, username, hash_password(password))
     {"status": 200, "user_id": user_id}
@@ -469,9 +480,10 @@ def get_status(user):
     return status
 
 # Expression-oriented (with modgud)
-from modgud import guarded_expression
+from modgud import guarded_expression, implicit_return
 
 @guarded_expression()
+@implicit_return
 def get_status(user):
     if user.is_active:
         "premium_active" if user.is_premium else "standard_active"
@@ -491,12 +503,13 @@ With modgud, Python developers can finally write in an expression-oriented style
 
 ```python
 # Complex business logic, expression style
-from modgud import guarded_expression, not_none, positive
+from modgud import guarded_expression, implicit_return, not_none, positive
 
 @guarded_expression(
     not_none("order"),
     positive("discount_rate")
 )
+@implicit_return
 def calculate_final_price(order, discount_rate, is_premium):
     base_price = order.total
     if is_premium:
@@ -535,6 +548,51 @@ Like **Móðguðr** (*"Furious Battler"*), the bridge guardian of Norse mytholog
 Your functions should focus on *what they do*, not on validating *what they receive*. Guards handle the boundary. Your code handles the logic.
 
 **Single return point. Single responsibility. Single source of truth.**
+
+---
+
+## 🎯 New in v0.3.0: Composable Expression Decorators
+
+**modgud now provides two complementary decorators that work beautifully together:**
+
+### Recommended Pattern
+```python
+from modgud import guarded_expression, implicit_return
+
+# Combine both decorators for full power
+@guarded_expression(not_none("x"), positive("x"))
+@implicit_return
+def process(x):
+    result = x * 2
+    result  # Clean implicit return
+```
+
+### Individual Use Cases
+```python
+# Guards only (traditional explicit returns)
+@guarded_expression(not_none("x"), positive("x"))
+def calculate(x):
+    return x * 2
+
+# Expression-orientation only (no guards)
+@implicit_return
+def classify(status):
+    if status == "active":
+        "user_active"
+    else:
+        "user_inactive"
+```
+
+### Migration Path
+The unified approach still works (with deprecation warning):
+```python
+# Legacy approach (deprecated but functional)
+@guarded_expression(not_none("x"), implicit_return=True)  # ⚠️ Deprecated parameter
+def legacy_function(x):
+    x * 2
+```
+
+**Why the change?** This separation enables cleaner composition with future expression-oriented decorators and gives you more flexibility in how you structure your functions.
 
 ---
 

@@ -19,8 +19,9 @@ Complete API reference for the modgud library, covering all decorators, classes,
 ## 📋 Table of Contents
 
 - [📦 Module Overview](#module-overview)
-- [🎖️ Primary Decorator](#primary-decorator)
+- [🎖️ Primary Decorators](#primary-decorators)
   - [guarded_expression](#guarded_expression)
+  - [implicit_return](#implicit_return)
 - [🧩 Pre-built Guard Functions](#pre-built-guard-functions)
 - [🚨 Error Classes](#error-classes)
 - [📝 Guard Registry Functions](#guard-registry-functions)
@@ -32,8 +33,9 @@ Complete API reference for the modgud library, covering all decorators, classes,
 
 ```python
 from modgud import (
-    # Primary decorator
+    # Primary decorators
     guarded_expression,
+    implicit_return,
 
     # Guard validators (all available guards)
     not_none,
@@ -73,7 +75,7 @@ from modgud import (
 
 ---
 
-## 🎖️ Primary Decorator
+## 🎖️ Primary Decorators
 
 ### guarded_expression
 
@@ -95,7 +97,7 @@ guarded_expression(
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `*guards` | `GuardFunction` | - | Variable number of guard functions that validate input |
-| `implicit_return` | `bool` | `True` | Enable implicit return transformation |
+| `implicit_return` | `bool` | `True` | **⚠️ Deprecated:** Use separate `@implicit_return` decorator instead |
 | `on_error` | `FailureBehavior` | `GuardClauseError` | Behavior when guard fails (see below) |
 | `log` | `bool` | `False` | Log guard failures at INFO level |
 
@@ -193,6 +195,111 @@ def process_items(items):
 process_items([])  # Logs: "INFO: Guard failed: items must not be empty"
 ```
 
+##### Recommended Composition Pattern (New in v0.3.0)
+
+```python
+from modgud import guarded_expression, implicit_return, positive
+
+# Recommended: Use separate decorators
+@guarded_expression(positive("x"))
+@implicit_return
+def calculate(x):
+    result = x * 2
+    result
+
+# Legacy (deprecated but functional)
+@guarded_expression(positive("x"), implicit_return=True)  # ⚠️ Shows warning
+def legacy_calculate(x):
+    result = x * 2
+    result
+```
+
+---
+
+### implicit_return
+
+**New in v0.3.0:** Standalone decorator for expression-oriented programming that transforms the last expression in each code path into an implicit return value.
+
+#### Signature
+
+```python
+implicit_return(func: Callable) -> Callable
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `func` | `Callable` | Function to transform with implicit returns |
+
+#### Returns
+
+Decorated function with AST-transformed implicit return behavior.
+
+#### Raises
+
+- `ExplicitReturnDisallowedError`: If function contains explicit `return` statements
+- `MissingImplicitReturnError`: If not all code paths yield a value
+- `UnsupportedConstructError`: If source code contains unsupported constructs
+
+#### Examples
+
+##### Basic Implicit Returns
+
+```python
+from modgud import implicit_return
+
+@implicit_return
+def classify_status(is_active, is_premium):
+    if is_active:
+        "premium" if is_premium else "standard"
+    else:
+        "inactive"
+
+classify_status(True, True)   # Returns: "premium"
+classify_status(True, False)  # Returns: "standard" 
+classify_status(False, True)  # Returns: "inactive"
+```
+
+##### Composition with Guards
+
+```python
+from modgud import guarded_expression, implicit_return, not_none
+
+@guarded_expression(not_none("user"))
+@implicit_return
+def get_user_role(user):
+    if user.is_admin:
+        "admin"
+    elif user.is_moderator:
+        "moderator"
+    else:
+        "user"
+```
+
+##### Complex Control Flow
+
+```python
+@implicit_return
+def process_data(data, fallback_mode=False):
+    try:
+        if fallback_mode:
+            data.get("simple_result", "default")
+        else:
+            complex_processing(data)
+    except ProcessingError:
+        "error_occurred"
+    except Exception:
+        "unknown_error"
+```
+
+#### Notes
+
+- **Order Matters**: When composing with other decorators, `@implicit_return` should typically be the innermost (closest to the function)
+- **Source Required**: Function source code must be available via `inspect.getsource()`
+- **No Explicit Returns**: Functions cannot contain `return` statements when using `@implicit_return`
+- **All Paths Must Yield**: Every execution path must end with an expression that produces a value
+
 ---
 
 ## 🧩 Pre-built Guard Functions
@@ -217,11 +324,12 @@ not_empty(param_name: str = 'parameter', position: Optional[int] = None) -> Guar
 
 **Example:**
 ```python
-from modgud import guarded_expression, not_empty
+from modgud import guarded_expression, implicit_return, not_empty
 
 @guarded_expression(not_empty("items"))
+@implicit_return
 def process(items):
-    return len(items)
+    len(items)
 ```
 
 ---
@@ -240,11 +348,12 @@ not_none(param_name: str = 'parameter', position: int = 0) -> GuardFunction
 
 **Example:**
 ```python
-from modgud import guarded_expression, not_none
+from modgud import guarded_expression, implicit_return, not_none
 
 @guarded_expression(not_none("user"))
+@implicit_return
 def greet(user):
-    return f"Hello, {user.name}"
+    f"Hello, {user.name}"
 ```
 
 ---
@@ -263,11 +372,12 @@ positive(param_name: str = 'parameter', position: int = 0) -> GuardFunction
 
 **Example:**
 ```python
-from modgud import guarded_expression, positive
+from modgud import guarded_expression, implicit_return, positive
 
 @guarded_expression(positive("amount"))
+@implicit_return
 def calculate_tax(amount):
-    return amount * 0.1
+    amount * 0.1
 ```
 
 ---
@@ -293,11 +403,12 @@ in_range(
 
 **Example:**
 ```python
-from modgud import guarded_expression, in_range
+from modgud import guarded_expression, implicit_return, in_range
 
 @guarded_expression(in_range(1, 10, "rating"))
+@implicit_return
 def save_rating(rating):
-    return {"rating": rating}
+    {"rating": rating}
 
 save_rating(5)   # OK
 save_rating(11)  # Raises: GuardClauseError

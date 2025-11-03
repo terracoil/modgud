@@ -8,9 +8,11 @@ guard clause validation and implicit return transformation into a single decorat
 from .common_guards import CommonGuards
 from .guard_registry import GuardRegistry
 from .guarded_expression import guarded_expression
+from .implicit_return_decorator import implicit_return
 
 __all__ = [
   'guarded_expression',
+  'implicit_return',
   'CommonGuards',
   'GuardRegistry',
 ]

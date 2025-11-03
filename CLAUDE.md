@@ -6,8 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is `modgud`, a Python library that provides guard clause decorators for implementing validation checks at function entry points. The library enforces single return point architecture and supports various failure behaviors including custom return values, exception raising, and handler functions.
 
-**IMPORTANT: This is a NEW project with NO existing users. No backward compatibility requirements. Breaking changes are acceptable. Clean, simple architecture is prioritized over legacy support.**
-
 **Core Architecture (v0.2.0):**
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
 - **Implicit return by default**: `implicit_return=True` enables Ruby-style expression-oriented code
