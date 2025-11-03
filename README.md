@@ -295,7 +295,45 @@ def sensitive_operation(api_key):
 
 Built entirely on Python's standard library. No bloat. No version conflicts. Just clean, fast Python.
 
-### 7. ✅ Battle-Tested & Type-Safe
+### 7. 🚀 Functional Pipelines with @pipeable
+
+Transform your functions into composable pipeline operations using the `|` operator—just like shell pipes or functional languages:
+
+```python
+from modgud import pipeable, guarded_expression, positive
+
+@pipeable
+def add(x, y):
+    return x + y
+
+@pipeable
+def multiply(x, factor):
+    return x * factor
+
+@pipeable
+@guarded_expression(positive("x"))
+def calculate_tax(x, rate=0.1):
+    return x * (1 + rate)
+
+# Use pipeline operations
+result = 100 | add(50) | multiply(2) | calculate_tax(rate=0.15)
+# Result: 345.0 (100 + 50 = 150, * 2 = 300, * 1.15 = 345)
+
+# Partial application for reusable transforms
+add_ten = add(10)
+double = multiply(2)
+
+pipeline = 5 | add_ten | double  # Returns 30
+```
+
+Features:
+- **Pipeline operator** (`|`) for functional composition
+- **Partial application** with automatic currying
+- **Seamless integration** with guards and implicit returns
+- **Type preservation** for IDE support
+- **Thread-safe** implementation
+
+### 8. ✅ Battle-Tested & Type-Safe
 
 - Full mypy type checking support
 - Comprehensive test suite with 92% coverage
@@ -336,6 +374,24 @@ print(calculate_discount(25))   # Returns 2.5
 print(calculate_discount(-10))  # Raises GuardClauseError
 ```
 
+### Your First Pipeline
+
+```python
+from modgud import pipeable
+
+@pipeable
+def add_tax(amount, rate=0.1):
+    return amount * (1 + rate)
+
+@pipeable
+def apply_discount(amount, discount):
+    return amount * (1 - discount)
+
+# Create a data transformation pipeline
+final_price = 100 | add_tax(0.08) | apply_discount(0.15)
+print(final_price)  # 91.8 (100 * 1.08 * 0.85)
+```
+
 **That's it.** You're writing cleaner Python.
 
 ---
@@ -346,6 +402,7 @@ print(calculate_discount(-10))  # Raises GuardClauseError
 - **🛡️ Guard Clause Decorators** - Validate inputs before function execution
 - **🎯 Single Return Point** - One logical exit point per function
 - **🧩 Pre-Built Guards** - Standard validations ready to use (not_none, positive, in_range, type_check, etc.)
+- **🚀 Functional Pipelines** - Use `|` operator for functional composition with @pipeable decorator
 - **🎛️ Configurable Failure Behaviors** - Return values, raise exceptions, or call custom handlers
 - **🏛️ Clean Architecture** - Dependency injection, pure functions, immutable transforms
 - **📦 Zero Dependencies** - Uses only Python standard library
@@ -629,6 +686,34 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
+
+## ✨ What's New in v1.2
+
+### 🚀 Functional Pipelines with @pipeable
+
+Transform your functions into composable pipeline operations using the `|` operator:
+
+```python
+from modgud import pipeable
+
+@pipeable
+def process(x, multiplier=2):
+    return x * multiplier
+
+# Pipeline operations
+result = 10 | process(3) | process(2)  # 60
+
+# Partial application
+triple = process(3)
+result = 10 | triple  # 30
+```
+
+**Features:**
+- Pipeline operator (`|`) for functional composition
+- Automatic partial application and currying
+- Full integration with guards and implicit returns
+- Thread-safe implementation
+- Type hints preserved for IDE support
 
 ## ✨ What's New in v1.1
 

@@ -55,6 +55,7 @@ class implicit_return:
       ExplicitReturnDisallowedError: If explicit return statements are found
       MissingImplicitReturnError: If a code path doesn't yield a value
       UnsupportedConstructError: If unsupported constructs are found at tail position
+
   """
 
   def __call__(self, func: F) -> F:
@@ -66,6 +67,7 @@ class implicit_return:
 
     Returns:
         The transformed function with implicit return semantics
+
     """
     # Extract and parse source
     try:

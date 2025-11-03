@@ -11,7 +11,7 @@ of guard_clause and implicit_return into a single, composable decorator.
 import functools
 import inspect
 import warnings
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from .errors import GuardClauseError, UnsupportedConstructError
 from .guard_runtime import GuardRuntime
@@ -40,7 +40,7 @@ class guarded_expression:
 
   Usage (recommended - with separate decorators):
       from modgud import implicit_return, guarded_expression
-      
+
       @implicit_return
       @guarded_expression(
           lambda x: x > 0 or "Must be positive"
@@ -82,17 +82,17 @@ class guarded_expression:
     self.implicit_return_enabled = implicit_return
     self.on_error = on_error
     self.log = log
-    
+
     # Issue deprecation warning if implicit_return parameter is used
     if implicit_return is not True:  # Only warn if explicitly set to False
       warnings.warn(
         "The 'implicit_return' parameter on @guarded_expression is deprecated and will be removed in v2.0.0. "
-        "Use the @implicit_return decorator separately for explicit composition:\n"
-        "  @implicit_return\n"
-        "  @guarded_expression(guards...)\n"
-        "  def my_function(): ...",
+        'Use the @implicit_return decorator separately for explicit composition:\n'
+        '  @implicit_return\n'
+        '  @guarded_expression(guards...)\n'
+        '  def my_function(): ...',
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
       )
 
   def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
@@ -112,6 +112,7 @@ class guarded_expression:
 
   def _wrap_with_guards(self, func: Callable[..., Any]) -> Callable[..., Any]:
     """Wrap the function with guard checking logic."""
+
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
       # Check guards if any are defined

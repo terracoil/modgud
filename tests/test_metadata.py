@@ -1,8 +1,7 @@
 """Tests for metadata preservation and edge cases."""
 
-import pytest
 from modgud.guarded_expression import guarded_expression
-from modgud.guarded_expression.errors import GuardClauseError, UnsupportedConstructError
+from modgud.guarded_expression.errors import GuardClauseError
 
 
 class TestMetadataPreservation:

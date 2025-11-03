@@ -52,7 +52,7 @@ Usage Examples:
         GuardRegistry.register("valid_email", valid_email, namespace="validators")
 """
 
-from .guarded_expression import guarded_expression, implicit_return
+from .guarded_expression import guarded_expression, implicit_return, pipeable
 from .guarded_expression.common_guards import CommonGuards
 from .guarded_expression.errors import (
   ExplicitReturnDisallowedError,
@@ -74,11 +74,12 @@ valid_file_path = CommonGuards.valid_file_path
 valid_url = CommonGuards.valid_url
 valid_enum = CommonGuards.valid_enum
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 __all__ = [
   # Primary decorators
   'guarded_expression',
   'implicit_return',
+  'pipeable',
   # Classes
   'CommonGuards',
   'GuardRegistry',

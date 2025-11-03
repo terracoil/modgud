@@ -9,10 +9,12 @@ from .common_guards import CommonGuards
 from .guard_registry import GuardRegistry
 from .guarded_expression import guarded_expression
 from .implicit_return_decorator import implicit_return
+from .pipeable import pipeable
 
 __all__ = [
   'guarded_expression',
   'implicit_return',
+  'pipeable',
   'CommonGuards',
   'GuardRegistry',
 ]
