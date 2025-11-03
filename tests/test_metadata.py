@@ -50,5 +50,7 @@ class TestDecoratorEdgeCases:
     env = {}
     exec(code, env)
 
-    with pytest.raises(UnsupportedConstructError, match='Source unavailable'):
-      guarded_expression(implicit_return=True)(env['foo'])
+    # With new implementation, guarded_expression falls back to guard-only wrapping
+    # when source is unavailable (no implicit return transformation)
+    decorated = guarded_expression(implicit_return=True)(env['foo'])
+    assert decorated() == 42  # Function works, just without implicit return
