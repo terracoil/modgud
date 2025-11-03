@@ -1,4 +1,10 @@
+**Parent**: [📋 ADR Index](README.md) | [📖 ADR-002](ADR-002-guard-pattern-design-rationale.md) | [📚 Documentation Hub](../README.md)
+
 # ADR-003: Registry System Architecture
+
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
+
+---
 
 ## Status
 Accepted (2025-10-26)

@@ -1,4 +1,15 @@
-"""Centralized error and validation message templates."""
+"""
+Domain message templates for modgud.
+
+Centralized error and validation message templates following domain-driven
+design principles. The domain layer is passive and contains no business
+logic - only message template definitions.
+"""
+
+__all__ = [
+  'ErrorMessages',
+  'InfoMessages',
+]
 
 
 class ErrorMessages:

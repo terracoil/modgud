@@ -1,16 +1,8 @@
-![Modgud](modgud-github.png)
+**Parent**: [📚 Documentation Hub](README.md) | [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md)
 
 # How It Works: The Magic Behind Expression-Oriented Python
 
----
-
-## 📍 Navigation
-
-**You are here**: How It Works (Technical Deep-Dive)
-
-**Parent**: [📚 Documentation Hub](README.md) - Back to documentation index
-**Grandparent**: [🌉 Main README](../README.md) - Project overview
-**Sibling**: [📖 API Reference](api-reference.md) - Complete API documentation
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
 
 ---
 

@@ -1,19 +1,8 @@
+**Parent**: [📚 Documentation Hub](README.md) | [🌉 Main README](../README.md) | [⚙️ How It Works](how-it-works.md)
+
 # API Reference
 
----
-
-## 📍 Navigation
-
-**You are here**: API Reference
-
-**Parent**: [📚 Documentation Hub](README.md) - Back to documentation index
-**Grandparent**: [🌉 Main README](../README.md) - Project overview
-**Sibling**: [⚙️ How It Works](how-it-works.md) - Technical deep-dive
-
----
-
-Complete API reference for the modgud library, covering all decorators, classes, functions, and types.
-
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
 ---
 
 ## 📋 Table of Contents

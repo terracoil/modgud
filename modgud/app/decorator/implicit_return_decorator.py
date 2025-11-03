@@ -14,8 +14,8 @@ import inspect
 from textwrap import dedent
 from typing import Any, Callable, TypeVar, cast
 
-from .errors import UnsupportedConstructError
-from .implicit_return import ImplicitReturnTransformer
+from ...domain.exceptions import UnsupportedConstructError
+from ...infrastructure.implicit_return import ImplicitReturnTransformer
 
 # Type variable for generic function signatures
 F = TypeVar('F', bound=Callable[..., Any])
@@ -55,6 +55,7 @@ class implicit_return:
       ExplicitReturnDisallowedError: If explicit return statements are found
       MissingImplicitReturnError: If a code path doesn't yield a value
       UnsupportedConstructError: If unsupported constructs are found at tail position
+
   """
 
   def __call__(self, func: F) -> F:
@@ -66,6 +67,7 @@ class implicit_return:
 
     Returns:
         The transformed function with implicit return semantics
+
     """
     # Extract and parse source
     try:

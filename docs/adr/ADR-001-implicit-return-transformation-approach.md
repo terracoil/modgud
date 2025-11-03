@@ -1,4 +1,10 @@
+**Parent**: [📋 ADR Index](README.md) | [📚 Documentation Hub](../README.md) | [📖 ADR-002](ADR-002-guard-pattern-design-rationale.md)
+
 # ADR-001: Implicit Return Transformation Approach
+
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
+
+---
 
 ## Status
 Accepted (2025-10-26)

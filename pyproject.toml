@@ -5,12 +5,12 @@ description = "Expression-oriented programming for Python 3.13+ with guard claus
 keywords = ["guards", "validation", "decorators", "defensive-programming", "single-return-point", "implicit-return"]
 license = {text = "MIT"}
 requires-python = ">=3.6"
-version = "1.2.5" # Uses poetry-dynamic-versioning
+version = "1.2.6" # Uses poetry-dynamic-versioning
 
 [project.urls]
 Homepage = "https://github.com/terracoil/modgud/blob/master/README.md"
 Repository = "https://github.com/terracoil/modgud"
-Documentation = "https://github.com/terracoil/modgud/blob/master/docs/README.md"
+Documentation = "https://github.com/terracoil/modgud/blob/main/docs/README.md"
 
 [tool.poetry]
 classifiers = [
@@ -84,7 +84,7 @@ follow_imports_for_stubs = true
 namespace_packages = true
 explicit_package_bases = true
 
-# Error presentation
+# Error infrastructure
 show_error_context = true
 show_column_numbers = true
 show_error_codes = true
