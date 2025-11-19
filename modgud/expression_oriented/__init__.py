@@ -21,21 +21,21 @@ from .decorator.inject_decorator import DependencyInjectionError, Inject, inject
 from .decorator.pipeable import pipeable
 from .decorator.safe_expression_decorator import SafeExpressionDecorator
 from .factory.chained_expression_factory import ChainedExpressionFactory
-from .factory.maybe_factory import MaybeFactory
+from modgud.expression_oriented.maybe.maybe_factory import MaybeFactory
 
 # Factory classes
 from .factory.result_factory import ResultFactory
 from .factory.safe_expression_factory import SafeExpressionFactory
 
 # Maybe types
-from .maybe.maybe_base import Maybe
+from ..domain.maybe_protocol import MaybeProtocol as Maybe
 from .maybe.nothing_maybe import Nothing
 from .maybe.some_maybe import Some
 from .results.err_result import Err
 from .results.ok_result import Ok
 
 # Result types
-from .results.result_base import Result
+from ..domain.result_protocol import ResultProtocol as Result
 
 # Tools
 from .tool.chainable_expression import ChainableExpression

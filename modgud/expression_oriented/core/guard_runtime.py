@@ -8,7 +8,7 @@ failure handling logic.
 import logging
 from typing import Any, Optional, Tuple
 
-from .types import FailureBehavior, GuardFunction
+from ...domain.types import FailureBehavior, GuardFunction
 
 
 class GuardRuntime:

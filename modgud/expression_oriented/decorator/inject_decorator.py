@@ -9,7 +9,8 @@ import functools
 import inspect
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, get_type_hints
 
-from ..core.di import EnergyInverter, ServiceNotFoundError
+from ...domain.exceptions import DependencyInjectionError, ServiceNotFoundError
+from ..core.di import EnergyInverter
 
 T = TypeVar('T')
 F = TypeVar('F', bound=Callable[..., Any])
@@ -216,12 +217,6 @@ class Inject:
         return True
 
     return False
-
-
-class DependencyInjectionError(Exception):
-  """Raised when dependency injection fails."""
-
-  pass
 
 
 # Convenient function-style decorators

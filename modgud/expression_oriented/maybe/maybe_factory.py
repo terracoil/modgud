@@ -7,9 +7,9 @@ and performing Maybe operations, following the single class per file principle.
 
 from typing import TypeVar
 
-from ..maybe.maybe_base import Maybe
-from ..maybe.nothing_maybe import Nothing
-from ..maybe.some_maybe import Some
+from ...domain.maybe_protocol import MaybeProtocol as Maybe
+from .nothing_maybe import Nothing
+from .some_maybe import Some
 
 T = TypeVar('T')
 

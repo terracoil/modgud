@@ -6,7 +6,7 @@ of complex expression-oriented types and decorators.
 """
 
 from .chained_expression_factory import ChainedExpressionFactory
-from .maybe_factory import MaybeFactory
+from modgud.expression_oriented.maybe.maybe_factory import MaybeFactory
 from .result_factory import ResultFactory
 from .safe_expression_factory import SafeExpressionFactory
 

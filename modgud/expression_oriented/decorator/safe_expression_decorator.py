@@ -10,7 +10,7 @@ from typing import Any, Callable, TypeVar
 
 from ..results.err_result import Err
 from ..results.ok_result import Ok
-from ..results.result_base import Result
+from ...domain.result_protocol import ResultProtocol as Result
 
 T = TypeVar('T')
 R = TypeVar('R')

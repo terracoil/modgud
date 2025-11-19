@@ -7,7 +7,7 @@ accessed through the CommonGuards interface or separately.
 
 from typing import Callable, Dict, Optional
 
-from .types import GuardFunction
+from ...domain.types import GuardFunction
 
 
 class GuardRegistry:

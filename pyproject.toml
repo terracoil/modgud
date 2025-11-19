@@ -84,7 +84,7 @@ follow_imports_for_stubs = true
 namespace_packages = true
 explicit_package_bases = true
 
-# Error presentation
+# Error infrastructure
 show_error_context = true
 show_column_numbers = true
 show_error_codes = true

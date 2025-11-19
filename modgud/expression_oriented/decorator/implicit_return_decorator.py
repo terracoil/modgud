@@ -14,7 +14,7 @@ import inspect
 from textwrap import dedent
 from typing import Any, Callable, TypeVar, cast
 
-from ..core.errors import UnsupportedConstructError
+from ...domain.exceptions import UnsupportedConstructError
 from ..core.implicit_return import ImplicitReturnTransformer
 
 # Type variable for generic function signatures

@@ -13,9 +13,9 @@ import inspect
 import warnings
 from typing import Any, Callable
 
-from ..core.errors import GuardClauseError, UnsupportedConstructError
+from ...domain.exceptions import GuardClauseError, UnsupportedConstructError
+from ...domain.types import FailureBehavior, GuardFunction
 from ..core.guard_runtime import GuardRuntime
-from ..core.types import FailureBehavior, GuardFunction
 from .implicit_return_decorator import implicit_return
 
 

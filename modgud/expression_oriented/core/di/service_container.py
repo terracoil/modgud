@@ -9,6 +9,8 @@ import threading
 from collections import defaultdict
 from typing import Any, Callable, Dict, Type, TypeVar, Union
 
+from ....domain.exceptions import ServiceNotFoundError
+
 T = TypeVar('T')
 
 
@@ -142,7 +144,3 @@ class ServiceContainer:
       self._instances.clear()
 
 
-class ServiceNotFoundError(Exception):
-  """Raised when a requested service cannot be found in the container."""
-
-  pass

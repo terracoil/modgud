@@ -54,7 +54,7 @@ Usage Examples:
 
 from .expression_oriented import Inject, guarded_expression, implicit_return, pipeable
 from .expression_oriented.core.common_guards import CommonGuards
-from .expression_oriented.core.errors import (
+from .domain.exceptions import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
