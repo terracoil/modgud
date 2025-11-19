@@ -6,8 +6,8 @@ by the implicit_return transformer.
 """
 
 from modgud import not_none, positive
-from modgud.guarded_expression import guarded_expression
-from modgud.guarded_expression.errors import GuardClauseError
+from modgud.expression_oriented import guarded_expression
+from modgud.expression_oriented.core.errors import GuardClauseError
 
 
 # Simple implicit return

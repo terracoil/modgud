@@ -6,9 +6,10 @@ from typing import List
 
 import pytest
 from modgud import positive
-from modgud.guarded_expression import CommonGuards, guarded_expression
-from modgud.guarded_expression.errors import GuardClauseError
-from modgud.guarded_expression.guard_registry import GuardRegistry
+from modgud.expression_oriented import guarded_expression
+from modgud.expression_oriented.core import CommonGuards
+from modgud.expression_oriented.core.errors import GuardClauseError
+from modgud.expression_oriented.core.guard_registry import GuardRegistry
 
 
 class TestThreadSafety:

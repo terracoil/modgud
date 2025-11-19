@@ -1,27 +1,8 @@
+**Parent**: [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md) | [⚙️ How It Works](how-it-works.md)
+
 # MODGUD Technical Documentation Hub
 
-# !["Móðguðr"](https://github.com/terracoil/modgud/raw/master/docs/modgud-text-sm.png)
-
----
-
-## 📍 Navigation
-
-**You are here**: Documentation Hub
-
-**Parent**:
-- [🌉 Main README](../README.md) - Project overview and quick start
-
-**Children**:
-- [📖 API Reference](api-reference.md) - Complete API documentation
-- [⚙️ How It Works](how-it-works.md) - Technical deep-dive into AST transformation
-
-**External Links**:
-- [GitHub Repository](https://github.com/terracoil/modgud)
-- [PyPI Package](https://pypi.org/project/modgud/)
-
----
-
-![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud-thumb.png)
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
 
 ---
 

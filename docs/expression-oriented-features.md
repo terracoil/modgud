@@ -1,4 +1,10 @@
+**Parent**: [📚 Documentation Hub](README.md) | [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md)
+
 # Expression-Oriented Programming Features for modgud: A Comprehensive Python Analysis
+
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
+
+---
 
 **Update**: The modgud package (https://github.com/terracoil/modgud) is a sophisticated expression-oriented programming library for Python 3.13+ that provides:
 

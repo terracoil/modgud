@@ -13,10 +13,10 @@ import inspect
 import warnings
 from typing import Any, Callable
 
-from .errors import GuardClauseError, UnsupportedConstructError
-from .guard_runtime import GuardRuntime
+from ..core.errors import GuardClauseError, UnsupportedConstructError
+from ..core.guard_runtime import GuardRuntime
+from ..core.types import FailureBehavior, GuardFunction
 from .implicit_return_decorator import implicit_return
-from .types import FailureBehavior, GuardFunction
 
 
 class guarded_expression:

@@ -1,4 +1,10 @@
+**Parent**: [📚 Documentation Hub](../README.md) | [🌉 Main README](../../README.md) | [📖 API Reference](../api-reference.md)
+
 # Architecture Decision Records
+
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
+
+---
 
 This directory contains Architecture Decision Records (ADRs) documenting key architectural decisions for the modgud project.
 

@@ -52,16 +52,16 @@ Usage Examples:
         GuardRegistry.register("valid_email", valid_email, namespace="validators")
 """
 
-from .guarded_expression import guarded_expression, implicit_return, pipeable
-from .guarded_expression.common_guards import CommonGuards
-from .guarded_expression.errors import (
+from .expression_oriented import Inject, guarded_expression, implicit_return, pipeable
+from .expression_oriented.core.common_guards import CommonGuards
+from .expression_oriented.core.errors import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .guarded_expression.guard_registry import GuardRegistry
+from .expression_oriented.core.guard_registry import GuardRegistry
 
 # Export guards as module-level functions for convenient direct import
 not_empty = CommonGuards.not_empty
@@ -80,6 +80,7 @@ __all__ = [
   'guarded_expression',
   'implicit_return',
   'pipeable',
+  'Inject',
   # Classes
   'CommonGuards',
   'GuardRegistry',

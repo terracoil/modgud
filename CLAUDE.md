@@ -12,7 +12,7 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 - **GuardClauseError by default**: `on_error=GuardClauseError` raises exception on guard failure
 - **Failure handling**: Configurable via `on_error` parameter (exception classes, custom values, callables)
 - **Pre-built guards**: Standard validation patterns available as individual functions (not_none, positive, type_check, etc.)
-- **NO LEGACY SUPPORT NEEDED**: Old `guard_clause` and `implicit_return` packages should be removed, not maintained as wrappers
+- **SUPPORT LEGACY USERs**: implicit_return was part of @guard_clause decorator, but is now optional and separate.
 
 ## Development Commands
 

@@ -3,11 +3,11 @@
 import ast
 
 import pytest
-from modgud.guarded_expression.errors import (
+from modgud.expression_oriented.core.errors import (
   ExplicitReturnDisallowedError,
   MissingImplicitReturnError,
 )
-from modgud.guarded_expression.implicit_return import ImplicitReturnTransformer
+from modgud.expression_oriented.core.implicit_return import ImplicitReturnTransformer
 
 
 class TestBasicTransformations:

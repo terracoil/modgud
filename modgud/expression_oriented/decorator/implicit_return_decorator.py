@@ -14,8 +14,8 @@ import inspect
 from textwrap import dedent
 from typing import Any, Callable, TypeVar, cast
 
-from .errors import UnsupportedConstructError
-from .implicit_return import ImplicitReturnTransformer
+from ..core.errors import UnsupportedConstructError
+from ..core.implicit_return import ImplicitReturnTransformer
 
 # Type variable for generic function signatures
 F = TypeVar('F', bound=Callable[..., Any])

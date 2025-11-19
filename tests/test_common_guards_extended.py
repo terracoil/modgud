@@ -13,7 +13,7 @@ from modgud import (
   valid_file_path,
   valid_url,
 )
-from modgud.guarded_expression.errors import GuardClauseError
+from modgud.expression_oriented.core.errors import GuardClauseError
 
 from .helpers import create_temp_file
 

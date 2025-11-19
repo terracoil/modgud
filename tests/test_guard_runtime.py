@@ -1,7 +1,7 @@
 """Unit tests for guard runtime logic."""
 
-from modgud.guarded_expression.errors import GuardClauseError
-from modgud.guarded_expression.guard_runtime import GuardRuntime
+from modgud.expression_oriented.core.errors import GuardClauseError
+from modgud.expression_oriented.core.guard_runtime import GuardRuntime
 
 
 class TestCheckGuards:
