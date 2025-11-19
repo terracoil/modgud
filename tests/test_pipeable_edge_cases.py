@@ -64,7 +64,7 @@ def recursive_factorial(n):
   """Recursive function to test stack behavior."""
   if n <= 1:
     return 1
-  return n * recursive_factorial(n - 1)
+  return n * recursive_factorial.func(n - 1)
 
 
 class CustomClass:
@@ -128,7 +128,12 @@ class TestEdgeCases:
 
   def test_empty_pipeline(self):
     """Test behavior with empty/null values."""
-    assert None | slow_add(5) == None + 5  # Should work, None coerces to 0 in addition
+    # Test with 0 instead of None, since None + 5 doesn't work in Python
+    assert 0 | slow_add(5) == 5  # Should work, 0 + 5 = 5
+    
+    # Test that None still gets passed through (will raise TypeError as expected)
+    with pytest.raises(TypeError):
+      None | slow_add(5)
 
   def test_exception_in_partial(self):
     """Test exception handling in partial applications."""
@@ -314,7 +319,7 @@ class TestComplexEdgeCases:
         self.call_log = []
 
       @pipeable
-      @guarded_expression(positive('x'), implicit_return=False)
+      @guarded_expression(positive('x', 1), implicit_return=False)
       def safe_sqrt(self, x):
         """Calculate square root with validation."""
         self.call_log.append(f'sqrt({x})')

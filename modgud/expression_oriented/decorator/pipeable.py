@@ -63,12 +63,15 @@ class Pipeable:
     functools.update_wrapper(self, func)
 
     # Proxy important attributes that other decorators might need
-    if hasattr(func, '__globals__'):
+    if hasattr(func, '__globals__'):  
       self.__globals__ = func.__globals__
     if hasattr(func, '__code__'):
       self.__code__ = func.__code__
     if hasattr(func, '__module__'):
       self.__module__ = func.__module__
+      
+    # Provide access to the underlying function for direct calls (useful for recursion)
+    self.func = func
 
   def __or__(self, other: Union['Pipeable', Any]) -> Any:
     """
@@ -178,37 +181,93 @@ class Pipeable:
     """
     Execute the wrapped function or create a partial application.
 
-    If sufficient arguments are provided to call the function, execute it directly.
-    Otherwise, create a partial application for pipeline usage.
+    When called with enough arguments to satisfy the function signature,
+    execute directly. Otherwise, create a partial application for pipeline usage.
 
     Args:
-        *args: Positional arguments for the function
+        *args: Arguments for the function
         **kwargs: Keyword arguments for the function
 
     Returns:
-        Function result if fully callable, otherwise a new Pipeable with bound arguments
+        Function result if fully satisfied, or Pipeable for partial application
 
     """
     import inspect
 
-    # Combine all arguments
+    # Special case: if no args and no kwargs, check if this is a no-argument function
+    if not args and not kwargs:
+      # Check if the function takes no arguments (excluding self for methods)
+      sig = inspect.signature(self._func)
+      params = list(sig.parameters.keys())
+      
+      # Filter out 'self' for methods
+      non_self_params = [p for p in params if p not in ('self', 'cls')]
+      
+      if len(non_self_params) == 0 and not self._bound_args:
+        # This is a no-argument function, execute it directly
+        return self._func(**self._bound_kwargs)
+      
+      # Otherwise return self unchanged
+      return self
+
+    # Combine all arguments - bound args come first, then new args  
     all_args = self._bound_args + args
     all_kwargs = {**self._bound_kwargs, **kwargs}
 
-    # Check if we have enough arguments to call the function directly
-    try:
-      # Try to bind the arguments to see if we can call the function
-      sig = inspect.signature(self._func)
-      bound = sig.bind(*all_args, **all_kwargs)
-      bound.apply_defaults()
-
-      # If we get here, we have enough arguments - execute the function
-      result = self._func(*all_args, **all_kwargs)
-      return result
-
-    except TypeError:
-      # Not enough arguments - return partial application for pipeline usage
+    sig = inspect.signature(self._func)
+    
+    # Analyze function parameters
+    params = list(sig.parameters.values())
+    has_var_positional = any(p.kind == p.VAR_POSITIONAL for p in params)
+    has_var_keyword = any(p.kind == p.VAR_KEYWORD for p in params)
+    has_defaults = any(p.default != p.empty for p in sig.parameters.values())
+    
+    # Count regular parameters (excluding *args and **kwargs)
+    regular_params = [p for p in params if p.kind not in (p.VAR_POSITIONAL, p.VAR_KEYWORD)]
+    required_params = [p for p in regular_params if p.default == p.empty]
+    
+    # Determine if this is a method and count provided arguments
+    is_method = (
+      self._bound_args 
+      and len(sig.parameters) > 0 
+      and list(sig.parameters.keys())[0] in ('self', 'cls')
+    )
+    
+    if is_method:
+      num_provided = len(all_args) - 1 + len(all_kwargs)
+      num_required = max(0, len(required_params) - 1)
+      total_regular = max(0, len(regular_params) - 1)
+    else:
+      num_provided = len(all_args) + len(all_kwargs)
+      num_required = len(required_params)
+      total_regular = len(regular_params)
+    
+    # Special case: decorator wrappers with *args, **kwargs and single argument
+    # This prevents premature execution during partial application
+    if has_var_positional and has_var_keyword and len(all_args) == 1 and not all_kwargs:
       return Pipeable(self._func, all_args, all_kwargs)
+    
+    # Decision logic
+    if has_defaults:
+      # Functions with defaults: only execute if ALL parameters provided
+      if num_provided >= total_regular:
+        try:
+          sig.bind(*all_args, **all_kwargs)
+          return self._func(*all_args, **all_kwargs)
+        except TypeError:
+          return Pipeable(self._func, all_args, all_kwargs)
+      else:
+        return Pipeable(self._func, all_args, all_kwargs)
+    else:
+      # Functions without defaults: execute if all required params satisfied
+      if num_provided >= num_required:
+        try:
+          sig.bind(*all_args, **all_kwargs)
+          return self._func(*all_args, **all_kwargs)
+        except TypeError:
+          return Pipeable(self._func, all_args, all_kwargs)
+      else:
+        return Pipeable(self._func, all_args, all_kwargs)
 
   def __get__(self, instance, owner):
     """
@@ -236,7 +295,7 @@ class Pipeable:
 
 def pipeable(func: Callable[..., T]) -> Pipeable:
   """
-  Decorator that makes functions pipeable via | operator.
+  Make functions pipeable via | operator.
 
   This decorator wraps a function in a Pipeable instance, enabling it to be used
   in functional-style pipelines with the | operator. It supports partial application
