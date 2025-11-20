@@ -1,7 +1,7 @@
 """Tests for basic guard clause functionality."""
 
 import pytest
-from modgud.expression_oriented import guarded_expression
+from modgud import guarded_expression
 
 from tests.helpers import assert_guard_fails
 
@@ -12,18 +12,18 @@ class TestBasicGuardExecution:
   def test_basic_guard_success(self):
     """Guards should allow execution when predicates return True."""
 
-    @guarded_expression(lambda x: x > 0 or 'Must be positive', implicit_return=False)
+    @guarded_expression(lambda x: x > 0 or 'Must be positive')
     def double(x):
-      return x * 2
+      x * 2  # implicit return
 
     assert double(5) == 10
 
   def test_basic_guard_failure_default_error(self):
     """GuardClauseError should be raised by default on guard failure."""
 
-    @guarded_expression(lambda x: x > 0 or 'Must be positive', implicit_return=False)
+    @guarded_expression(lambda x: x > 0 or 'Must be positive')
     def double(x):
-      return x * 2
+      x * 2  # implicit return
 
     assert_guard_fails(double, -5, expected_message='Must be positive')
 
@@ -37,10 +37,9 @@ class TestGuardFailureHandling:
     @guarded_expression(
       lambda x: x > 0 or 'Must be positive',
       on_error={'error': 'Invalid input'},
-      implicit_return=False,
     )
     def double(x):
-      return x * 2
+      x * 2  # implicit return
 
     assert double(-5) == {'error': 'Invalid input'}
 
@@ -48,10 +47,10 @@ class TestGuardFailureHandling:
     """Custom exception should be raised on guard failure when configured."""
 
     @guarded_expression(
-      lambda x: x > 0 or 'Must be positive', on_error=ValueError, implicit_return=False
+      lambda x: x > 0 or 'Must be positive', on_error=ValueError
     )
     def double(x):
-      return x * 2
+      x * 2  # implicit return
 
     with pytest.raises(ValueError) as exc_info:
       double(-5)
@@ -67,10 +66,9 @@ class TestGuardFailureHandling:
     @guarded_expression(
       lambda x: x > 0 or 'Must be positive',
       on_error=custom_handler,
-      implicit_return=False,
     )
     def double(x):
-      return x * 2
+      x * 2  # implicit return
 
     assert double(-5) == 'Handled: Must be positive'
 
@@ -84,10 +82,9 @@ class TestMultipleGuards:
     @guarded_expression(
       lambda x: x > 0 or 'Must be positive',
       lambda x: x < 100 or 'Must be less than 100',
-      implicit_return=False,
     )
     def double(x):
-      return x * 2
+      x * 2  # implicit return
 
     assert double(50) == 100
 
@@ -97,10 +94,9 @@ class TestMultipleGuards:
     @guarded_expression(
       lambda x: x > 0 or 'Must be positive',
       lambda x: x < 100 or 'Must be less than 100',
-      implicit_return=False,
     )
     def double(x):
-      return x * 2
+      x * 2  # implicit return
 
     assert_guard_fails(double, -5, expected_message='Must be positive')
 
@@ -110,9 +106,8 @@ class TestMultipleGuards:
     @guarded_expression(
       lambda x: x > 0 or 'Must be positive',
       lambda x: x < 100 or 'Must be less than 100',
-      implicit_return=False,
     )
     def double(x):
-      return x * 2
+      x * 2  # implicit return
 
     assert_guard_fails(double, 150, expected_message='Must be less than 100')

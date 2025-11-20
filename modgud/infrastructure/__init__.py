@@ -6,12 +6,9 @@ functionality but aren't part of the primary user-facing API.
 """
 
 from .common_guards import CommonGuards
-from .di import EnergyInverter, ServiceNotFoundError
 from .guard_registry import GuardRegistry
 
 __all__ = [
   'CommonGuards',
   'GuardRegistry',
-  'EnergyInverter',
-  'ServiceNotFoundError',
 ]

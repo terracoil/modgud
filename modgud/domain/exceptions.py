@@ -10,7 +10,7 @@ from typing import Optional
 
 __all__ = [
   'GuardClauseError',
-  'ImplicitReturnError', 
+  'ImplicitReturnError',
   'ExplicitReturnDisallowedError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
@@ -21,7 +21,7 @@ __all__ = [
 
 class GuardClauseError(Exception):
   """Exception raised when a guard clause fails."""
-  
+
   pass
 
 
@@ -36,7 +36,7 @@ class ImplicitReturnError(SyntaxError):
 
     :param message: Error message describing the issue
     :type message: str
-    :param lineno: Line number where the error occurred  
+    :param lineno: Line number where the error occurred
     :type lineno: Optional[int]
     :param col_offset: Column offset where the error occurred
     :type col_offset: Optional[int]
@@ -50,7 +50,7 @@ class ImplicitReturnError(SyntaxError):
 
 class ExplicitReturnDisallowedError(ImplicitReturnError):
   """Raised when an explicit `return` statement is found in a decorated function."""
-  
+
   pass
 
 
@@ -61,23 +61,23 @@ class MissingImplicitReturnError(ImplicitReturnError):
   Raised when a block is required to yield a value but does not end with
   a (convertible) final expression or a supported branching structure.
   """
-  
+
   pass
 
 
 class UnsupportedConstructError(ImplicitReturnError):
   """Raised when an unsupported AST construct appears at a required return boundary."""
-  
+
   pass
 
 
 class DependencyInjectionError(Exception):
   """Raised when dependency injection fails."""
-  
+
   pass
 
 
 class ServiceNotFoundError(Exception):
   """Raised when a requested service cannot be found in the container."""
-  
+
   pass

@@ -130,7 +130,7 @@ class TestEdgeCases:
     """Test behavior with empty/null values."""
     # Test with 0 instead of None, since None + 5 doesn't work in Python
     assert 0 | slow_add(5) == 5  # Should work, 0 + 5 = 5
-    
+
     # Test that None still gets passed through (will raise TypeError as expected)
     with pytest.raises(TypeError):
       None | slow_add(5)

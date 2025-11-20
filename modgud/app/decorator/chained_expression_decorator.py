@@ -11,7 +11,7 @@ import functools
 from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 if TYPE_CHECKING:
-  from ..tool.chainable_expression import ChainableExpression
+  from ...infrastructure.tool.chainable_expression import ChainableExpression
 
 T = TypeVar('T')
 
@@ -51,7 +51,7 @@ class ChainedExpressionDecorator:
 
       # Auto-unwrap ChainableExpression arguments if requested
       if self.auto_unwrap:
-        from ..tool.chainable_expression import ChainableExpression
+        from ...infrastructure.tool.chainable_expression import ChainableExpression
 
         unwrapped_args = []
         for arg in args:
@@ -70,7 +70,7 @@ class ChainedExpressionDecorator:
         processed_kwargs = unwrapped_kwargs
 
       result = func(*processed_args, **processed_kwargs)
-      from ..tool.chainable_expression import ChainableExpression
+      from ...infrastructure.tool.chainable_expression import ChainableExpression
 
       return ChainableExpression(result)
 

@@ -36,17 +36,17 @@ def multiply_implicit(x, factor):
 
 # 3. Pipeable with guarded_expression
 @pipeable
-@guarded_expression(positive('x'), implicit_return=False)
+@guarded_expression(positive('x'))
 def add_guarded(x, y):
-  """Add with guard validation."""
-  return x + y
+  """Add with guard validation (modern pattern)."""
+  x + y
 
 
 @pipeable
-@guarded_expression(positive('x'), type_check(int, 'factor'), implicit_return=False)
+@guarded_expression(positive('x'), type_check(int, 'factor'))
 def multiply_guarded(x, factor):
-  """Multiply with multiple guards."""
-  return x * factor
+  """Multiply with multiple guards (modern pattern)."""
+  x * factor
 
 
 # 4. All three decorators together
@@ -58,12 +58,13 @@ def add_tax(x, rate=0.1):
 
 
 @pipeable
-@guarded_expression(positive('amount'), implicit_return=False)
+@guarded_expression(positive('amount'))
 def calculate_discount(amount, discount_rate=0.1):
-  """Calculate discounted amount."""
+  """Calculate discounted amount (modern pattern)."""
   if discount_rate > 1:
     raise ValueError('Discount rate cannot exceed 100%')
-  return amount * (1 - discount_rate)
+  else:
+    amount * (1 - discount_rate)
 
 
 # Different ordering - @pipeable should still be outermost
@@ -232,10 +233,12 @@ class TestDecoratorOrdering:
     assert hasattr(process_value, '__implicit_return__')
     assert hasattr(compound_interest, '__implicit_return__')
 
-    # Functions without @implicit_return shouldn't have it
-    assert not hasattr(add_guarded, '__implicit_return__')
-    assert not hasattr(add_tax, '__implicit_return__')  # Uses explicit return now
-    assert not hasattr(calculate_discount, '__implicit_return__')  # Uses explicit return now
+    # Functions with modern @guarded_expression have implicit_return by default  
+    assert hasattr(add_guarded, '__implicit_return__')  # Modern pattern
+    assert hasattr(calculate_discount, '__implicit_return__')  # Modern pattern
+    
+    # Functions with explicit implicit_return=False shouldn't have it
+    assert not hasattr(add_tax, '__implicit_return__')  # Uses explicit return with deprecated param
 
 
 class TestRealWorldExamples:

@@ -105,7 +105,7 @@ Multiple return points everywhere. Business logic buried at the bottom. Error ha
 **modgud** gives you guard clauses and expression-oriented programming in Python:
 
 ```python
-from modgud import guarded_expression, implicit_return, positive, type_check, in_range, not_empty
+from modgud import guarded_expression, implicit_return, positive, type_check, in_range, not_empty, Inject, GuardRegistry
 
 @guarded_expression(
     positive("user_id"),
@@ -233,6 +233,36 @@ Built-in guards for:
 - `matches_pattern` - Regex pattern matching
 
 Plus you can write custom guards in seconds.
+
+#### Creating Custom Guards
+
+Register your own reusable guards:
+
+```python
+from modgud import GuardRegistry, guarded_expression, implicit_return
+
+# Define a custom guard factory
+def valid_age(min_age=0, max_age=150, param_name="age"):
+    def check(*args, **kwargs):
+        age = kwargs.get(param_name, args[0] if args else None)
+        if not isinstance(age, int):
+            return f"{param_name} must be an integer"
+        if min_age <= age <= max_age:
+            return True
+        return f"{param_name} must be between {min_age} and {max_age}"
+    return check
+
+# Register it for reuse
+GuardRegistry.register("valid_age", valid_age)
+
+# Use your custom guard
+@guarded_expression(
+    GuardRegistry.get("valid_age")(min_age=18, max_age=120)
+)
+@implicit_return
+def can_vote(age):
+    age >= 18
+```
 
 ### 5. 🎛️ Flexible Error Handling
 
@@ -382,6 +412,52 @@ final_price = 100 | add_tax(0.08) | apply_discount(0.15)
 print(final_price)  # 91.8 (100 * 1.08 * 0.85)
 ```
 
+### 8. 🔧 Dependency Injection with @Inject
+
+Automatically inject dependencies into decorated functions without manual wiring:
+
+```python
+from modgud import Inject, guarded_expression, implicit_return, not_empty, positive
+
+# Define your services
+class DatabaseService:
+    def get_user(self, user_id: int) -> dict:
+        # Simulate database fetch
+        return {"id": user_id, "name": "Alice", "active": True}
+
+class EmailService:
+    def send_welcome(self, email: str, name: str) -> bool:
+        print(f"Sending welcome email to {name} at {email}")
+        return True
+
+# Use @Inject to automatically provide dependencies
+@Inject(db=DatabaseService, email=EmailService)
+@guarded_expression(
+    not_empty("user_email"),
+    positive("user_id")
+)
+@implicit_return
+def register_user(user_id: int, user_email: str, db: DatabaseService, email: EmailService):
+    # Services are automatically injected - no manual creation needed!
+    user = db.get_user(user_id)
+    if user["active"]:
+        email.send_welcome(user_email, user["name"])
+        {"status": "registered", "user": user}
+    else:
+        {"status": "inactive", "user": user}
+
+# Call without creating services - they're injected automatically
+result = register_user(123, "alice@example.com")
+# Output: Sending welcome email to Alice at alice@example.com
+# Returns: {"status": "registered", "user": {"id": 123, "name": "Alice", "active": True}}
+```
+
+**Features:**
+- **Automatic instantiation** - Services created as needed
+- **Type-based injection** - Can also use type hints for injection
+- **Testable** - Easy to mock dependencies in tests
+- **Composable** - Works seamlessly with other modgud decorators
+
 **That's it.** You're writing cleaner Python.
 
 ---
@@ -393,8 +469,10 @@ print(final_price)  # 91.8 (100 * 1.08 * 0.85)
 - **🎯 Single Return Point** - One logical exit point per function
 - **🧩 Pre-Built Guards** - Standard validations ready to use (not_none, positive, in_range, type_check, etc.)
 - **🚀 Functional Pipelines** - Use `|` operator for functional composition with @pipeable decorator
+- **🔧 Dependency Injection** - Automatic dependency resolution with @Inject decorator
+- **📝 Custom Guard Registry** - Create and register reusable validation guards
 - **🎛️ Configurable Failure Behaviors** - Return values, raise exceptions, or call custom handlers
-- **🏛️ Clean Architecture** - Dependency injection, pure functions, immutable transforms
+- **🏛️ Clean Architecture** - KLA layered design with pure functions and immutable transforms
 - **📦 Zero Dependencies** - Uses only Python standard library
 - **✅ Type-Safe** - Full mypy support with proper type hints
 - **🔒 Thread-Safe** - No shared mutable state

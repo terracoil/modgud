@@ -8,9 +8,9 @@ in Result types, following the single class per file principle.
 import functools
 from typing import Any, Callable, TypeVar
 
-from ..results.err_result import Err
-from ..results.ok_result import Ok
 from ...domain.result_protocol import ResultProtocol as Result
+from ...infrastructure.results.err_result import Err
+from ...infrastructure.results.ok_result import Ok
 
 T = TypeVar('T')
 R = TypeVar('R')

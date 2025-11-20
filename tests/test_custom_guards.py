@@ -2,7 +2,7 @@
 
 import pytest
 from modgud import GuardRegistry, guarded_expression
-from modgud.expression_oriented.core.errors import GuardClauseError
+from modgud import GuardClauseError
 
 
 class TestGuardRegistry:

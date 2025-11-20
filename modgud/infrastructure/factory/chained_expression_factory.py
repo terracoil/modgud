@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Callable, TypeVar, Union
 
-from ..decorator.chained_expression_decorator import ChainedExpressionDecorator
+from ...app.decorator.chained_expression_decorator import ChainedExpressionDecorator
 from ..tool.chainable_expression import ChainableExpression
 
 T = TypeVar('T')

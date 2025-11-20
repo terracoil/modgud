@@ -7,9 +7,9 @@ and performing Result operations, following the single class per file principle.
 
 from typing import Callable, TypeVar
 
+from ...domain.result_protocol import ResultProtocol as Result
 from ..results.err_result import Err
 from ..results.ok_result import Ok
-from ...domain.result_protocol import ResultProtocol as Result
 
 T = TypeVar('T')
 E = TypeVar('E')

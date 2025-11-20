@@ -40,16 +40,16 @@ def standalone_implicit(x, y):
     x - y
 
 
-@guarded_expression(positive('x', position=0), not_none('y', position=1), implicit_return=False)
+@guarded_expression(positive('x', position=0), not_none('y', position=1))
 def standalone_guards(x, y):
-  """Standalone guards without implicit return."""
-  return x + y
+  """Standalone guards with implicit return (modern pattern)."""
+  x + y
 
 
-@guarded_expression(positive('x'), implicit_return=False)
-def guards_with_explicit_false(x):
-  """Guards with explicit implicit_return=False."""
-  return x * 3
+@guarded_expression(positive('x'))
+def guards_with_modern_pattern(x):
+  """Guards with modern implicit return pattern."""
+  x * 3
 
 
 class TestDecoratorComposition:
@@ -117,11 +117,9 @@ class TestDecoratorComposition:
       # No warning should be issued
       assert len(w) == 0
 
-  def test_guards_with_explicit_false(self):
-    """Test guards with explicit implicit_return=False."""
-    # The deprecation warning is issued when the decorator is created (at module import),
-    # not when the function is called
-    result = guards_with_explicit_false(3)
+  def test_guards_with_modern_pattern(self):
+    """Test guards with modern implicit return pattern."""
+    result = guards_with_modern_pattern(3)
     assert result == 9
 
 
@@ -133,19 +131,19 @@ class TestMetadataPreservation:
     assert composed_implicit_then_guards.__name__ == 'composed_implicit_then_guards'
     assert composed_guards_then_implicit.__name__ == 'composed_guards_then_implicit'
     assert standalone_implicit.__name__ == 'standalone_implicit'
-    assert standalone_guards.__name__ == 'standalone_guards'
+    assert guards_with_modern_pattern.__name__ == 'guards_with_modern_pattern'
 
   def test_docstring_preserved(self):
     """Test that __doc__ is preserved."""
     assert 'Recommended composition' in composed_guards_then_implicit.__doc__
     assert 'Invalid composition' in composed_implicit_then_guards.__doc__
     assert 'Standalone implicit' in standalone_implicit.__doc__
-    assert 'Standalone guards' in standalone_guards.__doc__
+    assert 'Guards with modern' in guards_with_modern_pattern.__doc__
 
   def test_implicit_return_marker(self):
     """Test that implicit_return decorator adds marker attribute."""
     assert hasattr(standalone_implicit, '__implicit_return__')
     assert standalone_implicit.__implicit_return__ is True
 
-    # Guards-only function should not have the marker
-    assert not hasattr(standalone_guards, '__implicit_return__')
+    # Modern guards pattern still gets implicit_return behavior by default
+    assert hasattr(guards_with_modern_pattern, '__implicit_return__')

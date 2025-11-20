@@ -15,7 +15,7 @@ from typing import Any, Callable
 
 from ...domain.exceptions import GuardClauseError, UnsupportedConstructError
 from ...domain.types import FailureBehavior, GuardFunction
-from ..core.guard_runtime import GuardRuntime
+from ...infrastructure.guard_runtime import GuardRuntime
 from .implicit_return_decorator import implicit_return
 
 

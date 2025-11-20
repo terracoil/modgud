@@ -2,7 +2,7 @@
 
 import pytest
 from modgud import pipeable
-from modgud.expression_oriented.decorator.pipeable import Pipeable
+from modgud.app.decorator.pipeable import Pipeable
 
 
 # Test functions to use in pipelines

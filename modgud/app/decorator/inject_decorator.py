@@ -10,7 +10,7 @@ import inspect
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, get_type_hints
 
 from ...domain.exceptions import DependencyInjectionError, ServiceNotFoundError
-from ..core.di import EnergyInverter
+from ...util.di import EnergyInverter
 
 T = TypeVar('T')
 F = TypeVar('F', bound=Callable[..., Any])

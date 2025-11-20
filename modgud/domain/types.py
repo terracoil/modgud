@@ -2,7 +2,7 @@
 Domain type definitions for modgud.
 
 All type aliases and type definitions used throughout the modgud library
-are defined here following domain-driven design principles. The domain 
+are defined here following domain-driven design principles. The domain
 layer is passive and contains no business logic - only type definitions.
 """
 

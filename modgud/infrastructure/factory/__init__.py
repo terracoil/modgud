@@ -5,8 +5,9 @@ This sub-package contains factory classes that encapsulate creation
 of complex expression-oriented types and decorators.
 """
 
-from .chained_expression_factory import ChainedExpressionFactory
 from modgud.expression_oriented.maybe.maybe_factory import MaybeFactory
+
+from .chained_expression_factory import ChainedExpressionFactory
 from .result_factory import ResultFactory
 from .safe_expression_factory import SafeExpressionFactory
 

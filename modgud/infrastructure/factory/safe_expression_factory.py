@@ -7,7 +7,7 @@ following the single class per file principle.
 
 from typing import Callable, TypeVar, Union
 
-from ..decorator.safe_expression_decorator import SafeExpressionDecorator
+from ...app.decorator.safe_expression_decorator import SafeExpressionDecorator
 from ...domain.result_protocol import ResultProtocol as Result
 
 T = TypeVar('T')

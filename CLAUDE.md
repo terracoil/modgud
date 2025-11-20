@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is `modgud`, a Python library that provides guard clause decorators for implementing validation checks at function entry points. The library enforces single return point architecture and supports various failure behaviors including custom return values, exception raising, and handler functions.
 
-**Core Architecture (v0.2.0):**
+**Core Architecture (v1.2.6):**
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
-- **Implicit return by default**: `implicit_return=True` enables Ruby-style expression-oriented code
-- **GuardClauseError by default**: `on_error=GuardClauseError` raises exception on guard failure
-- **Failure handling**: Configurable via `on_error` parameter (exception classes, custom values, callables)
-- **Pre-built guards**: Standard validation patterns available as individual functions (not_none, positive, type_check, etc.)
-- **SUPPORT LEGACY USERs**: implicit_return was part of @guard_clause decorator, but is now optional and separate.
+- **Expression decorators**: `implicit_return` (standalone), `pipeable` (functional pipes)
+- **Dependency injection**: `@Inject` decorator for automatic dependency resolution
+- **Guard system**: Pre-built guards + `GuardRegistry` for custom validators
+- **Error handling**: Configurable via `on_error` parameter (exception classes, custom values, callables)
+- **Architecture**: Clean separation with KLA (app/infrastructure/domain/util layers)
 
 ## Development Commands
 
@@ -88,24 +88,46 @@ poetry run twine check dist/*
 ```
 
 ## Code Architecture
+Loosely based on KLA (Kinetic Layer Architecture)[docs/architecture/kla-architecture-v4.6.6.md]
 
 ### Core Module Structure (v0.2.0)
+_Top-level layers (and directories/packages).  Dependencies flow downward:_
+app - top level application (presentation from KLA; what we want the user to see; includes or even implements items from domain)
+infrastructure - core logic and implementation details
+domain - domain-level concepts and abstractions (passive layer; combines domain and foundation layers from KLA)
+util - generic utilities  
 
-**Primary API:**
-- `modgud/guarded_expression/` - Unified decorator implementation
-  - `decorator.py` - Main `guarded_expression` class
-  - `ast_transform.py` - Pure AST transformation for implicit returns
-  - `guard_runtime.py` - Pure guard checking and failure handling functions
-  - `common_guards.py` - Pre-built guard factory methods (exports individual functions)
-  - `__init__.py` - Package exports
 
-**Shared Infrastructure:**
-- `modgud/shared/` - Common types and errors
-  - `types.py` - Type definitions (`GuardFunction`, `FailureBehavior`)
-  - `errors.py` - All exception classes (`GuardClauseError`, `ImplicitReturnError`, etc.)
+
+
+## Code Architecture
+Loosely based on KLA (Kinetic Layer Architecture)
+
+### Core Module Structure (KLA)
+_Top-level layers (and directories/packages). Dependencies flow downward:_
+
+**app/** - Presentation layer (decorators, public APIs)
+- `app/decorator/guarded_expression.py` - Main decorator implementation
+- `app/decorator/implicit_return_decorator.py` - Standalone implicit return 
+- `app/decorator/pipeable.py` - Functional pipeline decorator
+- `app/decorator/inject_decorator.py` - Dependency injection decorator
+
+**infrastructure/** - Core logic and implementation details
+- `infrastructure/guard_runtime.py` - Guard checking and failure handling
+- `infrastructure/implicit_return.py` - AST transformation for implicit returns
+- `infrastructure/common_guards.py` - Pre-built guard validators
+- `infrastructure/guard_registry.py` - Custom guard registration system
+
+**domain/** - Passive domain objects
+- `domain/exceptions.py` - All exception classes
+- `domain/types.py` - Type definitions
+- `domain/protocols.py` - Interface definitions
+
+**util/** - Generic utilities
+- `util/di/` - Dependency injection system
 
 **Public API Exports:**
-- `modgud/__init__.py` - Primary exports (`guarded_expression`, guard functions, error classes)
+- `modgud/__init__.py` - Primary exports (decorators, guards, errors)
 
 ### Key Design Patterns
 

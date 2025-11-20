@@ -11,7 +11,7 @@ from __future__ import annotations
 import ast
 from typing import List, Optional, Tuple
 
-from .errors import (
+from ..domain.exceptions import (
   ExplicitReturnDisallowedError,
   MissingImplicitReturnError,
   UnsupportedConstructError,

@@ -1,8 +1,8 @@
 """
 ResultProtocol for modgud domain layer.
 
-Protocol definition for Result types following domain-driven design 
-principles. This protocol defines the interface for success/error 
+Protocol definition for Result types following domain-driven design
+principles. This protocol defines the interface for success/error
 containers that can be either Ok or Err.
 """
 

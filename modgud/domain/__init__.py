@@ -13,9 +13,10 @@ only data structures and interface definitions.
 """
 
 # Core types
-from .types import FailureBehavior, FailureTypes, GuardFunction
+# Domain enums
+from .enums import FailureStrategy, GuardStrategy, ServiceLifetime
 
-# Domain exceptions  
+# Domain exceptions
 from .exceptions import (
   DependencyInjectionError,
   ExplicitReturnDisallowedError,
@@ -28,18 +29,16 @@ from .exceptions import (
 
 # Domain protocols
 from .maybe_protocol import MaybeProtocol
-from .result_protocol import ResultProtocol
-
-# Domain enums
-from .enums import FailureStrategy, GuardStrategy, ServiceLifetime
 
 # Message templates
 from .messages import ErrorMessages, InfoMessages
+from .result_protocol import ResultProtocol
+from .types import FailureBehavior, FailureTypes, GuardFunction
 
 __all__ = [
   # Types
   'GuardFunction',
-  'FailureTypes', 
+  'FailureTypes',
   'FailureBehavior',
   # Exceptions
   'GuardClauseError',

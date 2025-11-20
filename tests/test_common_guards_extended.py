@@ -13,7 +13,7 @@ from modgud import (
   valid_file_path,
   valid_url,
 )
-from modgud.expression_oriented.core.errors import GuardClauseError
+from modgud import GuardClauseError
 
 from .helpers import create_temp_file
 
@@ -25,9 +25,9 @@ class TestValidFilePathGuard:
     """Test guard passes for existing file."""
     with create_temp_file('test content') as tmp_path:
 
-      @guarded_expression(valid_file_path('filepath', must_be_file=True), implicit_return=False)
+      @guarded_expression(valid_file_path('filepath', must_be_file=True))
       def process_file(filepath: str):
-        return f'Processing {filepath}'
+        f'Processing {filepath}'
 
       result = process_file(tmp_path)
       assert 'Processing' in result
@@ -35,9 +35,9 @@ class TestValidFilePathGuard:
   def test_nonexistent_file_fails(self):
     """Test guard fails for nonexistent file."""
 
-    @guarded_expression(valid_file_path('filepath'), implicit_return=False)
+    @guarded_expression(valid_file_path('filepath'))
     def process_file(filepath: str):
-      return f'Processing {filepath}'
+      f'Processing {filepath}'
 
     with pytest.raises(GuardClauseError, match='does not exist'):
       process_file('/nonexistent/path/to/file.txt')
@@ -46,9 +46,9 @@ class TestValidFilePathGuard:
     """Test guard passes for existing directory."""
     with tempfile.TemporaryDirectory() as tmp_dir:
 
-      @guarded_expression(valid_file_path('dirpath', must_be_dir=True), implicit_return=False)
+      @guarded_expression(valid_file_path('dirpath', must_be_dir=True))
       def process_dir(dirpath: str):
-        return f'Processing {dirpath}'
+        f'Processing {dirpath}'
 
       result = process_dir(tmp_dir)
       assert 'Processing' in result
@@ -60,9 +60,9 @@ class TestValidFilePathGuard:
 
     try:
 
-      @guarded_expression(valid_file_path('dirpath', must_be_dir=True), implicit_return=False)
+      @guarded_expression(valid_file_path('dirpath', must_be_dir=True))
       def process_dir(dirpath: str):
-        return f'Processing {dirpath}'
+        f'Processing {dirpath}'
 
       with pytest.raises(GuardClauseError, match='must be a directory'):
         process_dir(tmp_path)
@@ -72,9 +72,9 @@ class TestValidFilePathGuard:
   def test_allow_nonexistent_path(self):
     """Test guard passes for nonexistent path when must_exist=False."""
 
-    @guarded_expression(valid_file_path('filepath', must_exist=False), implicit_return=False)
+    @guarded_expression(valid_file_path('filepath', must_exist=False))
     def create_file(filepath: str):
-      return f'Creating {filepath}'
+      f'Creating {filepath}'
 
     result = create_file('/path/to/new/file.txt')
     assert 'Creating' in result
@@ -86,9 +86,9 @@ class TestValidUrlGuard:
   def test_valid_http_url(self):
     """Test guard passes for valid HTTP URL."""
 
-    @guarded_expression(valid_url('url'), implicit_return=False)
+    @guarded_expression(valid_url('url'))
     def fetch_url(url: str):
-      return f'Fetching {url}'
+      f'Fetching {url}'
 
     result = fetch_url('http://example.com')
     assert 'Fetching' in result
@@ -96,9 +96,9 @@ class TestValidUrlGuard:
   def test_valid_https_url(self):
     """Test guard passes for valid HTTPS URL."""
 
-    @guarded_expression(valid_url('url'), implicit_return=False)
+    @guarded_expression(valid_url('url'))
     def fetch_url(url: str):
-      return f'Fetching {url}'
+      f'Fetching {url}'
 
     result = fetch_url('https://example.com/path?query=value')
     assert 'Fetching' in result

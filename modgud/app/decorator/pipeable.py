@@ -63,13 +63,13 @@ class Pipeable:
     functools.update_wrapper(self, func)
 
     # Proxy important attributes that other decorators might need
-    if hasattr(func, '__globals__'):  
+    if hasattr(func, '__globals__'):
       self.__globals__ = func.__globals__
     if hasattr(func, '__code__'):
       self.__code__ = func.__code__
     if hasattr(func, '__module__'):
       self.__module__ = func.__module__
-      
+
     # Provide access to the underlying function for direct calls (useful for recursion)
     self.func = func
 
@@ -199,40 +199,40 @@ class Pipeable:
       # Check if the function takes no arguments (excluding self for methods)
       sig = inspect.signature(self._func)
       params = list(sig.parameters.keys())
-      
+
       # Filter out 'self' for methods
       non_self_params = [p for p in params if p not in ('self', 'cls')]
-      
+
       if len(non_self_params) == 0 and not self._bound_args:
         # This is a no-argument function, execute it directly
         return self._func(**self._bound_kwargs)
-      
+
       # Otherwise return self unchanged
       return self
 
-    # Combine all arguments - bound args come first, then new args  
+    # Combine all arguments - bound args come first, then new args
     all_args = self._bound_args + args
     all_kwargs = {**self._bound_kwargs, **kwargs}
 
     sig = inspect.signature(self._func)
-    
+
     # Analyze function parameters
     params = list(sig.parameters.values())
     has_var_positional = any(p.kind == p.VAR_POSITIONAL for p in params)
     has_var_keyword = any(p.kind == p.VAR_KEYWORD for p in params)
     has_defaults = any(p.default != p.empty for p in sig.parameters.values())
-    
+
     # Count regular parameters (excluding *args and **kwargs)
     regular_params = [p for p in params if p.kind not in (p.VAR_POSITIONAL, p.VAR_KEYWORD)]
     required_params = [p for p in regular_params if p.default == p.empty]
-    
+
     # Determine if this is a method and count provided arguments
     is_method = (
-      self._bound_args 
-      and len(sig.parameters) > 0 
+      self._bound_args
+      and len(sig.parameters) > 0
       and list(sig.parameters.keys())[0] in ('self', 'cls')
     )
-    
+
     if is_method:
       num_provided = len(all_args) - 1 + len(all_kwargs)
       num_required = max(0, len(required_params) - 1)
@@ -241,12 +241,12 @@ class Pipeable:
       num_provided = len(all_args) + len(all_kwargs)
       num_required = len(required_params)
       total_regular = len(regular_params)
-    
+
     # Special case: decorator wrappers with *args, **kwargs and single argument
     # This prevents premature execution during partial application
     if has_var_positional and has_var_keyword and len(all_args) == 1 and not all_kwargs:
       return Pipeable(self._func, all_args, all_kwargs)
-    
+
     # Decision logic
     if has_defaults:
       # Functions with defaults: only execute if ALL parameters provided

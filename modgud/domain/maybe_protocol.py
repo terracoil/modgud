@@ -1,8 +1,8 @@
 """
 MaybeProtocol for modgud domain layer.
 
-Protocol definition for Maybe types following domain-driven design 
-principles. This protocol defines the interface for optional value 
+Protocol definition for Maybe types following domain-driven design
+principles. This protocol defines the interface for optional value
 containers that may or may not contain a value.
 """
 
@@ -46,7 +46,7 @@ class MaybeProtocol(Protocol, Generic[T]):
 
     :param default: Value to return if Nothing
     :type default: T
-    :returns: The wrapped value if Some, otherwise default  
+    :returns: The wrapped value if Some, otherwise default
     :rtype: T
     """
     ...
