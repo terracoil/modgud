@@ -32,6 +32,7 @@ from .maybe_protocol import MaybeProtocol
 
 # Message templates
 from .messages import ErrorMessages, InfoMessages
+from .pipeable_protocol import PipeableProtocol
 from .result_protocol import ResultProtocol
 from .types import FailureBehavior, FailureTypes, GuardFunction
 
@@ -50,6 +51,7 @@ __all__ = [
   'ServiceNotFoundError',
   # Protocols
   'MaybeProtocol',
+  'PipeableProtocol',
   'ResultProtocol',
   # Enums
   'GuardStrategy',

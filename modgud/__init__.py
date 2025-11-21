@@ -63,8 +63,17 @@ from .domain.exceptions import (
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
+from .infrastructure.chainable_expression import ChainableExpression
+from .infrastructure.chained_expression_factory import ChainedExpressionFactory
 from .infrastructure.common_guards import CommonGuards
+from .infrastructure.err_result import Err
 from .infrastructure.guard_registry import GuardRegistry
+from .infrastructure.maybe_factory import MaybeFactory
+from .infrastructure.nothing_maybe import Nothing
+from .infrastructure.ok_result import Ok
+from .infrastructure.result_factory import ResultFactory
+from .infrastructure.safe_expression_factory import SafeExpressionFactory
+from .infrastructure.some_maybe import Some
 
 # Export guards as module-level functions for convenient direct import
 not_empty = CommonGuards.not_empty
@@ -77,13 +86,38 @@ valid_file_path = CommonGuards.valid_file_path
 valid_url = CommonGuards.valid_url
 valid_enum = CommonGuards.valid_enum
 
+# Create factory instances
+_safe_factory = SafeExpressionFactory()
+_chained_factory = ChainedExpressionFactory()
+
+# Export factory functions for convenient direct import
+safe_expression = _safe_factory.create_decorator
+chained_expression = _chained_factory.create_decorator
+# pipeable is already imported from app.decorator.pipeable above
+chain = _chained_factory.create_expression
+
+# Export factory functions for monadic types
+Maybe = MaybeFactory
+Result = ResultFactory
+
 __version__ = '1.2.0'
 __all__ = [
   # Primary decorators
   'guarded_expression',
   'implicit_return',
   'pipeable',
+  'safe_expression',
+  'chained_expression',
   'Inject',
+  # Monadic types and factories
+  'Maybe',
+  'Some',
+  'Nothing',
+  'Result',
+  'Ok',
+  'Err',
+  'ChainableExpression',
+  'chain',
   # Classes
   'CommonGuards',
   'GuardRegistry',

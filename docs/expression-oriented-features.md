@@ -1,78 +1,747 @@
 **Parent**: [📚 Documentation Hub](README.md) | [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md)
 
-# Expression-Oriented Programming Features for modgud: A Comprehensive Python Analysis
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                     EXPRESSION-ORIENTED PROGRAMMING FEATURES                  ║
+║                               FOR MODGUD v1.2.6+                             ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
 
 <img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
 
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🎯 CURRENT IMPLEMENTATION STATUS                                           │
+│  ✅ = FULLY IMPLEMENTED    🚧 = IN PROGRESS    ❌ = NOT IMPLEMENTED YET      │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## 🔥 **Current modgud Features** (Python 3.13+)
+
+**✅ IMPLEMENTED:**
+- **`@guarded_expression` decorator**: ✅ Combines guard clauses with implicit returns using AST transformation
+- **`CommonGuards` class**: ✅ Pre-built validators (not_none, positive, in_range, type_check, matches_pattern, not_empty)  
+- **`@safe_expression` decorator**: ✅ Automatic Result wrapping for exception handling
+- **`@chained_expression` decorator**: ✅ Fluent interfaces with method chaining
+- **`Maybe`/`Result` types**: ✅ Full monadic operations with `Some`/`Nothing`, `Ok`/`Err`
+- **`@Inject` decorator**: ✅ Automatic dependency injection
+- **`@implicit_return` decorator**: ✅ Standalone implicit return transformation
+- **`@pipeable` decorator**: ✅ Functional pipeline composition with `|` operator
+- **`ChainableExpression`**: ✅ Method chaining for any value with `chain()` helper
+- **Configurable error handling**: ✅ Can raise exceptions, return custom values, or call handler functions
+- **Zero dependencies**: ✅ Built entirely on Python's standard library
+- **Expression-oriented programming**: ✅ Implicit returns from the last expression in each branch (like Ruby/Rust/Scala)
+
+```python
+# ✅ IMPLEMENTED - Current modgud usage examples
+from modgud import (
+    guarded_expression, safe_expression, chained_expression, 
+    positive, not_none, Maybe, Result, chain
+)
+
+# Guard clauses with implicit returns
+@guarded_expression(positive('x'))
+def process(x):
+    result = x * 2
+    result  # implicit return
+
+# Safe error handling with Result types
+@safe_expression
+def safe_divide(a, b):
+    return a / b  # Wrapped in Ok(result) or Err(exception)
+
+# Method chaining with fluent interfaces
+result = chain(42).map(lambda x: x * 2).filter(lambda x: x > 50).unwrap()
+
+# Monadic operations with Maybe types
+user_email = Maybe.from_value(user).map(lambda u: u.email).unwrap_or("unknown")
+```
+
 ---
 
-**Update**: The modgud package (https://github.com/terracoil/modgud) is a sophisticated expression-oriented programming library for Python 3.13+ that provides:
+This comprehensive analysis catalogs **additional expression-oriented programming features** that would complement and extend modgud's existing capabilities, building upon its foundation of guard clauses and implicit returns.
 
-- **`@guarded_expression` decorator**: Combines guard clauses with implicit returns using AST transformation
-- **`CommonGuards` class**: Pre-built validators (not_none, positive, in_range, type_check, matches_pattern, not_empty)
-- **Configurable error handling**: Can raise exceptions, return custom values, or call handler functions
-- **Zero dependencies**: Built entirely on Python's standard library
-- **Expression-oriented programming**: Implicit returns from the last expression in each branch (like Ruby/Rust/Scala)
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                     📋 FEATURE IMPLEMENTATION ROADMAP                        ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
 
-This analysis catalogs additional expression-oriented programming features that would complement and extend modgud's existing capabilities, building upon its foundation of guard clauses and implicit returns.
+## 🎯 **Pattern Matching & Destructuring Enhancements**
 
-## Pattern Matching and Destructuring Enhancements
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  IMPLEMENTATION STATUS: ❌ NOT IMPLEMENTED YET                               │
+│  PYTHON COMPATIBILITY: 3.6+ (polyfills) | 3.10+ (native integration)       │
+│  PRIORITY: HIGH - Natural extension of guard clauses                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-Python 3.10 introduced structural pattern matching through PEP 634, but several enhancements could extend this into more powerful expression-oriented patterns. **Expression-based pattern matching** would allow match statements to return values directly, enabling functional-style code where pattern matching becomes part of expression chains rather than requiring statement blocks. A helper could wrap Python's match statement to return matched values, similar to Scala's match expressions.
+### ❌ **Expression-Based Pattern Matching**
+Python 3.10 introduced structural pattern matching through PEP 634, but several enhancements could extend this into more powerful expression-oriented patterns. **Expression-based pattern matching** would allow match statements to return values directly, enabling functional-style code where pattern matching becomes part of expression chains rather than requiring statement blocks.
 
-Guard clause utilities represent another powerful addition. While Python 3.10 supports guards in match statements with `if` clauses, **dedicated guard combinators** could provide composable validation. Think predicates like `all_of()`, `any_of()`, and `none_of()` that combine multiple conditions, enabling patterns like `case Point(x, y) if all_of(positive, less_than(100))(x, y):`. These work in Python 3.6+ by operating on values before pattern matching, though integration with 3.10+ match statements creates the most elegant API.
+```python
+# ❌ NOT IMPLEMENTED - Proposed @pattern_matched decorator
+@pattern_matched
+@guarded_expression
+def describe_shape(shape):
+    match shape:
+        case Point(x, y): f"Point at ({x}, {y})"
+        case Circle(_, radius): f"Circle with radius {radius}"
+        case Rectangle(_, width, height): f"Rectangle {width}x{height}"
+        case _: "Unknown shape"
+```
 
-**Destructuring utilities** for dictionaries, nested structures, and custom objects would complement pattern matching. Python's tuple unpacking works well for sequences, but deep nested extraction remains verbose. A `pluck()` function could extract nested values safely (returning `None` or a default for missing paths), while `destructure()` could handle complex objects with path specifications. Compatible with Python 3.6+, these fill gaps that pattern matching doesn't fully address.
+### ❌ **Guard Combinators for Pattern Matching**
+While Python 3.10 supports guards in match statements with `if` clauses, **dedicated guard combinators** could provide composable validation with modgud's existing guard system.
 
-For Python 3.9 and earlier, **pattern matching polyfills** provide crucial backward compatibility. Libraries like pampy demonstrated this is feasible, but a modern implementation could use type hints and protocol classes to create safer, more maintainable pattern matching that feels native. This requires matching against types, literals, sequences, and dictionaries—all possible through careful isinstance checks and recursive pattern application.
+```python
+# ❌ NOT IMPLEMENTED - Proposed guard combinator integration
+from modgud import all_of, any_of, none_of, positive, less_than
 
-## Monadic Operations and Algebraic Data Types
+@guarded_expression
+def classify_point(point):
+    match point:
+        case Point(x, y) if all_of(positive, less_than(100))(x, y):
+            "small positive quadrant"
+        case Point(x, y) if any_of(lambda n: n < 0)(x, y):
+            "has negative coordinate"
+        case _:
+            "other"
+```
 
-**Maybe/Option and Result/Either types** form the foundation of type-safe error handling without exceptions. A Maybe monad represents optional values (Some or Nothing), eliminating null checks. Result types encode success/failure with typed errors, enabling railway-oriented programming where operations chain automatically until encountering an error. Both work in Python 3.6+ using classes, but Python 3.10+ enables elegant pattern matching integration: `match result: case Ok(value): ... case Err(error): ...`.
+### ❌ **Destructuring Utilities**
+**Destructuring utilities** for dictionaries, nested structures, and custom objects would complement pattern matching. Python's tuple unpacking works well for sequences, but deep nested extraction remains verbose.
 
-The real power emerges with **composable monadic operations**. Methods like `map()`, `bind()` (flatMap), `filter()`, and `or_else()` let you chain operations on wrapped values without unwrapping. For example: `Maybe.of(user).map(get_email).filter(is_valid_email).or_else("no-reply@example.com")` handles all edge cases without a single if statement. These patterns work universally across Python 3.6+ but benefit from newer type system features.
+```python
+# ❌ NOT IMPLEMENTED - Proposed destructuring helpers
+from modgud import pluck, destructure
 
-**Do-notation or computation expressions** provide syntactic sugar for monadic composition. While Python lacks Haskell's do-notation or F#'s computation expressions, you can approximate it using decorators and generators. A decorator unwraps monadic values within a generator function, making sequential operations read imperatively while maintaining functional purity underneath. This works in Python 3.6+ but really shines with Python 3.10+ where you can combine it with pattern matching.
+@guarded_expression
+def process_api_response(response):
+    guard not response: return "No data"
+    
+    # Safe nested extraction with defaults
+    user_name = pluck(response, 'user.profile.name', default='Anonymous')
+    user_email = pluck(response, 'user.contact.email', default='')
+    
+    f"{user_name} <{user_email}>"
 
-**Task and IO monads** separate pure from impure code. An IO monad wraps side effects (file I/O, network calls, randomness) without executing them immediately, enabling referential transparency. Tasks represent asynchronous operations as values, composable before execution. These work in Python 3.6+ but Python 3.13's improved concurrency features make them particularly valuable.
+# Alternative destructuring syntax
+@destructured
+@guarded_expression  
+def handle_config(config):
+    {
+        'database': {'host': db_host, 'port': db_port},
+        'redis': {'url': redis_url}
+    } = config
+    
+    f"DB: {db_host}:{db_port}, Redis: {redis_url}"
+```
 
-**Validation applicative** accumulates errors rather than short-circuiting like Result. When validating a form with multiple fields, you want all errors, not just the first one. Validation functors enable this through applicative composition: `Validation.of(create_user).apply(validate_name(name)).apply(validate_email(email)).apply(validate_age(age))` collects all failures. Compatible with Python 3.6+, this pattern requires careful implementation of applicative functor laws.
+### ❌ **Pattern Matching Polyfills (Python 3.6-3.9)**
+For backward compatibility, **pattern matching polyfills** would provide crucial support for older Python versions using modgud's AST transformation capabilities.
 
-## Advanced Function Composition and Piping
+```python
+# ❌ NOT IMPLEMENTED - Proposed pattern matching backport
+@pattern_matched  # Uses AST transformation for 3.6-3.9
+@guarded_expression
+def handle_response(response):
+    match response:
+        case {'status': 200, 'data': data}: 
+            process_success(data)
+        case {'status': int(code)} if 400 <= code < 500:
+            handle_client_error(code)
+        case {'status': int(code)} if code >= 500:
+            handle_server_error(code)
+        case _:
+            "Invalid response format"
+```
 
-**Reverse composition operator** (pipe operator) enables left-to-right data flow that mirrors how humans read. Instead of `h(g(f(x)))`, write `pipe(x, f, g, h)` or even `x | f | g | h` using operator overloading. This requires creating a `Pipe` class with `__or__` overloading or using a pipe function. While Python 3.6+ supports this, the pattern works best when combined with currying—functions need consistent signatures to chain smoothly.
+## 🧬 **Monadic Operations & Algebraic Data Types**
 
-**Automatic currying and partial application** make composition elegant. A `@curry` decorator transforms `def add(a, b, c)` into a function that can be called as `add(1)(2)(3)` or `add(1, 2, 3)` or `add(1)(2, 3)`. Combined with piping, this enables `numbers | map(add(5)) | filter(less_than(100))` without lambda wrappers. Implementation uses `functools.partial` and inspection of function signatures, working in Python 3.6+ but benefiting from Python 3.10+'s better type introspection.
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  IMPLEMENTATION STATUS: ✅ IMPLEMENTED (CORE TYPES)                         │
+│  PYTHON COMPATIBILITY: 3.13+ (current implementation)                      │
+│  PRIORITY: HIGH - Essential for functional error handling                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-**Compose and flow utilities** complement piping. `compose(f, g, h)` creates right-to-left composition (mathematical), while `flow(f, g, h)` creates left-to-right (intuitive). Both return new functions, enabling reusable transformation pipelines: `process_user = flow(validate, normalize, save_to_db)`. These are straightforward to implement in Python 3.6+ using `functools.reduce` and function wrapping.
+### ✅ **Maybe/Option and Result/Either Types** (IMPLEMENTED!)
+Foundation of type-safe error handling without exceptions. **Maybe monad** represents optional values (Some or Nothing), eliminating null checks. **Result types** encode success/failure with typed errors, enabling railway-oriented programming.
 
-**Point-free style helpers** eliminate explicit arguments. Combinators like `identity`, `constant`, `flip` (reverses argument order), and `tap` (executes side effect, returns original) enable more declarative code. A `method` helper converts methods to functions: `users | map(method('get_email'))` instead of `map(lambda u: u.get_email())`. Compatible with Python 3.6+, these utilities reduce lambda soup.
+```python
+# ✅ IMPLEMENTED - Current modgud Maybe/Option and Result types
+from modgud import Maybe, Result, Some, Nothing, Ok, Err
 
-**Function threading macros** inspired by Clojure's `->` and `->>` thread values through function chains. `thread_first(x, f, g, h)` calls `h(g(f(x)))`, while `thread_last(x, f, g, h)` calls `h(g(f(x)))` but passes the accumulator as the last argument to each function. This matters when interoperating with functions that have inconsistent argument orders. Works in Python 3.6+ through clever argument positioning.
+# Maybe types - handle optional values safely
+user = Maybe.from_value(fetch_user_by_id(123))  # Some(user) or Nothing()
+email = Maybe.some("user@example.com")
+empty = Maybe.nothing()
 
-## Lazy Evaluation and Infinite Sequences
+# Result types - railway-oriented programming  
+@safe_expression
+def safe_divide(a, b):
+    return a / b  # Automatically wrapped in Ok(result) or Err(exception)
 
-**Lazy sequence type** wraps iterators with functional operations that don't execute until materialized. Unlike built-in map/filter which return iterators without methods, a `LazySeq` class provides `map()`, `filter()`, `take()`, `drop()`, `take_while()`, and more as chainable methods. `LazySeq(range(1000000)).filter(is_prime).take(10)` never creates a million-element list. This works in Python 3.6+ by wrapping generators and implementing `__iter__`.
+# Direct Result creation
+success = Result.ok("Success!")
+failure = Result.err("Something went wrong")
 
-**Memoization and caching decorators** enable lazy computation with sharing. `@lazy` makes a property compute once and cache, while `@memoize` caches function results by arguments. For recursive functions like Fibonacci, memoization transforms exponential time into linear. Python 3.8+ offers `functools.cached_property` natively, but custom implementations work in 3.6+ and can handle more sophisticated cache invalidation strategies.
+# Pattern matching integration (Python 3.10+)
+@guarded_expression
+def handle_result(result):
+    match result:
+        case Ok(value): f"Success: {value}"
+        case Err(error): f"Error: {error}"
+```
 
-**Stream processing utilities** enable infinite data structures. A `Stream` class representing `(value, next_thunk)` pairs lets you define infinite sequences like `naturals = Stream(0, lambda: naturals.map(add(1)))`. Combined with memoization, this enables dynamic programming approaches. Works in Python 3.6+ through careful thunk management and cycle detection.
+### ✅ **Composable Monadic Operations** (IMPLEMENTED!)
+Methods like `map()`, `and_then()` (bind/flatMap), and `unwrap_or()` enable chaining operations on wrapped values without explicit unwrapping.
 
-**Transducers** separate the essence of a transformation from how it's applied. Rather than creating intermediate collections with each `map/filter` operation, transducers compose transformations and apply them in one pass. A transducer is a function that transforms a reducer, enabling powerful optimizations. While complex to implement correctly, transducers work in Python 3.6+ and provide significant performance benefits for pipeline-heavy code.
+```python
+# ✅ IMPLEMENTED - Current modgud monadic chaining
+from modgud import Maybe, Result, Some, Nothing
 
-**Pull streams vs push streams** represent different laziness models. Python's generators are pull streams (consumer controls when values are produced). Push streams (observables) let producers control timing, enabling reactive programming patterns. A lightweight Observable implementation could bridge this gap, providing functional operators over event streams. Works in Python 3.6+ but integrates beautifully with Python 3.13's improved concurrency primitives.
+# Maybe chaining with map and and_then
+user_email = Some("user@example.com") \
+    .map(str.lower) \
+    .map(lambda email: f"processed_{email}") \
+    .unwrap_or("default@example.com")
 
-## Expression-Based Control Flow
+# Result chaining for railway-oriented programming  
+@safe_expression
+def process_data(input_data):
+    # Result automatically wraps exceptions
+    processed = parse_json(input_data)  # Returns Result[dict, Exception]
+    validated = processed.map(validate_schema) 
+    return validated.unwrap_or({})
 
-**Conditional expressions beyond ternary** extend Python's `x if condition else y` with multi-branch support. A `cond()` function takes condition/value pairs and returns the first matching value: `cond(x < 0, "negative", x == 0, "zero", x > 0, "positive")`. This reads more naturally than nested ternaries and works in Python 3.6+. Enhanced versions could support guard functions or pattern matching integration.
+# Chaining with and_then for monadic composition
+def safe_divide(a, b):
+    return Ok(a).and_then(lambda x: Ok(x / b) if b != 0 else Err("Division by zero"))
+```
 
-**Switch/case expression emulation** for pre-3.10 Python provides pattern-like dispatching. A dictionary-based dispatcher with callables handles simple cases: `{0: zero_handler, 1: one_handler}.get(value, default_handler)(value)`. More sophisticated implementations support predicates, ranges, and type matching. Python 3.10+ makes this obsolete with native pattern matching, but backward compatibility matters.
+### ❌ **Do-Notation / Computation Expressions**
+Syntactic sugar for monadic composition using decorators and generators to make sequential operations read imperatively while maintaining functional purity.
 
-**Guard clauses and early returns** wrapped functionally enable cleaner validation. A `guard()` function takes predicates and error messages, short-circuiting on first failure: `guard(is_valid(input), "Invalid input").then(process)`. This transforms imperative guard clauses into expressions. Works in Python 3.6+ using exception handling under the hood.
+```python
+# ❌ NOT IMPLEMENTED - Proposed do-notation decorator
+@do_notation(Maybe)
+def calculate_total(cart_id):
+    cart = yield fetch_cart(cart_id)        # Maybe[Cart]
+    items = yield get_cart_items(cart)      # Maybe[List[Item]]
+    prices = yield calculate_prices(items)   # Maybe[List[Price]]
+    total = sum(prices)                     # Direct calculation
+    return total                            # Wrapped in Maybe automatically
 
-**Expression blocks and let bindings** scope temporary variables within expressions. Python lacks let expressions, but a `let()` function or context manager can simulate them: `let(x=expensive_calc()).in_(lambda x: x * x + x)`. This avoids polluting the namespace with intermediate values. Python 3.8+ walrus operator (`:=`) partly addresses this, but explicit let bindings are cleaner for complex expressions.
+# Equivalent to: fetch_cart(cart_id).bind(get_cart_items).bind(calculate_prices).map(sum)
+```
 
-**Try expressions** wrap exception-prone code in expressions returning Result types. Rather than try/except blocks, `try_call(lambda: int(value))` returns `Ok(int_value)` or `Err(exception)`. This enables functional error handling without disrupting expression flow. Works in Python 3.6+ through straightforward exception wrapping.
+### ❌ **Task and IO Monads**
+Separate pure from impure code. **IO monad** wraps side effects without executing them immediately. **Tasks** represent asynchronous operations as values.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed IO and Task monads  
+from modgud import IO, Task
+
+@guarded_expression
+def read_config():
+    io_action = IO.of(lambda: open('config.json').read()) \
+        .map(json.loads) \
+        .map(validate_config)
+    
+    io_action.run()  # Only executes when explicitly run
+
+@guarded_expression  
+async def fetch_user_data(user_id):
+    task = Task.of(fetch_user(user_id)) \
+        .bind(lambda u: Task.of(fetch_profile(u.id))) \
+        .map(merge_user_profile)
+    
+    await task.run()  # Composable before execution
+```
+
+### ❌ **Validation Applicative**
+Accumulates errors rather than short-circuiting like Result. Perfect for form validation where you want all errors, not just the first failure.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed Validation applicative
+from modgud import Validation, ValidationError
+
+@guarded_expression
+def create_user(name, email, age):
+    # Collects ALL validation errors, doesn't short-circuit
+    Validation.of(User) \
+        .apply(validate_name(name)) \
+        .apply(validate_email(email)) \
+        .apply(validate_age(age)) \
+        .fold(
+            on_success=lambda user: f"Created: {user}",
+            on_failure=lambda errors: f"Errors: {', '.join(errors)}"
+        )
+
+def validate_name(name):
+    return Validation.success(name) if name else Validation.failure("Name required")
+    
+def validate_email(email):
+    return Validation.success(email) if '@' in email else Validation.failure("Invalid email")
+```
+
+## 🔗 **Advanced Function Composition & Piping**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  IMPLEMENTATION STATUS: 🚧 PARTIALLY IMPLEMENTED                            │
+│  PYTHON COMPATIBILITY: 3.6+ (all features)                                 │  
+│  PRIORITY: MEDIUM - Enhances existing pipeable decorator                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### ✅ **Pipe Operator (IMPLEMENTED)**
+**Reverse composition operator** enables left-to-right data flow. modgud's `@pipeable` decorator already provides this functionality!
+
+```python
+# ✅ IMPLEMENTED - Current modgud @pipeable decorator
+from modgud import pipeable
+
+@pipeable
+def add(x, y):
+    return x + y
+
+@pipeable  
+def multiply(x, factor):
+    return x * factor
+
+@pipeable
+def format_result(x):
+    return f"Result: {x}"
+
+# Chaining with pipe operator
+result = 5 | add(3) | multiply(2) | format_result()  # "Result: 16"
+```
+
+### ✅ **Chainable Expressions (IMPLEMENTED!)**
+**Fluent interfaces** with method chaining for functional-style data transformation.
+
+```python
+# ✅ IMPLEMENTED - Current modgud chainable expressions
+from modgud import chain, chained_expression, ChainableExpression
+
+# Manual chainable wrapping
+result = chain(42) \
+    .map(lambda x: x * 2) \
+    .filter(lambda x: x > 50) \
+    .tap(print) \
+    .unwrap_or(0)  # 84
+
+# Decorator for automatic chaining
+@chained_expression
+def process_data(data):
+    return data.upper()
+
+# Returns ChainableExpression that can be chained
+result = process_data("hello") \
+    .map(lambda s: s + " WORLD") \
+    .unwrap()  # "HELLO WORLD"
+```
+
+### ❌ **Automatic Currying and Partial Application**
+Make composition more elegant by transforming functions to support partial application automatically.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed @curry decorator
+from modgud import curry, pipeable
+
+@curry
+@pipeable
+def add_three(a, b, c):
+    return a + b + c
+
+# Multiple calling styles enabled by currying
+add_partial = add_three(1)           # Returns function waiting for b, c
+add_more = add_partial(2)            # Returns function waiting for c  
+result = add_more(3)                 # Returns 6
+
+# Elegant pipeline composition without lambdas
+numbers = [1, 2, 3, 4, 5]
+result = numbers | map(add_three(10, 5)) | list()  # [16, 17, 18, 19, 20]
+```
+
+### ❌ **Compose and Flow Utilities**
+Complement piping with function composition utilities for reusable transformation pipelines.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed compose/flow functions
+from modgud import compose, flow, pipeable
+
+@pipeable
+def validate(data): return validated_data
+@pipeable  
+def normalize(data): return normalized_data
+@pipeable
+def save_to_db(data): return saved_data
+
+# Right-to-left composition (mathematical)
+process_user_rtl = compose(save_to_db, normalize, validate)
+
+# Left-to-right composition (intuitive) 
+process_user_ltr = flow(validate, normalize, save_to_db)
+
+# Both create reusable transformation pipelines
+result = process_user_ltr(user_data)
+```
+
+### ❌ **Point-Free Style Helpers**
+Eliminate explicit arguments and reduce lambda usage with combinator utilities.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed point-free helpers
+from modgud import identity, constant, flip, tap, method
+
+users = [user1, user2, user3]
+
+# Method helper converts methods to functions
+emails = users | map(method('get_email')) | list()
+
+# Tap executes side effect, returns original (debugging/logging)
+result = data | tap(print) | process() | tap(log_result)
+
+# Flip reverses argument order
+divide = lambda a, b: a / b
+divide_by = flip(divide)  # Now: divide_by(2, 10) == 10 / 2 == 5.0
+
+# Identity and constant for composition
+safe_process = flow(
+    validate_input,
+    when(is_empty, constant([])),  # Return empty list for empty input
+    when(is_valid, identity),      # Pass through valid input unchanged
+    process_data
+)
+```
+
+### ❌ **Function Threading Macros**
+Inspired by Clojure's `->` and `->>`, thread values through function chains with flexible argument positioning.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed threading macros
+from modgud import thread_first, thread_last
+
+# Thread-first: x becomes first argument of each function
+result = thread_first(
+    "hello world",
+    str.title,                    # "Hello World"
+    lambda s: s.replace(" ", "_"), # "Hello_World"  
+    str.lower                     # "hello_world"
+)
+
+# Thread-last: x becomes last argument of each function  
+result = thread_last(
+    [1, 2, 3, 4, 5],
+    lambda lst, x: filter(lambda n: n > x, lst), 2,  # [3, 4, 5]
+    lambda lst, x: map(lambda n: n * x, lst), 10,    # [30, 40, 50]
+    list                                              # [30, 40, 50]
+)
+
+# Useful for functions with inconsistent argument orders
+process_data = thread_first(
+    raw_data,
+    parse_json,           # parse_json(raw_data)  
+    validate_schema,      # validate_schema(parsed_data)
+    enrich_with_metadata, # enrich_with_metadata(validated_data)
+    save_to_cache        # save_to_cache(enriched_data)
+)
+```
+
+## 🔄 **Lazy Evaluation & Infinite Sequences**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  IMPLEMENTATION STATUS: ❌ NOT IMPLEMENTED YET                               │
+│  PYTHON COMPATIBILITY: 3.6+ (all features) | 3.8+ (cached_property)        │
+│  PRIORITY: MEDIUM - Performance optimization for data processing            │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### ❌ **Lazy Sequence Type**
+Wraps iterators with functional operations that don't execute until materialized. Unlike built-in map/filter, provides chainable methods for elegant composition.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed LazySeq class
+from modgud import LazySeq
+
+# Never creates a million-element list in memory
+@guarded_expression
+def find_large_primes():
+    LazySeq(range(1000000)) \
+        .filter(is_prime) \
+        .filter(lambda n: n > 10000) \
+        .take(10) \
+        .to_list()  # Only materializes the final 10 results
+
+# Chainable operations with method syntax
+@guarded_expression  
+def process_data_stream(data):
+    LazySeq(data) \
+        .map(parse_record) \
+        .filter(is_valid) \
+        .group_by(lambda r: r.category) \
+        .map_values(lambda group: sum(r.value for r in group)) \
+        .to_dict()
+```
+
+### ❌ **Memoization and Caching Decorators**
+Enable lazy computation with sharing. Transform expensive recursive functions from exponential to linear time.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed memoization decorators
+from modgud import memoize, lazy_property
+
+@memoize
+@guarded_expression
+def fibonacci(n):
+    guard n <= 1: return n
+    fibonacci(n-1) + fibonacci(n-2)  # Exponential → Linear with memoization
+
+class DataProcessor:
+    @lazy_property
+    def expensive_computation(self):
+        # Computed once, cached thereafter
+        return perform_heavy_calculation(self.data)
+    
+    @memoize(max_size=128, ttl=300)  # LRU cache with TTL
+    @guarded_expression
+    def process_item(self, item_id):
+        guard item_id: return fetch_and_process(item_id)
+        None
+```
+
+### ❌ **Stream Processing Utilities**
+Enable infinite data structures through lazy evaluation and functional stream operations.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed Stream class
+from modgud import Stream
+
+# Infinite sequences with lazy evaluation
+naturals = Stream.iterate(0, lambda x: x + 1)
+fibonacci_stream = Stream.iterate((0, 1), lambda pair: (pair[1], pair[0] + pair[1])).map(lambda pair: pair[0])
+
+@guarded_expression
+def take_fibonacci(n):
+    guard n > 0: return fibonacci_stream.take(n).to_list()
+    []
+
+# Stream composition and transformation
+@guarded_expression
+def process_event_stream(events):
+    Stream.from_iterable(events) \
+        .filter(lambda e: e.severity >= WARNING) \
+        .buffer(size=100, timeout=5.0) \
+        .map(aggregate_events) \
+        .subscribe(send_alert)
+```
+
+### ❌ **Transducers**
+Separate transformation essence from application method. Compose transformations without intermediate collections.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed transducer system
+from modgud import transduce, mapping, filtering, taking
+
+# Traditional approach - creates intermediate collections
+def traditional_pipeline(data):
+    return list(map(str.upper, filter(str.isalpha, data[:100])))
+
+# Transducer approach - single pass, no intermediates
+@guarded_expression
+def transducer_pipeline(data):
+    xform = compose(
+        taking(100),      # Take first 100
+        filtering(str.isalpha),  # Keep only alphabetic
+        mapping(str.upper)       # Convert to uppercase
+    )
+    transduce(xform, list, data)  # Single pass transformation
+
+# Reusable transformations
+text_processor = compose(
+    filtering(lambda s: len(s) > 3),
+    mapping(str.strip),
+    mapping(str.title)
+)
+
+# Apply to different collection types
+result_list = transduce(text_processor, list, text_data)
+result_set = transduce(text_processor, set, text_data)
+```
+
+### ❌ **Pull vs Push Streams**
+Different laziness models for event processing and reactive programming patterns.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed Observable/Stream types
+from modgud import Observable, Stream
+
+# Pull streams (consumer-controlled)
+@guarded_expression
+def pull_stream_example():
+    stream = Stream.from_iterable(data_source)
+    stream.take_while(is_valid) \
+          .batch(10) \
+          .map(process_batch) \
+          .consume()  # Consumer pulls when ready
+
+# Push streams (producer-controlled) 
+@guarded_expression
+def push_stream_example():
+    observable = Observable.from_events(event_source)
+    observable.filter(is_important) \
+              .debounce(1.0) \
+              .map(transform_event) \
+              .subscribe(handle_event)  # Producer pushes when data available
+
+# Bridge between pull and push
+@guarded_expression
+def bridge_streams():
+    pull_stream = Stream.from_generator(data_generator)
+    push_observable = pull_stream.to_observable(buffer_size=1000)
+    push_observable.subscribe(process_data)
+```
+
+## ⚡ **Expression-Based Control Flow**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  IMPLEMENTATION STATUS: ❌ NOT IMPLEMENTED YET                               │
+│  PYTHON COMPATIBILITY: 3.6+ (all features) | 3.8+ (walrus operator)        │
+│  PRIORITY: HIGH - Natural extension of guard clauses and implicit returns   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### ❌ **Multi-Branch Conditional Expressions**
+Extend Python's ternary operator with clean multi-branch support that integrates with modgud's guard system.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed cond() function
+from modgud import cond
+
+@guarded_expression
+def classify_number(x):
+    cond(
+        x < 0, "negative",
+        x == 0, "zero", 
+        x > 0 and x < 10, "small positive",
+        x >= 10, "large positive"
+    )  # Returns first matching condition
+
+# Integration with existing guards
+@guarded_expression  
+def process_user_status(user):
+    guard user: return "No user"
+    
+    cond(
+        user.is_active, "active",
+        user.is_suspended, "suspended", 
+        user.is_pending, "pending",
+        default="unknown"
+    )
+```
+
+### ❌ **Enhanced Switch/Case Expression**
+Pattern-like dispatching that works with Python 3.6+ and complements 3.10+ pattern matching.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed switch expression
+from modgud import switch
+
+@guarded_expression
+def handle_http_status(status_code):
+    switch(status_code) \
+        .case(200, lambda: "OK") \
+        .case(404, lambda: "Not Found") \
+        .case(lambda x: 400 <= x < 500, lambda: "Client Error") \
+        .case(lambda x: x >= 500, lambda: "Server Error") \
+        .default(lambda: "Unknown Status")
+
+# Type-based dispatching
+@guarded_expression
+def serialize_value(value):
+    switch(type(value)) \
+        .case(str, lambda v: f'"{v}"') \
+        .case(int, lambda v: str(v)) \
+        .case(list, lambda v: f"[{', '.join(map(serialize_value, v))}]") \
+        .default(lambda v: repr(v))
+```
+
+### ❌ **Functional Guard Expressions**
+Transform modgud's guard clauses into chainable expressions for more complex validation flows.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed functional guard syntax
+from modgud import guard_chain
+
+@guarded_expression
+def process_payment(payment_data):
+    guard_chain(payment_data) \
+        .check(lambda p: p.amount > 0, "Amount must be positive") \
+        .check(lambda p: p.currency in VALID_CURRENCIES, "Invalid currency") \
+        .check(lambda p: p.card.is_valid(), "Invalid card") \
+        .then(lambda p: charge_payment(p)) \
+        .catch(lambda error: log_payment_error(error))
+```
+
+### ❌ **Let Bindings and Expression Blocks**
+Scope temporary variables within expressions without polluting the namespace.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed let binding syntax
+from modgud import let
+
+@guarded_expression
+def complex_calculation(x, y):
+    let(
+        a=expensive_calc_1(x),
+        b=expensive_calc_2(y), 
+        c=expensive_calc_3(x, y)
+    ).in_(lambda a, b, c: (a + b) * c if c > 0 else a - b)
+
+# Context manager style
+@guarded_expression
+def process_data(raw_data):
+    with let(
+        parsed=parse_data(raw_data),
+        validated=validate_data(parsed),
+        enriched=enrich_data(validated)
+    ) as (parsed, validated, enriched):
+        f"Processed {len(enriched)} items from {len(parsed)} raw items"
+```
+
+### ❌ **Try Expressions**
+Wrap exception-prone code in expressions returning Result types for functional error handling.
+
+```python
+# ❌ NOT IMPLEMENTED - Proposed try expressions
+from modgud import try_expr, Ok, Err
+
+@guarded_expression
+def safe_parse_int(value):
+    try_expr(lambda: int(value)) \
+        .map(lambda x: x * 2) \
+        .fold(
+            on_ok=lambda result: f"Success: {result}",
+            on_error=lambda error: f"Parse error: {error}"
+        )
+
+# Chaining multiple try operations
+@guarded_expression
+def safe_divide_and_format(a_str, b_str):
+    try_expr(lambda: int(a_str)) \
+        .bind(lambda a: try_expr(lambda: int(b_str)).map(lambda b: (a, b))) \
+        .bind(lambda pair: try_expr(lambda: pair[0] / pair[1]) if pair[1] != 0 else Err("Division by zero")) \
+        .map(lambda result: f"Result: {result:.2f}") \
+        .unwrap_or("Calculation failed")
+```
 
 ## Immutability and Persistent Data Structures
 
@@ -368,3 +1037,91 @@ AST transformation enables powerful development features:
 - **Coverage analysis**: Track which guards/branches execute
 
 The combination of guard clauses, implicit returns, and AST transformation makes modgud uniquely positioned to bring expression-oriented programming to Python without waiting for language changes. It's not just a library—it's a bridge to Python's functional future.
+
+---
+
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                      📊 COMPREHENSIVE FEATURE SUMMARY                        ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
+
+## 🎯 **Implementation Status Overview**
+
+| **Feature Category** | **Status** | **Priority** | **Python Compat** | **Description** |
+|---------------------|------------|--------------|-------------------|-----------------|
+| **Core Guard System** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@guarded_expression`, `CommonGuards`, error handling |
+| **Implicit Returns** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | AST transformation for expression-oriented functions |
+| **Pipeline Composition** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@pipeable` decorator with `\|` operator |
+| **Chainable Expressions** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@chained_expression`, `chain()`, fluent interfaces |
+| **Monadic Operations** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `Maybe`/`Result` types, `Some`/`Nothing`, `Ok`/`Err` |
+| **Safe Error Handling** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@safe_expression` decorator with Result wrapping |
+| **Dependency Injection** | ✅ **IMPLEMENTED** | MEDIUM | 3.13+ | `@Inject` decorator for automatic resolution |
+| **Pattern Matching** | ❌ **NOT IMPLEMENTED** | HIGH | 3.6+ / 3.10+ | Enhanced destructuring and pattern matching |
+| **Function Composition** | 🚧 **PARTIAL** | MEDIUM | 3.6+ | Currying, compose/flow utilities, point-free style |
+| **Lazy Evaluation** | ❌ **NOT IMPLEMENTED** | MEDIUM | 3.6+ | LazySeq, memoization, stream processing |
+| **Control Flow** | ❌ **NOT IMPLEMENTED** | HIGH | 3.6+ | Multi-branch conditionals, try expressions |
+| **Immutable Data** | ❌ **NOT IMPLEMENTED** | MEDIUM | 3.7+ | Persistent data structures, lens operations |
+| **Type Classes** | ❌ **NOT IMPLEMENTED** | LOW | 3.8+ | Protocol-based polymorphism |
+| **Async Patterns** | ❌ **NOT IMPLEMENTED** | MEDIUM | 3.7+ | Async monads, effect systems |
+
+---
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  🚀 RECOMMENDED IMPLEMENTATION ROADMAP                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### **✅ Phase 1: Core Foundation** (COMPLETED!)
+1. ✅ **Guard System** - `@guarded_expression` with pre-built validators
+2. ✅ **Implicit Returns** - Ruby-style expression-oriented functions  
+3. ✅ **Pipeline Composition** - `@pipeable` with `|` operator
+4. ✅ **Monadic Types** - `Maybe`/`Result` with full monadic operations
+5. ✅ **Safe Error Handling** - `@safe_expression` with Result wrapping
+6. ✅ **Chainable Expressions** - Fluent interfaces with method chaining
+
+### **Phase 2: Enhanced Control Flow** (Next Priority)
+1. **Multi-Branch Conditionals** (`cond`, `switch`) - Natural extension of guards  
+2. **Try Expressions** - Functional exception handling without `@safe_expression`
+3. **Pattern Matching Helpers** - Backport 3.10+ features to older Python
+4. **Let Bindings** - Scoped temporary variables in expressions
+
+### **Phase 3: Advanced Composition** (Medium Priority)  
+5. **Currying & Partial Application** - Complete the piping story
+6. **Compose/Flow Utilities** - Reusable transformation pipelines
+7. **Point-Free Style Helpers** - Eliminate lambda expressions
+
+### **Phase 4: Performance & Advanced Features** (Low Priority)
+8. **Lazy Evaluation** - Performance optimizations for data processing
+9. **Immutable Data Structures** - Functional data manipulation
+10. **Async Patterns** - Real-world application support
+
+---
+
+```
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                        💡 WHY MODGUD REMAINS ESSENTIAL                       ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+```
+
+Despite Python's evolution toward more functional features, **modgud fills a critical gap**:
+
+### **🎯 Zero-Syntax-Cost Expression Orientation**
+While Python 3.10+ adds pattern matching, it's still statement-based. modgud's `@guarded_expression` transforms regular functions into expression-oriented code *today*, working seamlessly with Python 3.13+ codebases.
+
+### **📈 Gradual Adoption Path**  
+Unlike heavy functional libraries that require architectural changes, modgud decorators can be applied selectively. Start with one function, see benefits, expand gradually.
+
+### **🐍 Pythonic Integration**
+Rather than forcing Haskell idioms, modgud enhances Python's decorator pattern. Natural to Python developers while delivering expression-oriented benefits.
+
+### **⚡ Performance Without Overhead**
+AST transformation operates at function level with minimal runtime overhead, suitable for performance-sensitive code where other FP solutions might be rejected.
+
+### **🏗️ Clean Architecture Foundation**
+Already demonstrates clean architecture with dependency injection and separation of concerns, making it an excellent foundation for additional functional features.
+
+---
+
+**modgud isn't just a library—it's Python's bridge to expression-oriented programming.**

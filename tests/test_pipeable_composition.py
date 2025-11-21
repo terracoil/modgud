@@ -152,10 +152,9 @@ class TestPipeableWithGuardedExpression:
       -5 | multiply_guarded(2)
 
     # Test type checking for factor parameter
-    # Note: Currently type checking on bound arguments has known issues
-    # This test verifies the pipeline executes but may not enforce all guards
-    result = 10 | multiply_guarded('test')
-    assert result == 'testtesttesttesttesttesttesttesttesttest'  # String repeated 10 times
+    # Guards should properly validate bound arguments
+    with pytest.raises(GuardClauseError, match='factor must be of type int'):
+      10 | multiply_guarded('test')
 
 
 class TestAllThreeDecorators:

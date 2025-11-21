@@ -9,8 +9,8 @@ import functools
 from typing import Any, Callable, TypeVar
 
 from ...domain.result_protocol import ResultProtocol as Result
-from ...infrastructure.results.err_result import Err
-from ...infrastructure.results.ok_result import Ok
+from ...infrastructure.err_result import Err
+from ...infrastructure.ok_result import Ok
 
 T = TypeVar('T')
 R = TypeVar('R')

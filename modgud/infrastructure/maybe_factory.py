@@ -7,7 +7,7 @@ and performing Maybe operations, following the single class per file principle.
 
 from typing import TypeVar
 
-from ...domain.maybe_protocol import MaybeProtocol as Maybe
+from ..domain.maybe_protocol import MaybeProtocol as Maybe
 from .nothing_maybe import Nothing
 from .some_maybe import Some
 

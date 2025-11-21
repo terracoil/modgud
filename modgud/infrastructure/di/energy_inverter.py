@@ -7,9 +7,11 @@ for dependency injection operations following the single class per file principl
 
 from typing import List, Optional, Type, TypeVar
 
+from modgud.domain import ServiceNotFoundError
+
 from .interface_discovery import InterfaceDiscovery
 from .registration_strategies import RegistrationStrategies
-from .service_container import ServiceContainer, ServiceNotFoundError
+from .service_container import ServiceContainer
 
 T = TypeVar('T')
 

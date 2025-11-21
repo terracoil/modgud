@@ -7,7 +7,7 @@ following the single class per file principle.
 
 from typing import Any, Callable, TypeVar
 
-from ...domain.maybe_protocol import MaybeProtocol
+from ..domain.maybe_protocol import MaybeProtocol
 
 T = TypeVar('T')
 U = TypeVar('U')
