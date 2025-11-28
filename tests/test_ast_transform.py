@@ -7,7 +7,7 @@ from modgud.domain.exceptions import (
   ExplicitReturnDisallowedError,
   MissingImplicitReturnError,
 )
-from modgud.infrastructure.implicit_return import ImplicitReturnTransformer
+from modgud.infrastructure.transform import ImplicitReturnTransformer
 
 
 class TestBasicTransformations:

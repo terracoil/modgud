@@ -1,5 +1,4 @@
-"""
-Modgud - Modern Guard Clauses for Python.
+"""Modgud - Modern Guard Clauses for Python.
 
 A library for implementing guard clause decorators with single return point architecture.
 
@@ -45,8 +44,8 @@ Usage Examples:
 
         def valid_email(param_name="email", position=0):
             def check(*args, **kwargs):
-                value = kwargs.get(param_name, args[position] if position < len(args) else None)
-                return "@" in str(value) or f"{param_name} must be a valid email"
+                name = kwargs.get(param_name, args[position] if position < len(args) else None)
+                return "@" in str(name) or f"{param_name} must be a valid email"
             return check
 
         GuardRegistry.register("valid_email", valid_email, namespace="validators")
@@ -56,7 +55,7 @@ from .app.decorator.guarded_expression import guarded_expression
 from .app.decorator.implicit_return_decorator import implicit_return
 from .app.decorator.inject_decorator import Inject
 from .app.decorator.pipeable import pipeable
-from .domain.exceptions import (
+from .domain import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
@@ -66,7 +65,7 @@ from .domain.exceptions import (
 from .infrastructure.chainable_expression import ChainableExpression
 from .infrastructure.chained_expression_factory import ChainedExpressionFactory
 from .infrastructure.common_guards import CommonGuards
-from .infrastructure.err_result import Err
+from .infrastructure.err_result import ErrResult
 from .infrastructure.guard_registry import GuardRegistry
 from .infrastructure.maybe_factory import MaybeFactory
 from .infrastructure.nothing_maybe import Nothing
@@ -115,7 +114,7 @@ __all__ = [
   'Nothing',
   'Result',
   'Ok',
-  'Err',
+  'ErrResult',
   'ChainableExpression',
   'chain',
   # Classes

@@ -1,5 +1,4 @@
-"""
-Interface discovery for automatic service registration.
+"""Interface discovery for automatic service registration.
 
 This module provides the InterfaceDiscovery class that automatically discovers
 interface implementations following the single class per file principle.
@@ -13,8 +12,7 @@ from typing import Any, Dict, List, Optional, Set, Type
 
 
 class InterfaceDiscovery:
-  """
-  Discovers interface implementations for automatic service registration.
+  """Discovers interface implementations for automatic service registration.
 
   Scans modules to find classes that implement interfaces (Protocols or ABCs)
   and supports naming convention-based default selection.
@@ -26,8 +24,7 @@ class InterfaceDiscovery:
     self._scanned_modules: Set[str] = set()
 
   def scan_module(self, module_name: str) -> None:
-    """
-    Scan a module for interface implementations.
+    """Scan a module for interface implementations.
 
     Args:
         module_name: Name of the module to scan (e.g., 'myapp.services')
@@ -52,7 +49,7 @@ class InterfaceDiscovery:
     # Scan sub-modules if it's a package
     try:
       if hasattr(module, '__path__'):
-        for _, name, ispkg in pkgutil.iter_modules(module.__path__, module.__name__ + '.'):
+        for _, name, _ispkg in pkgutil.iter_modules(module.__path__, module.__name__ + '.'):
           if name not in self._scanned_modules:
             try:
               submodule = importlib.import_module(name)
@@ -88,8 +85,7 @@ class InterfaceDiscovery:
         continue
 
   def _get_implemented_interfaces(self, cls: Type) -> List[Type]:
-    """
-    Get all interfaces (Protocols/ABCs) implemented by a class.
+    """Get all interfaces (Protocols/ABCs) implemented by a class.
 
     Args:
         cls: Class to analyze
@@ -108,8 +104,7 @@ class InterfaceDiscovery:
     return interfaces
 
   def _is_interface(self, cls: Type) -> bool:
-    """
-    Check if a class is an interface (Protocol or ABC).
+    """Check if a class is an interface (Protocol or ABC).
 
     Args:
         cls: Class to check
@@ -129,8 +124,7 @@ class InterfaceDiscovery:
     return False
 
   def get_implementations(self, interface: Type) -> List[Type]:
-    """
-    Get all discovered implementations for an interface.
+    """Get all discovered implementations for an interface.
 
     Args:
         interface: Interface type to get implementations for
@@ -142,8 +136,7 @@ class InterfaceDiscovery:
     return self._discovered_implementations.get(interface, [])
 
   def get_default_implementation(self, interface: Type) -> Optional[Type]:
-    """
-    Get the default implementation for an interface using naming conventions.
+    """Get the default implementation for an interface using naming conventions.
 
     Prioritizes implementations with names containing:
     1. "Default"

@@ -11,6 +11,7 @@
 - [🎖️ Primary Decorators](#primary-decorators)
   - [guarded_expression](#guarded_expression)
   - [implicit_return](#implicit_return)
+- [📖 Usage Patterns: Choosing Your Approach](#usage-patterns-choosing-your-approach)
 - [🧩 Pre-built Guard Functions](#pre-built-guard-functions)
 - [🚨 Error Classes](#error-classes)
 - [📝 Guard Registry Functions](#guard-registry-functions)
@@ -86,7 +87,7 @@ guarded_expression(
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `*guards` | `GuardFunction` | - | Variable number of guard functions that validate input |
-| `implicit_return` | `bool` | `True` | **⚠️ Deprecated:** Use separate `@implicit_return` decorator instead |
+| `implicit_return` | `bool` | `True` | Enable implicit return transformation (fully supported) |
 | `on_error` | `FailureBehavior` | `GuardClauseError` | Behavior when guard fails (see below) |
 | `log` | `bool` | `False` | Log guard failures at INFO level |
 
@@ -184,23 +185,28 @@ def process_items(items):
 process_items([])  # Logs: "INFO: Guard failed: items must not be empty"
 ```
 
-##### Recommended Composition Pattern (New in v0.3.0)
+##### Usage Patterns (Both Fully Supported)
 
 ```python
 from modgud import guarded_expression, implicit_return, positive
 
-# Recommended: Use separate decorators
-@guarded_expression(positive("x"))
-@implicit_return
+# Pattern 1: Unified parameter (simple, all-in-one)
+@guarded_expression(
+    positive("x"),
+    implicit_return=True  # Fully supported!
+)
 def calculate(x):
     result = x * 2
     result
 
-# Legacy (deprecated but functional)
-@guarded_expression(positive("x"), implicit_return=True)  # ⚠️ Shows warning
-def legacy_calculate(x):
+# Pattern 2: Separate decorators (flexible, composable)
+@guarded_expression(positive("x"))
+@implicit_return
+def calculate_v2(x):
     result = x * 2
     result
+
+# Both patterns are first-class citizens - choose based on your needs!
 ```
 
 ---
@@ -284,10 +290,106 @@ def process_data(data, fallback_mode=False):
 
 #### Notes
 
-- **Order Matters**: When composing with other decorators, `@implicit_return` should typically be the innermost (closest to the function)
+- **Two Valid Patterns**: Use `implicit_return=True` parameter OR separate `@implicit_return` decorator
+- **Order Matters**: When using separate decorators, `@implicit_return` should typically be the innermost (closest to the function)
+- **⚠️ Composition Warning**: Avoid placing `@implicit_return` before `@guarded_expression` as it may bypass guards
 - **Source Required**: Function source code must be available via `inspect.getsource()`
-- **No Explicit Returns**: Functions cannot contain `return` statements when using `@implicit_return`
+- **No Explicit Returns**: Functions cannot contain `return` statements when using implicit returns
 - **All Paths Must Yield**: Every execution path must end with an expression that produces a value
+
+---
+
+## 📖 Usage Patterns: Choosing Your Approach
+
+modgud offers two equally valid patterns for combining guards with implicit returns. Both are fully supported and the choice depends on your specific needs.
+
+### Pattern 1: Unified Parameter Approach
+
+**When to use:**
+- Simple functions with guards and implicit returns
+- When you want all configuration in one place
+- Teaching/learning scenarios
+- Functions where the transformation is core to the function's identity
+
+**Example:**
+```python
+@guarded_expression(
+    positive("amount"),
+    not_none("user"),
+    implicit_return=True,  # All-in-one configuration
+    on_error=None
+)
+def calculate_discount(amount, user):
+    discount = user.discount_rate if user.is_premium else 0.05
+    amount * (1 - discount)
+```
+
+**Benefits:**
+- Single decorator for complete function transformation
+- Explicit configuration in one place
+- Easier to understand for newcomers
+- Reduces decorator stack complexity
+
+### Pattern 2: Separate Decorators Approach
+
+**When to use:**
+- Complex decorator compositions
+- When implicit return is optional/conditional
+- Building reusable decorator stacks
+- Need maximum flexibility
+
+**Example:**
+```python
+@cache  # Other decorators can be added
+@guarded_expression(positive("amount"), not_none("user"))
+@implicit_return  # Separate concern
+def calculate_discount(amount, user):
+    discount = user.discount_rate if user.is_premium else 0.05
+    amount * (1 - discount)
+```
+
+**Benefits:**
+- More composable and flexible
+- Clearer separation of concerns
+- Better for complex decorator stacks
+- Allows fine-grained control
+
+### ⚠️ Important: Decorator Order Matters
+
+When using separate decorators, the order is critical:
+
+```python
+# ✅ CORRECT: Guards before implicit return
+@guarded_expression(positive("x"))
+@implicit_return
+def correct(x):
+    x * 2
+
+# ❌ WRONG: This can bypass guards!
+@implicit_return
+@guarded_expression(positive("x"))  # Guards may not execute properly
+def problematic(x):
+    x * 2
+```
+
+The incorrect order can cause guards to be bypassed due to how Python's `inspect.getsource()` works with decorated functions.
+
+### Choosing Between Patterns
+
+| Use Case | Recommended Pattern | Example |
+|----------|-------------------|---------|
+| Simple validation + implicit return | Unified parameter | `@guarded_expression(..., implicit_return=True)` |
+| Complex decorator stacks | Separate decorators | `@cache @guarded_expression(...) @implicit_return` |
+| Guards without implicit returns | Unified with `implicit_return=False` | `@guarded_expression(..., implicit_return=False)` |
+| Conditional implicit returns | Separate decorators | Apply `@implicit_return` conditionally |
+| Teaching/documentation | Unified parameter | Shows all features in one place |
+
+### Migration from Deprecated Pattern
+
+If you previously avoided the `implicit_return` parameter due to deprecation warnings:
+1. **No action required** - your separate decorator code continues to work
+2. **Optional**: Consider if the unified parameter would be cleaner for your use case
+3. **Review**: Check decorator order if using separate decorators
 
 ---
 
@@ -313,10 +415,13 @@ not_empty(param_name: str = 'parameter', position: Optional[int] = None) -> Guar
 
 **Example:**
 ```python
-from modgud import guarded_expression, implicit_return, not_empty
+from modgud import guarded_expression, not_empty
 
-@guarded_expression(not_empty("items"))
-@implicit_return
+# Using unified parameter approach
+@guarded_expression(
+    not_empty("items"),
+    implicit_return=True
+)
 def process(items):
     len(items)
 ```
@@ -336,13 +441,17 @@ not_none(param_name: str = 'parameter', position: int = 0) -> GuardFunction
 - `position`: Position in args (default: 0)
 
 **Example:**
-```python
-from modgud import guarded_expression, implicit_return, not_none
 
-@guarded_expression(not_none("user"))
-@implicit_return
+```python
+from modgud import guarded_expression, not_none
+
+# Using unified parameter approach
+@guarded_expression(
+    not_none("user"),
+    implicit_return=True
+)
 def greet(user):
-    f"Hello, {user.name}"
+  f"Hello, {user.item_name}"
 ```
 
 ---
@@ -361,10 +470,12 @@ positive(param_name: str = 'parameter', position: int = 0) -> GuardFunction
 
 **Example:**
 ```python
-from modgud import guarded_expression, implicit_return, positive
+from modgud import guarded_expression, positive
 
-@guarded_expression(positive("amount"))
-@implicit_return
+@guarded_expression(
+    positive("amount"),
+    implicit_return=True
+)
 def calculate_tax(amount):
     amount * 0.1
 ```
@@ -392,10 +503,12 @@ in_range(
 
 **Example:**
 ```python
-from modgud import guarded_expression, implicit_return, in_range
+from modgud import guarded_expression, in_range
 
-@guarded_expression(in_range(1, 10, "rating"))
-@implicit_return
+@guarded_expression(
+    in_range(1, 10, "rating"),
+    implicit_return=True
+)
 def save_rating(rating):
     {"rating": rating}
 
@@ -666,7 +779,7 @@ register_guard(
 
 **Example:**
 ```python
-def positive_int(param_name="value", position=0):
+def positive_int(param_name="vector", position=0):
     def check(*args, **kwargs):
         value = kwargs.get(param_name, args[position] if position < len(args) else None)
         return (isinstance(value, int) and value > 0) or "Must be a positive integer"

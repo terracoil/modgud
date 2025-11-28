@@ -1,5 +1,4 @@
-"""
-Service container for dependency injection.
+"""Service container for dependency injection.
 
 This module provides the ServiceContainer class that manages service registration,
 resolution, and lifecycle following the single class per file principle.
@@ -9,14 +8,13 @@ import threading
 from collections import defaultdict
 from typing import Any, Callable, Dict, Type, TypeVar, Union
 
-from ...domain.exceptions import ServiceNotFoundError
+from modgud.domain import ServiceNotFoundError
 
 T = TypeVar('T')
 
 
 class ServiceContainer:
-  """
-  Thread-safe service container for dependency injection.
+  """Thread-safe service container for dependency injection.
 
   Manages service registration, resolution, and lifecycle with support for:
   - Interface-based registration
@@ -39,8 +37,7 @@ class ServiceContainer:
     name: str = 'default',
     singleton: bool = True,
   ) -> None:
-    """
-    Register a service implementation for an interface.
+    """Register a service implementation for an interface.
 
     Args:
         interface: The interface/protocol type
@@ -60,8 +57,7 @@ class ServiceContainer:
         del self._instances[interface][name]
 
   def resolve(self, interface: Type[T], name: str = 'default') -> T:
-    """
-    Resolve a service instance for the given interface.
+    """Resolve a service instance for the given interface.
 
     Args:
         interface: The interface/protocol type to resolve
@@ -107,8 +103,7 @@ class ServiceContainer:
       return instance
 
   def is_registered(self, interface: Type[T], name: str = 'default') -> bool:
-    """
-    Check if a service is registered for the given interface and name.
+    """Check if a service is registered for the given interface and name.
 
     Args:
         interface: The interface/protocol type
@@ -122,8 +117,7 @@ class ServiceContainer:
       return interface in self._services and name in self._services[interface]
 
   def get_registered_names(self, interface: Type[T]) -> list[str]:
-    """
-    Get all registered service names for an interface.
+    """Get all registered service names for an interface.
 
     Args:
         interface: The interface/protocol type

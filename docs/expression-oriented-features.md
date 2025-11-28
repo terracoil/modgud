@@ -23,7 +23,7 @@
 - **`CommonGuards` class**: ✅ Pre-built validators (not_none, positive, in_range, type_check, matches_pattern, not_empty)  
 - **`@safe_expression` decorator**: ✅ Automatic Result wrapping for exception handling
 - **`@chained_expression` decorator**: ✅ Fluent interfaces with method chaining
-- **`Maybe`/`Result` types**: ✅ Full monadic operations with `Some`/`Nothing`, `Ok`/`Err`
+- **`Maybe`/`Result` types**: ✅ Full monadic operations with `Some`/`Nothing`, `Ok`/`ErrResult`
 - **`@Inject` decorator**: ✅ Automatic dependency injection
 - **`@implicit_return` decorator**: ✅ Standalone implicit return transformation
 - **`@pipeable` decorator**: ✅ Functional pipeline composition with `|` operator
@@ -48,7 +48,7 @@ def process(x):
 # Safe error handling with Result types
 @safe_expression
 def safe_divide(a, b):
-    return a / b  # Wrapped in Ok(result) or Err(exception)
+    return a / b  # Wrapped in Ok(result) or ErrResult(exception)
 
 # Method chaining with fluent interfaces
 result = chain(42).map(lambda x: x * 2).filter(lambda x: x > 50).unwrap()
@@ -173,28 +173,33 @@ Foundation of type-safe error handling without exceptions. **Maybe monad** repre
 
 ```python
 # ✅ IMPLEMENTED - Current modgud Maybe/Option and Result types
-from modgud import Maybe, Result, Some, Nothing, Ok, Err
+from modgud import Maybe, Result, Some, Nothing, Ok, ErrResult
 
 # Maybe types - handle optional values safely
 user = Maybe.from_value(fetch_user_by_id(123))  # Some(user) or Nothing()
 email = Maybe.some("user@example.com")
 empty = Maybe.nothing()
 
+
 # Result types - railway-oriented programming  
 @safe_expression
 def safe_divide(a, b):
-    return a / b  # Automatically wrapped in Ok(result) or Err(exception)
+  return a / b  # Automatically wrapped in Ok(result) or ErrResult(exception)
+
 
 # Direct Result creation
 success = Result.ok("Success!")
 failure = Result.err("Something went wrong")
 
+
 # Pattern matching integration (Python 3.10+)
 @guarded_expression
 def handle_result(result):
-    match result:
-        case Ok(value): f"Success: {value}"
-        case Err(error): f"Error: {error}"
+  match result:
+    case Ok(value):
+      f"Success: {value}"
+    case ErrResult(error):
+      f"Error: {error}"
 ```
 
 ### ✅ **Composable Monadic Operations** (IMPLEMENTED!)
@@ -220,7 +225,7 @@ def process_data(input_data):
 
 # Chaining with and_then for monadic composition
 def safe_divide(a, b):
-    return Ok(a).and_then(lambda x: Ok(x / b) if b != 0 else Err("Division by zero"))
+    return Ok(a).and_then(lambda x: Ok(x / b) if b != 0 else ErrResult("Division by zero"))
 ```
 
 ### ❌ **Do-Notation / Computation Expressions**
@@ -528,19 +533,23 @@ from modgud import Stream
 naturals = Stream.iterate(0, lambda x: x + 1)
 fibonacci_stream = Stream.iterate((0, 1), lambda pair: (pair[1], pair[0] + pair[1])).map(lambda pair: pair[0])
 
+
 @guarded_expression
 def take_fibonacci(n):
-    guard n > 0: return fibonacci_stream.take(n).to_list()
-    []
+  guard
+  n > 0:
+  return fibonacci_stream.take(n).to_list()
+  []
+
 
 # Stream composition and transformation
 @guarded_expression
 def process_event_stream(events):
-    Stream.from_iterable(events) \
-        .filter(lambda e: e.severity >= WARNING) \
-        .buffer(size=100, timeout=5.0) \
-        .map(aggregate_events) \
-        .subscribe(send_alert)
+  Stream.from_tuple(events)
+    .filter(lambda e: e.severity >= WARNING)
+    .buffer(size=100, timeout=5.0)
+    .map(aggregate_events)
+    .subscribe(send_alert)
 ```
 
 ### ❌ **Transducers**
@@ -583,30 +592,33 @@ Different laziness models for event processing and reactive programming patterns
 # ❌ NOT IMPLEMENTED - Proposed Observable/Stream types
 from modgud import Observable, Stream
 
+
 # Pull streams (consumer-controlled)
 @guarded_expression
 def pull_stream_example():
-    stream = Stream.from_iterable(data_source)
-    stream.take_while(is_valid) \
-          .batch(10) \
-          .map(process_batch) \
-          .consume()  # Consumer pulls when ready
+  stream = Stream.from_tuple(data_source)
+  stream.take_while(is_valid)
+    .batch(10)
+    .map(process_batch)
+    .consume()  # Consumer pulls when ready
+
 
 # Push streams (producer-controlled) 
 @guarded_expression
 def push_stream_example():
-    observable = Observable.from_events(event_source)
-    observable.filter(is_important) \
-              .debounce(1.0) \
-              .map(transform_event) \
-              .subscribe(handle_event)  # Producer pushes when data available
+  observable = Observable.from_events(event_source)
+  observable.filter(is_important)
+    .debounce(1.0)
+    .map(transform_event)
+    .subscribe(handle_event)  # Producer pushes when data available
+
 
 # Bridge between pull and push
 @guarded_expression
 def bridge_streams():
-    pull_stream = Stream.from_generator(data_generator)
-    push_observable = pull_stream.to_observable(buffer_size=1000)
-    push_observable.subscribe(process_data)
+  pull_stream = Stream.from_generator(data_generator)
+  push_observable = pull_stream.to_observable(buffer_size=1000)
+  push_observable.subscribe(process_data)
 ```
 
 ## ⚡ **Expression-Based Control Flow**
@@ -722,25 +734,27 @@ Wrap exception-prone code in expressions returning Result types for functional e
 
 ```python
 # ❌ NOT IMPLEMENTED - Proposed try expressions
-from modgud import try_expr, Ok, Err
+from modgud import try_expr, Ok, ErrResult
+
 
 @guarded_expression
 def safe_parse_int(value):
-    try_expr(lambda: int(value)) \
-        .map(lambda x: x * 2) \
-        .fold(
-            on_ok=lambda result: f"Success: {result}",
-            on_error=lambda error: f"Parse error: {error}"
-        )
+  try_expr(lambda: int(value))
+    .map(lambda x: x * 2)
+    .fold(
+    on_ok=lambda result: f"Success: {result}",
+    on_error=lambda error: f"Parse error: {error}"
+  )
+
 
 # Chaining multiple try operations
 @guarded_expression
 def safe_divide_and_format(a_str, b_str):
-    try_expr(lambda: int(a_str)) \
-        .bind(lambda a: try_expr(lambda: int(b_str)).map(lambda b: (a, b))) \
-        .bind(lambda pair: try_expr(lambda: pair[0] / pair[1]) if pair[1] != 0 else Err("Division by zero")) \
-        .map(lambda result: f"Result: {result:.2f}") \
-        .unwrap_or("Calculation failed")
+  try_expr(lambda: int(a_str))
+    .bind(lambda a: try_expr(lambda: int(b_str)).map(lambda b: (a, b)))
+    .bind(lambda pair: try_expr(lambda: pair[0] / pair[1]) if pair[1] != 0 else ErrResult("Division by zero"))
+    .map(lambda result: f"Result: {result:.2f}")
+    .unwrap_or("Calculation failed")
 ```
 
 ## Immutability and Persistent Data Structures
@@ -904,7 +918,7 @@ def risky_calculation(x, y):
 
 @safe_expression(returns=Result)
 def parse_data(text):
-    return json.loads(text)  # Returns Result.Ok or Result.Err
+    return json.loads(text)  # Returns Result.Ok or Result.ErrResult
 ```
 **Implementation**: Wrap function bodies in try/except, converting exceptions to monadic types (Result/Option) or default values. Integrate with modgud's implicit return to ensure clean error propagation.
 
@@ -1054,7 +1068,7 @@ The combination of guard clauses, implicit returns, and AST transformation makes
 | **Implicit Returns** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | AST transformation for expression-oriented functions |
 | **Pipeline Composition** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@pipeable` decorator with `\|` operator |
 | **Chainable Expressions** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@chained_expression`, `chain()`, fluent interfaces |
-| **Monadic Operations** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `Maybe`/`Result` types, `Some`/`Nothing`, `Ok`/`Err` |
+| **Monadic Operations** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `Maybe`/`Result` types, `Some`/`Nothing`, `Ok`/`ErrResult` |
 | **Safe Error Handling** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@safe_expression` decorator with Result wrapping |
 | **Dependency Injection** | ✅ **IMPLEMENTED** | MEDIUM | 3.13+ | `@Inject` decorator for automatic resolution |
 | **Pattern Matching** | ❌ **NOT IMPLEMENTED** | HIGH | 3.6+ / 3.10+ | Enhanced destructuring and pattern matching |

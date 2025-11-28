@@ -1,5 +1,4 @@
-"""
-Guard checking logic for runtime validation.
+"""Guard checking logic for runtime validation.
 
 Provides the GuardRuntime class that encapsulates guard evaluation and
 failure handling logic.
@@ -8,7 +7,7 @@ failure handling logic.
 import logging
 from typing import Any, Optional, Tuple
 
-from ..domain.types import FailureBehavior, GuardFunction
+from modgud.domain import FailureBehavior, GuardFunction
 
 
 class GuardRuntime:
@@ -20,8 +19,7 @@ class GuardRuntime:
   def check_guards(
     cls, guards: Tuple[GuardFunction, ...], args: Tuple[Any, ...], kwargs: dict[str, Any]
   ) -> Optional[str]:
-    """
-    Evaluate all guards sequentially.
+    """Evaluate all guards sequentially.
 
     Args:
         guards: Tuple of guard functions to evaluate
@@ -32,12 +30,14 @@ class GuardRuntime:
         None if all guards pass, or error message string if any guard fails
 
     """
+    result = None
     for guard in guards:
       guard_result = guard(*args, **kwargs)
-      # Early exit on first failure - fail fast principle
+      # Fail fast principle
       if guard_result is not True:  # Must be exact True, not just truthy
-        return guard_result if isinstance(guard_result, str) else 'Guard clause failed'
-    return None
+        result = guard_result if isinstance(guard_result, str) else 'Guard clause failed'
+        break
+    return result
 
   @classmethod
   def handle_failure(
@@ -49,8 +49,7 @@ class GuardRuntime:
     kwargs: dict[str, Any],
     log_enabled: bool,
   ) -> Tuple[Any, Optional[BaseException]]:
-    """
-    Handle guard failure based on on_error configuration.
+    """Handle guard failure based on on_error configuration.
 
     Args:
         error_msg: The error message from the failed guard
@@ -63,7 +62,7 @@ class GuardRuntime:
     Returns:
         Tuple of (return_value, exception_to_raise)
         - If exception should be raised: (None, exception_instance)
-        - If value should be returned: (value, None)
+        - If name should be returned: (name, None)
 
     """
     # Log before handling - capture failure regardless of handler outcome

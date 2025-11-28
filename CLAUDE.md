@@ -20,21 +20,26 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 
 ### 🚨 MANDATORY LINTING REQUIREMENT 🚨
 
-**CRITICAL**: You MUST run `bin/devtools build lint --fix` BEFORE:
+**CRITICAL**: You MUST run linting BEFORE:
 - Making ANY code changes
 - Performing code reviews
-- Starting refactoring work.  If there are linting and/or mypy typing issues found, fix those first before refactoring.  
+- Starting refactoring work. If there are linting and/or mypy typing issues found, fix those first before refactoring.
 - Committing changes
 - Creating pull requests
 
-This command runs:
-1. **Ruff linting** - catches code quality issues
+Run these commands:
+```bash
+poetry run ruff check modgud/ --fix && poetry run ruff format modgud/ && poetry run mypy modgud/
+```
+
+This runs:
+1. **Ruff linting** - catches code quality issues (with auto-fix)
 2. **Ruff formatting** - ensures consistent code style
 3. **MyPy type checking** - validates type annotations with strict settings
 
 **FAILURE TO RUN LINTING = INVALID CODE SUBMISSION**
 
-The `--fix` flag automatically corrects fixable issues. If linting fails after auto-fix, you MUST resolve all errors before proceeding. No exceptions.
+If linting fails after auto-fix, you MUST resolve all errors before proceeding. No exceptions.
 
 ### Package Management
 **This is a Poetry project** - use Poetry for all dependency management:
@@ -88,27 +93,14 @@ poetry run twine check dist/*
 ```
 
 ## Code Architecture
-Loosely based on KLA (Kinetic Layer Architecture)[docs/architecture/kla-architecture-v4.6.6.md]
+Loosely based on KLA (Kinetic Layer Architecture) [docs/architecture/kla-architecture-v4.6.6.md]
 
 ### Core Module Structure (v0.2.0)
-_Top-level layers (and directories/packages).  Dependencies flow downward:_
-app - top level application (presentation from KLA; what we want the user to see; includes or even implements items from domain)
-infrastructure - core logic and implementation details
-domain - domain-level concepts and abstractions (passive layer; combines domain and foundation layers from KLA)
-util - generic utilities  
-
-
-
-
-## Code Architecture
-Loosely based on KLA (Kinetic Layer Architecture)
-
-### Core Module Structure (KLA)
 _Top-level layers (and directories/packages). Dependencies flow downward:_
 
 **app/** - Presentation layer (decorators, public APIs)
 - `app/decorator/guarded_expression.py` - Main decorator implementation
-- `app/decorator/implicit_return_decorator.py` - Standalone implicit return 
+- `app/decorator/implicit_return_decorator.py` - Standalone implicit return
 - `app/decorator/pipeable.py` - Functional pipeline decorator
 - `app/decorator/inject_decorator.py` - Dependency injection decorator
 
@@ -119,12 +111,18 @@ _Top-level layers (and directories/packages). Dependencies flow downward:_
 - `infrastructure/guard_registry.py` - Custom guard registration system
 
 **domain/** - Passive domain objects
-- `domain/exceptions.py` - All exception classes
+- `domain/exceptions/` - All exception classes
+- `domain/enums/` - Enum definitions (OrdinalEnum, QuadShapeEnum, etc.)
+- `domain/ports/` - Protocol/interface definitions (VectorPort, ShapePort, etc.)
 - `domain/types.py` - Type definitions
-- `domain/protocols.py` - Interface definitions
 
 **util/** - Generic utilities
 - `util/di/` - Dependency injection system
+- `util/geo/` - Geometry utilities (vectors, shapes, joinery, SVG conversion)
+  - `util/geo/shapes/` - Shape classes (Square, Rectangle, Trapezoid, etc.)
+  - `util/geo/svg/` - SVG conversion utilities
+- `util/tools/` - API tools (Ranger, TextUtil)
+- `util/logging/` - Logging utilities
 
 **Public API Exports:**
 - `modgud/__init__.py` - Primary exports (decorators, guards, errors)
@@ -191,7 +189,6 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 - Logging functionality
 - Guard parameter handling (positional vs named)
 - Metadata preservation (__name__, __doc__, __signature__, __annotations__)
-- Legacy compatibility (guard_clause and implicit_return wrappers)
 
 ## Architecture Notes
 

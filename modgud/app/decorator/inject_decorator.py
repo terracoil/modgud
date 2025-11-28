@@ -1,5 +1,4 @@
-"""
-Inject decorator for dependency injection.
+"""Inject decorator for dependency injection.
 
 This module provides the Inject decorator that enables automatic dependency
 injection into function parameters following the single class per file principle.
@@ -9,16 +8,16 @@ import functools
 import inspect
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, get_type_hints
 
-from ...domain.exceptions import DependencyInjectionError, ServiceNotFoundError
-from ...infrastructure.di import EnergyInverter
+from modgud.domain import DependencyInjectionError
+from modgud.domain.ports import DependencyResolverPort, DIContainerPort
+from modgud.infrastructure.service_locator import get_service_locator
 
 T = TypeVar('T')
 F = TypeVar('F', bound=Callable[..., Any])
 
 
 class Inject:
-  """
-  Decorator for automatic dependency injection into function parameters.
+  """Decorator for automatic dependency injection into function parameters.
 
   Injects services based on parameter type annotations or explicit interface specifications.
   Integrates seamlessly with other modgud decorators for composition.
@@ -35,8 +34,7 @@ class Inject:
   """
 
   def __init__(self, *interfaces: Type, service_names: Optional[Dict[str, str]] = None) -> None:
-    """
-    Initialize the inject decorator.
+    """Initialize the inject decorator.
 
     Args:
         *interfaces: Interface types to inject (in parameter order)
@@ -47,10 +45,14 @@ class Inject:
     self.service_names = service_names or {}
     self.auto_inject = False
 
+    # Get services from service locator
+    locator = get_service_locator()
+    self._container = locator.resolve(DIContainerPort)
+    self._resolver = locator.resolve(DependencyResolverPort)
+
   @classmethod
   def auto(cls, service_names: Optional[Dict[str, str]] = None) -> 'Inject':
-    """
-    Create an auto-injection decorator that uses type hints.
+    """Create an auto-injection decorator that uses type hints.
 
     Args:
         service_names: Optional mapping of parameter names to service names
@@ -64,8 +66,7 @@ class Inject:
     return instance
 
   def __call__(self, func: F) -> F:
-    """
-    Apply dependency injection to the function.
+    """Apply dependency injection to the function.
 
     Args:
         func: Function to decorate
@@ -84,7 +85,12 @@ class Inject:
     else:
       injection_map = self._build_explicit_injection_map(sig)
 
-    # Create the wrapper function
+    # Use the resolver to create injection wrapper
+    if not injection_map:
+      # No injection needed, return original function
+      return func  # type: ignore[return-name]
+
+    # Create custom wrapper that uses our injection map
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
       # Bind arguments to get parameter names
@@ -93,15 +99,14 @@ class Inject:
 
       # Inject dependencies for missing parameters
       injected_kwargs = {}
-      di = EnergyInverter.instance()
 
       for param_name, interface_type in injection_map.items():
         if param_name not in bound_args.arguments:
           service_name = self.service_names.get(param_name, 'default')
           try:
-            injected_service = di.resolve(interface_type, service_name)
+            injected_service = self._container.resolve(interface_type, service_name)
             injected_kwargs[param_name] = injected_service
-          except ServiceNotFoundError as e:
+          except KeyError as e:
             raise DependencyInjectionError(
               f"Cannot inject dependency for parameter '{param_name}' of type {interface_type.__name__}: {e}"
             ) from e
@@ -120,13 +125,12 @@ class Inject:
     wrapper.__dependency_injected__ = True  # type: ignore[attr-defined]
     wrapper.__injection_map__ = injection_map  # type: ignore[attr-defined]
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper  # type: ignore[return-name]
 
   def _build_auto_injection_map(
     self, sig: inspect.Signature, type_hints: Dict[str, Any]
   ) -> Dict[str, Type]:
-    """
-    Build injection map using type hints for auto-injection.
+    """Build injection map using type hints for auto-injection.
 
     Args:
         sig: Function signature
@@ -158,8 +162,7 @@ class Inject:
     return injection_map
 
   def _build_explicit_injection_map(self, sig: inspect.Signature) -> Dict[str, Type]:
-    """
-    Build injection map using explicitly provided interfaces.
+    """Build injection map using explicitly provided interfaces.
 
     Args:
         sig: Function signature
@@ -179,8 +182,7 @@ class Inject:
     return injection_map
 
   def _is_injectable_type(self, param_type: Any) -> bool:
-    """
-    Check if a type is suitable for dependency injection.
+    """Check if a type is suitable for dependency injection.
 
     Args:
         param_type: Type to check
@@ -189,14 +191,22 @@ class Inject:
         True if the type should be injected
 
     """
-    # Skip built-in types and common non-injectable types
-    if param_type in (str, int, float, bool, list, dict, tuple, set):
-      return False
+    # Delegate to detector service if available
+    try:
+      from modgud.domain.ports import InjectableDetectorPort
 
-    # Skip Optional types unless they wrap an injectable type
-    if hasattr(param_type, '__origin__'):
-      if param_type.__origin__ is type(None):  # Optional[T]
+      detector = get_service_locator().resolve(InjectableDetectorPort)
+      return detector.is_injectable(param_type)
+    except Exception:
+      # Fallback to basic checks
+      # Skip built-in types and common non-injectable types
+      if param_type in (str, int, float, bool, list, dict, tuple, set):
         return False
+
+      # Skip Optional types unless they wrap an injectable type
+      if hasattr(param_type, '__origin__'):
+        if param_type.__origin__ is type(None):  # Optional[T]
+          return False
 
     # Check if it looks like a Protocol or ABC
     if hasattr(param_type, '_is_protocol') or hasattr(param_type, '__abstractmethods__'):
@@ -221,8 +231,7 @@ class Inject:
 
 # Convenient function-style decorators
 def inject(*interfaces: Type, service_names: Optional[Dict[str, str]] = None) -> Callable[[F], F]:
-  """
-  Function-style decorator for explicit dependency injection.
+  """Function-style decorator for explicit dependency injection.
 
   Args:
       *interfaces: Interface types to inject
@@ -236,8 +245,7 @@ def inject(*interfaces: Type, service_names: Optional[Dict[str, str]] = None) ->
 
 
 def inject_auto(service_names: Optional[Dict[str, str]] = None) -> Callable[[F], F]:
-  """
-  Function-style decorator for auto dependency injection.
+  """Function-style decorator for auto dependency injection.
 
   Args:
       service_names: Optional service name mappings

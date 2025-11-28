@@ -1,0 +1,270 @@
+#!/usr/bin/env python3
+"""
+Shape to Draw.io Converter
+Converts shapetools SVG output to draw.io custom shape XML format.
+"""
+
+import re
+import sys
+from pathlib import Path
+from typing import Dict, List, Tuple
+
+# Draw.io shape template
+DRAWIO_TEMPLATE = """<shape name="{shape_name}" h="100" w="100" aspect="variable" strokewidth="inherit">
+    <connections>
+        <constraint x="0" y="0" perimeter="1"/>
+        <constraint x="0.5" y="0" perimeter="1"/>
+        <constraint x="1" y="0" perimeter="1"/>
+        <constraint x="0" y="0.5" perimeter="1"/>
+        <constraint x="1" y="0.5" perimeter="1"/>
+        <constraint x="0" y="1" perimeter="1"/>
+        <constraint x="0.5" y="1" perimeter="1"/>
+        <constraint x="1" y="1" perimeter="1"/>
+    </connections>
+{background_placement}
+    <background>
+{path_content}
+        <fillstroke/>
+    </background>
+</shape>
+"""
+
+# Alternative template with connections inside background (for consistency with some existing shapes)
+DRAWIO_TEMPLATE_ALT = """<shape name="{shape_name}" h="100" w="100" aspect="variable" strokewidth="inherit">
+    <background>
+        <connections>
+            <constraint x="0" y="0" perimeter="1"/>
+            <constraint x="0.5" y="0" perimeter="1"/>
+            <constraint x="1" y="0" perimeter="1"/>
+            <constraint x="0" y="0.5" perimeter="1"/>
+            <constraint x="1" y="0.5" perimeter="1"/>
+            <constraint x="0" y="1" perimeter="1"/>
+            <constraint x="0.5" y="1" perimeter="1"/>
+            <constraint x="1" y="1" perimeter="1"/>
+        </connections>
+
+{path_content}
+        <fillstroke/>
+    </background>
+</shape>
+"""
+
+def parse_svg_path(svg_input: str) -> Tuple[str, List[str]]:
+    """Parse SVG path from shapetools output."""
+    lines = []
+    path_name = ""
+    
+    # Extract path name
+    path_match = re.search(r'<path\s+name="([^"]+)"', svg_input)
+    if path_match:
+        path_name = path_match.group(1)
+    
+    # Extract all path commands
+    for line in svg_input.split('\n'):
+        line = line.strip()
+        if any(tag in line for tag in ['<move', '<line', '<close', '<!--']):
+            # Indent path content
+            lines.append(f"        {line}")
+    
+    return path_name, lines
+
+def scale_coordinates(lines: List[str], scale: float = 1.0) -> List[str]:
+    """Scale coordinates if needed to fit 0-100 range."""
+    scaled_lines = []
+    
+    for line in lines:
+        # Check if line contains coordinates
+        if 'x=' in line and 'y=' in line:
+            # Extract and scale coordinates
+            x_match = re.search(r'x="([^"]+)"', line)
+            y_match = re.search(r'y="([^"]+)"', line)
+            
+            if x_match and y_match:
+                x = float(x_match.group(1)) * scale
+                y = float(y_match.group(1)) * scale
+                
+                # Replace coordinates
+                line = re.sub(r'x="[^"]+"', f'x="{x:.2f}"', line)
+                line = re.sub(r'y="[^"]+"', f'y="{y:.2f}"', line)
+        
+        scaled_lines.append(line)
+    
+    return scaled_lines
+
+def convert_to_drawio(svg_input: str, shape_name: str, use_alt_template: bool = False) -> str:
+    """Convert shapetools SVG output to draw.io XML format."""
+    path_name, path_lines = parse_svg_path(svg_input)
+    
+    # Check if scaling is needed (simple heuristic: check max coordinates)
+    max_coord = 0.0
+    for line in path_lines:
+        x_match = re.search(r'x="([^"]+)"', line)
+        y_match = re.search(r'y="([^"]+)"', line)
+        if x_match:
+            max_coord = max(max_coord, abs(float(x_match.group(1))))
+        if y_match:
+            max_coord = max(max_coord, abs(float(y_match.group(1))))
+    
+    # Scale if coordinates exceed 100
+    if max_coord > 100:
+        scale_factor = 100.0 / max_coord
+        path_lines = scale_coordinates(path_lines, scale_factor)
+    
+    # Add path tag wrapper
+    wrapped_path = [f'        <path name="{path_name}">']
+    wrapped_path.extend(path_lines)
+    wrapped_path.append('        </path>')
+    
+    # Generate draw.io XML
+    path_content = '\n'.join(wrapped_path)
+    
+    if use_alt_template:
+        return DRAWIO_TEMPLATE_ALT.format(
+            shape_name=shape_name,
+            path_content=path_content
+        )
+    else:
+        return DRAWIO_TEMPLATE.format(
+            shape_name=shape_name,
+            background_placement="",
+            path_content=path_content
+        )
+
+def generate_canonical_shapes():
+    """Generate all canonical shapes with predefined parameters."""
+    shapes = {
+        'shape-adapter.xml': {
+            'name': 'slantTeethRight',
+            'svg': '''<path name="notchedAdapter">
+            <!-- origin -->
+            <move x="0.0" y="65.0"/>
+            <!-- begStub -->
+            <line x="12.5" y="65.0"/>
+            <!-- tooth-1-side-a -->
+            <line x="12.5" y="100.0"/>
+            <!-- tooth-1-end -->
+            <line x="37.5" y="100.0"/>
+            <!-- tooth-1-side-b -->
+            <line x="37.5" y="65.0"/>
+            <!-- tooth-1-gap -->
+            <line x="62.5" y="65.0"/>
+            <!-- tooth-2-side-a -->
+            <line x="62.5" y="100.0"/>
+            <!-- tooth-2-end -->
+            <line x="87.5" y="100.0"/>
+            <!-- tooth-2-side-b -->
+            <line x="87.5" y="65.0"/>
+            <!-- endStub -->
+            <line x="100.0" y="65.0"/>
+            <!-- adapterEnclosureBottom -->
+            <line x="100.0" y="0.0"/>
+            <!-- adapterEnclosureLeft -->
+            <line x="10.0" y="0.0"/>
+            <!-- adapterEnclosureCorner -->
+            <line x="-0.0" y="20.0"/>
+            <close/>
+        </path>'''
+        },
+        'shape-port.xml': {
+            'name': 'slantTeethLeft',
+            'svg': '''<path name="notchedPort">
+            <!-- begStub -->
+            <move x="100.0" y="0.0"/>
+            <!-- slot-2-side-b -->
+            <line x="87.5" y="0.0"/>
+            <!-- slot-2-end -->
+            <line x="87.5" y="35.0"/>
+            <!-- slot-2-side-a -->
+            <line x="62.5" y="35.0"/>
+            <!-- slot-1-gap -->
+            <line x="62.5" y="0.0"/>
+            <!-- slot-1-side-b -->
+            <line x="37.5" y="0.0"/>
+            <!-- slot-1-end -->
+            <line x="37.5" y="35.0"/>
+            <!-- slot-1-side-a -->
+            <line x="12.5" y="35.0"/>
+            <!-- endStub -->
+            <line x="12.5" y="0.0"/>
+            <!-- origin -->
+            <line x="0.0" y="0.0"/>
+            <!-- portEnclosureTop -->
+            <line x="0.0" y="100.0"/>
+            <!-- portEnclosureRight -->
+            <line x="90.0" y="100.0"/>
+            <!-- portEnclosureCorner -->
+            <line x="100.0" y="80.0"/>
+            <close/>
+        </path>''',
+            'use_alt': True  # This one uses alt template
+        },
+        'shape-teeth.xml': {
+            'name': 'slantTeeth',
+            'svg': '''<path name="dovetailTeeth">
+            <move x="0.0" y="0.0"/>
+            <line x="0.0" y="5.83"/>
+            <line x="40.0" y="10.83"/>
+            <line x="40.0" y="22.5"/>
+            <line x="0.0" y="27.5"/>
+            <line x="0.0" y="39.17"/>
+            <line x="40.0" y="44.17"/>
+            <line x="40.0" y="55.83"/>
+            <line x="0.0" y="60.83"/>
+            <line x="0.0" y="72.5"/>
+            <line x="40.0" y="77.5"/>
+            <line x="40.0" y="89.17"/>
+            <line x="0.0" y="94.17"/>
+            <line x="0.0" y="100.0"/>
+            <close/>
+        </path>'''
+        }
+    }
+    
+    return shapes
+
+def main():
+    """Main entry point for shape2drawio converter."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Convert shapetools output to draw.io XML format')
+    parser.add_argument('--input', '-i', help='Input SVG from shapetools (stdin if not specified)')
+    parser.add_argument('--output', '-o', help='Output draw.io XML file (stdout if not specified)')
+    parser.add_argument('--name', '-n', required=True, help='Shape name for draw.io')
+    parser.add_argument('--alt-template', action='store_true', help='Use alternative template with connections inside background')
+    parser.add_argument('--generate-all', action='store_true', help='Generate all canonical shapes')
+    
+    args = parser.parse_args()
+    
+    if args.generate_all:
+        # Generate all canonical shapes
+        shapes = generate_canonical_shapes()
+        for filename, config in shapes.items():
+            xml = convert_to_drawio(
+                config['svg'], 
+                config['name'],
+                config.get('use_alt', False)
+            )
+            output_path = Path('docs/architecture') / filename
+            output_path.write_text(xml)
+            print(f"Generated {output_path}")
+    else:
+        # Read input
+        if args.input:
+            with open(args.input, 'r') as f:
+                svg_input = f.read()
+        else:
+            svg_input = sys.stdin.read()
+        
+        # Convert
+        xml_output = convert_to_drawio(svg_input, args.name, args.alt_template)
+        
+        # Write output
+        if args.output:
+            with open(args.output, 'w') as f:
+                f.write(xml_output)
+            print(f"Generated {args.output}")
+        else:
+            print(xml_output)
+
+if __name__ == '__main__':
+    main()

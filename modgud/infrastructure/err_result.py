@@ -1,30 +1,26 @@
-"""
-Err result type for failed computations.
+"""ErrResult result type for failed computations.
 
-This module provides the Err class representing failed Result values,
+This module provides the ErrResult class representing failed Result values,
 following the single class per file principle.
 """
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.result_protocol import ResultProtocol
+from modgud.domain.ports import ResultPort
 
 T = TypeVar('T')
 U = TypeVar('U')
 E = TypeVar('E')
 
 
-class Err(ResultProtocol[T, E]):
-  """
-  Represents a failed result containing an error value.
-  """
+class ErrResult(ResultPort[T, E]):
+  """Represents a failed result containing an error name."""
 
   def __init__(self, error: E) -> None:
-    """
-    Initialize an Err result.
+    """Initialize an ErrResult result.
 
     Args:
-        error: The error value to wrap
+        error: The error name to wrap
 
     """
     self._error = error
@@ -34,32 +30,32 @@ class Err(ResultProtocol[T, E]):
     return False
 
   def is_err(self) -> bool:
-    """Return True since this is an Err result."""
+    """Return True since this is an ErrResult result."""
     return True
 
   def unwrap(self) -> T:
     """Raise an exception since this is an error."""
-    raise ValueError(f'Called unwrap on Err: {self._error!r}')
+    raise ValueError(f'Called unwrap on ErrResult: {self._error!r}')
 
   def unwrap_or(self, default: T) -> T:
-    """Return the default value since this is an error."""
+    """Return the default name since this is an error."""
     return default
 
-  def map(self, func: Callable[[T], U]) -> ResultProtocol[U, E]:
+  def map(self, func: Callable[[T], U]) -> ResultPort[U, E]:
     """Return self unchanged since this is an error."""
-    return Err(self._error)
+    return ErrResult(self._error)
 
-  def and_then(self, func: Callable[[T], ResultProtocol[U, E]]) -> ResultProtocol[U, E]:
+  def and_then(self, func: Callable[[T], ResultPort[U, E]]) -> ResultPort[U, E]:
     """Return self unchanged since this is an error."""
-    return Err(self._error)
+    return ErrResult(self._error)
 
   def __eq__(self, other: Any) -> bool:
     """Check equality with another Result."""
     result = False
-    if isinstance(other, Err):
+    if isinstance(other, ErrResult):
       result = self._error == other._error
     return result
 
   def __repr__(self) -> str:
     """Return string representation."""
-    return f'Err({self._error!r})'
+    return f'ErrResult({self._error!r})'

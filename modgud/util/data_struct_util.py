@@ -1,3 +1,5 @@
+"""Utility functions for data structure manipulation."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -8,18 +10,17 @@ Simple = dict[str, SimpleType] | list[SimpleType] | SimpleType
 
 
 class DataStructUtil:
-  """Utility methods for collections (list, dict, set, etc)"""
+  """Utility methods for collections (list, dict, set, etc)."""
 
   @classmethod
   def simplify(cls, obj: Any, max_depth: int = 10) -> Simple:
-    """
-    Recursively convert any class or collection to a "simple" representation.
+    """Recursively convert any class or collection to a "simple" representation.
 
     Args:
         obj: The object to convert
         max_depth: Maximum recursion depth (default 10)
 
-    Returns: A dictionary, list, or primitive value representation of the object
+    Returns: A dictionary, list, or primitive name representation of the object
 
     """
 

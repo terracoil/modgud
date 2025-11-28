@@ -1,0 +1,22 @@
+<shape name="slantTeeth" h="100" w="100" aspect="variable" strokewidth="inherit">
+    <background>
+        <path name="dovetailTeeth">
+            <move x="0.0" y="0.0"/>
+            <line x="0.0" y="5.83"/>
+            <line x="40.0" y="10.83"/>
+            <line x="40.0" y="22.5"/>
+            <line x="0.0" y="27.5"/>
+            <line x="0.0" y="39.17"/>
+            <line x="40.0" y="44.17"/>
+            <line x="40.0" y="55.83"/>
+            <line x="0.0" y="60.83"/>
+            <line x="0.0" y="72.5"/>
+            <line x="40.0" y="77.5"/>
+            <line x="40.0" y="89.17"/>
+            <line x="0.0" y="94.17"/>
+            <line x="0.0" y="100.0"/>
+            <close/>
+        </path>
+        <fillstroke/>
+    </background>
+</shape>

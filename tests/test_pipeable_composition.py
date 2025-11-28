@@ -17,13 +17,13 @@ from modgud import (
 
 
 # 2. Pipeable with implicit_return
-# Note: @pipeable should be the outermost decorator for proper functionality
+# Note: @pipeable should be outermost, @implicit_return innermost
 @pipeable
 @implicit_return
 def add_implicit(x, y):
   """Add with implicit return."""
   result = x + y
-  result
+  result  # noqa: B018 - implicit return
 
 
 @pipeable
@@ -31,7 +31,7 @@ def add_implicit(x, y):
 def multiply_implicit(x, factor):
   """Multiply with implicit return."""
   result = x * factor
-  result
+  result  # noqa: B018 - implicit return
 
 
 # 3. Pipeable with guarded_expression
@@ -67,26 +67,26 @@ def calculate_discount(amount, discount_rate=0.1):
     amount * (1 - discount_rate)
 
 
-# Different ordering - @pipeable should still be outermost
+# Correct ordering - @implicit_return must be innermost for source access
 @pipeable
-@implicit_return
 @guarded_expression(positive('x'))
+@implicit_return
 def process_value(x):
   """Process with different decorator order."""
   result = x * 2 + 10
-  result
+  result  # noqa: B018 - implicit return
 
 
 # Module-level test fixtures for implicit return
 @pipeable
-@implicit_return
 @guarded_expression(positive('base'))
+@implicit_return
 def compound_interest(base, rate=0.05, years=1):
   """Calculate compound interest."""
   total = base
   for _ in range(int(years)):
     total = total * (1 + rate)
-  total
+  total  # noqa: B018 - implicit return
 
 
 class TestPipeableWithImplicitReturn:
@@ -232,10 +232,10 @@ class TestDecoratorOrdering:
     assert hasattr(process_value, '__implicit_return__')
     assert hasattr(compound_interest, '__implicit_return__')
 
-    # Functions with modern @guarded_expression have implicit_return by default  
+    # Functions with modern @guarded_expression have implicit_return by default
     assert hasattr(add_guarded, '__implicit_return__')  # Modern pattern
     assert hasattr(calculate_discount, '__implicit_return__')  # Modern pattern
-    
+
     # Functions with explicit implicit_return=False shouldn't have it
     assert not hasattr(add_tax, '__implicit_return__')  # Uses explicit return with deprecated param
 
@@ -248,11 +248,11 @@ class TestRealWorldExamples:
 
     @pipeable
     def normalize(value, min_val=0, max_val=100):
-      """Normalize value to 0-1 range."""
+      """Normalize name to 0-1 range."""
       return (value - min_val) / (max_val - min_val)
 
     @pipeable
-    @guarded_expression(type_check(float, 'value'), implicit_return=False)
+    @guarded_expression(type_check(float, 'name'), implicit_return=False)
     def round_to_decimal(value, places=2):
       """Round to specified decimal places."""
       return round(value, places)
@@ -263,7 +263,7 @@ class TestRealWorldExamples:
       """Convert to percentage string."""
       f'{value * 100:.1f}%'
 
-    # Transform a value through the pipeline
+    # Transform a name through the pipeline
     result = 75 | normalize(0, 100) | round_to_decimal(3) | to_percentage
     assert result == '75.0%'
 

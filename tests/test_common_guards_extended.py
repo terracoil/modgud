@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from modgud import (
+  GuardClauseError,
   guarded_expression,
   matches_pattern,
   not_empty,
@@ -13,7 +14,6 @@ from modgud import (
   valid_file_path,
   valid_url,
 )
-from modgud import GuardClauseError
 
 from .helpers import create_temp_file
 
@@ -27,7 +27,7 @@ class TestValidFilePathGuard:
 
       @guarded_expression(valid_file_path('filepath', must_be_file=True))
       def process_file(filepath: str):
-        f'Processing {filepath}'
+        f'Processing {filepath}'  # noqa: B021
 
       result = process_file(tmp_path)
       assert 'Processing' in result
@@ -37,7 +37,7 @@ class TestValidFilePathGuard:
 
     @guarded_expression(valid_file_path('filepath'))
     def process_file(filepath: str):
-      f'Processing {filepath}'
+      f'Processing {filepath}'  # noqa: B021
 
     with pytest.raises(GuardClauseError, match='does not exist'):
       process_file('/nonexistent/path/to/file.txt')
@@ -48,7 +48,7 @@ class TestValidFilePathGuard:
 
       @guarded_expression(valid_file_path('dirpath', must_be_dir=True))
       def process_dir(dirpath: str):
-        f'Processing {dirpath}'
+        f'Processing {dirpath}'  # noqa: B021
 
       result = process_dir(tmp_dir)
       assert 'Processing' in result
@@ -62,7 +62,7 @@ class TestValidFilePathGuard:
 
       @guarded_expression(valid_file_path('dirpath', must_be_dir=True))
       def process_dir(dirpath: str):
-        f'Processing {dirpath}'
+        f'Processing {dirpath}'  # noqa: B021
 
       with pytest.raises(GuardClauseError, match='must be a directory'):
         process_dir(tmp_path)
@@ -74,7 +74,7 @@ class TestValidFilePathGuard:
 
     @guarded_expression(valid_file_path('filepath', must_exist=False))
     def create_file(filepath: str):
-      f'Creating {filepath}'
+      f'Creating {filepath}'  # noqa: B021
 
     result = create_file('/path/to/new/file.txt')
     assert 'Creating' in result
@@ -88,7 +88,7 @@ class TestValidUrlGuard:
 
     @guarded_expression(valid_url('url'))
     def fetch_url(url: str):
-      f'Fetching {url}'
+      f'Fetching {url}'  # noqa: B021
 
     result = fetch_url('http://example.com')
     assert 'Fetching' in result
@@ -98,7 +98,7 @@ class TestValidUrlGuard:
 
     @guarded_expression(valid_url('url'))
     def fetch_url(url: str):
-      f'Fetching {url}'
+      f'Fetching {url}'  # noqa: B021
 
     result = fetch_url('https://example.com/path?query=value')
     assert 'Fetching' in result
@@ -138,7 +138,7 @@ class TestValidEnumGuard:
   """Tests for valid_enum guard."""
 
   def test_valid_enum_value(self):
-    """Test guard passes for valid enum value."""
+    """Test guard passes for valid enum name."""
 
     class Color(Enum):
       RED = 'red'
@@ -167,7 +167,7 @@ class TestValidEnumGuard:
     assert 'active' in result
 
   def test_invalid_enum_value_fails(self):
-    """Test guard fails for invalid enum value."""
+    """Test guard fails for invalid enum name."""
 
     class Priority(Enum):
       LOW = 'low'

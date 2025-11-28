@@ -6,8 +6,7 @@ from pathlib import Path
 
 
 def get_project_version() -> str:
-  """
-  Get the current Project version.
+  """Get the current Project version.
 
   :return: Version string in format 'v1.0.15'
   """
@@ -34,8 +33,7 @@ def get_project_version() -> str:
 
 
 def format_title_with_version(title: str) -> str:
-  """
-  Format title with Freyja version information.
+  """Format title with Freyja version information.
 
   :param title: Original application title
   :return: Title formatted with version (e.g., "My App - freyja v1.0.15")

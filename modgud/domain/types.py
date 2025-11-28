@@ -1,5 +1,4 @@
-"""
-Domain type definitions for modgud.
+"""Domain type definitions for modgud.
 
 All type aliases and type definitions used throughout the modgud library
 are defined here following domain-driven design principles. The domain

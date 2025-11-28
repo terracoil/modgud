@@ -8,8 +8,7 @@ class JsonFormatter:
   """Format dependency analysis results as JSON."""
 
   def __init__(self, pretty: bool = True, indent: int = 2):
-    """
-    Initialize JSON formatter.
+    """Initialize JSON formatter.
 
     :param pretty: Use pretty formatting with indentation
     :param indent: Number of spaces for indentation when pretty=True

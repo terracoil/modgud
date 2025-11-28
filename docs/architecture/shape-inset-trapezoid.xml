@@ -1,0 +1,37 @@
+<shape name="insetTrapezoid" h="100" w="100" aspect="variable" strokewidth="inherit">
+    <connections>
+        <constraint x="0" y="0" perimeter="1"/>
+        <constraint x="0.5" y="0" perimeter="1"/>
+        <constraint x="1" y="0" perimeter="1"/>
+        <constraint x="0" y="0.5" perimeter="1"/>
+        <constraint x="1" y="0.5" perimeter="1"/>
+        <constraint x="0" y="1" perimeter="1"/>
+        <constraint x="0.5" y="1" perimeter="1"/>
+        <constraint x="1" y="1" perimeter="1"/>
+    </connections>
+
+    <background>
+        <path name="trapezoid_70°_0.1">
+            <!-- origin -->
+            <move x="81.84" y="0.0"/>
+            <!-- top -->
+            <line x="18.16" y="0.0"/>
+            <!-- rightSide -->
+            <line x="100.0" y="100.0"/>
+            <!-- stackEdge -->
+            <line x="90.0" y="100.0"/>
+            <!-- stackArea -->
+            <line x="80.0" y="91.82"/>
+            <!-- stackArea -->
+            <line x="20.0" y="91.82"/>
+            <!-- stackArea -->
+            <line x="10.0" y="100.0"/>
+            <!-- stackEdge -->
+            <line x="0.0" y="100.0"/>
+            <!-- leftSide -->
+            <line x="81.84" y="0.0"/>
+            <close/>
+        </path>
+        <fillstroke/>
+    </background>
+</shape>

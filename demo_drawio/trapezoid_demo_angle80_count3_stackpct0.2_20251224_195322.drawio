@@ -1,0 +1,25 @@
+<mxfile host="app.diagrams.net" agent="modgud/1.0" version="24.8.6">
+  <diagram name="Trapezoid Demo" id="546a7dae-166f-49da-8394-5cc90606c05e">
+    <mxGraphModel dx="1242" dy="788" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="800" pageHeight="600" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="5a078403-78ee-411f-900b-84b0c5bdc2dd" value="" style="shape=mxgraph.basic.polygon;polyline=0;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;shadow=1;rounded=0;sketch=1;curveFitting=1;jiggle=1;gradientColor=#7ea6e0;gradientDirection=west;polyCoords=0.23027248392372085,0.08333333333333333,0.769727516076279,0.08333333333333333,0.9166666666666666,0.9166666666666666,0.7991153461943568,0.9166666666666666,0.7697275160762792,0.75,0.23027248392372085,0.75,0.20088465380564335,0.9166666666666666,0.08333333333333333,0.9166666666666666,0.23027248392372085,0.08333333333333333" vertex="1" parent="1">
+          <mxGeometry x="100" y="100" width="120.0" height="120.0" as="geometry">
+            <Array as="points">
+              <mxPoint x="127.6326980708465" y="110.0"/>
+              <mxPoint x="192.36730192915348" y="110.0"/>
+              <mxPoint x="210.0" y="210.0"/>
+              <mxPoint x="195.89384154332282" y="210.0"/>
+              <mxPoint x="192.36730192915348" y="190.0"/>
+              <mxPoint x="127.6326980708465" y="190.0"/>
+              <mxPoint x="124.1061584566772" y="210.0"/>
+              <mxPoint x="110.0" y="210.0"/>
+              <mxPoint x="127.6326980708465" y="110.0"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

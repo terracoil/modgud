@@ -5,11 +5,7 @@ from threading import Thread
 from typing import List
 
 import pytest
-from modgud import positive
-from modgud import guarded_expression
-from modgud import CommonGuards
-from modgud import GuardClauseError
-from modgud import GuardRegistry
+from modgud import CommonGuards, GuardClauseError, GuardRegistry, guarded_expression, positive
 
 
 class TestThreadSafety:
@@ -299,10 +295,10 @@ class TestImplicitReturnEdgeCases:
     from tests.test_fixtures import exception_only_function
 
     # All paths raise exceptions
-    with pytest.raises(ValueError, match='Negative value'):
+    with pytest.raises(ValueError, match='Negative name'):
       exception_only_function(-5)
 
-    with pytest.raises(RuntimeError, match='Non-negative value'):
+    with pytest.raises(RuntimeError, match='Non-negative name'):
       exception_only_function(5)
 
   def test_empty_function_body(self):
@@ -317,7 +313,7 @@ class TestImplicitReturnEdgeCases:
     """Function with some paths having values and some having pass."""
     from tests.test_fixtures import conditional_noop
 
-    # Positive path has value
+    # Positive path has name
     assert conditional_noop(5) == 10
 
     # Negative path has pass (should return None)

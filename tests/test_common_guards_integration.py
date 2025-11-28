@@ -2,6 +2,7 @@
 
 import pytest
 from modgud import (
+  GuardClauseError,
   guarded_expression,
   in_range,
   matches_pattern,
@@ -10,7 +11,6 @@ from modgud import (
   positive,
   type_check,
 )
-from modgud import GuardClauseError
 
 
 class TestCommonGuardValidation:
@@ -37,14 +37,14 @@ class TestCommonGuardValidation:
       else:
         x + x
 
-    # Valid value should pass
+    # Valid name should pass
     result = process(valid_value)
     expected = (
       valid_value * 2 if isinstance(valid_value, (int, float)) else valid_value + valid_value
     )
     assert result == expected
 
-    # Invalid value should fail with proper error message
+    # Invalid name should fail with proper error message
     with pytest.raises(GuardClauseError) as exc_info:
       process(invalid_value)
     assert error_message in str(exc_info.value)

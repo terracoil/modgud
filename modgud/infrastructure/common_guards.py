@@ -1,5 +1,4 @@
-"""
-Common guard validators for typical validation scenarios.
+"""Common guard validators for typical validation scenarios.
 
 Provides pre-built guard functions through the CommonGuards class for
 common validation patterns like not_none, positive, in_range, etc.
@@ -11,13 +10,11 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 from urllib.parse import urlparse
 
-from ..domain.messages import ErrorMessages
-from ..domain.types import GuardFunction
+from modgud.domain import ErrorMessages, GuardFunction
 
 
 class CommonGuards:
-  """
-  Pre-defined common guard clauses.
+  """Pre-defined common guard clauses.
 
   Usage:
       @guarded_expression(
@@ -36,18 +33,17 @@ class CommonGuards:
     kwargs: dict[str, Any],
     default: Any = None,
   ) -> Any:
-    """
-    Extract parameter value from args or kwargs.
+    """Extract parameter name from args or kwargs.
 
     Args:
         param_name: Name of the parameter in kwargs
         position: Position in args (None means first arg)
         args: Positional arguments tuple
         kwargs: Keyword arguments dict
-        default: Default value if not found
+        default: Default name if not found
 
     Returns:
-        Parameter value or default
+        Parameter name or default
 
     """
     result = default
@@ -68,15 +64,14 @@ class CommonGuards:
     error_template: str,
     default: Any = None,
   ) -> GuardFunction:
-    """
-    Create common guard patterns with a factory method.
+    """Create common guard patterns with a factory method.
 
     Args:
         param_name: Name of the parameter to check
         position: Position for positional args
-        validator: Function that validates the value, returns bool
-        error_template: Error message template with {param_name} and {value} placeholders
-        default: Default value if parameter not found
+        validator: Function that validates the name, returns bool
+        error_template: Error message template with {param_name} and {name} placeholders
+        default: Default name if parameter not found
 
     Returns:
         GuardFunction that validates parameters
@@ -95,8 +90,7 @@ class CommonGuards:
 
   @staticmethod
   def not_empty(param_name: str = 'parameter', position: Optional[int] = None) -> GuardFunction:
-    """
-    Guard ensuring collection parameter is not empty.
+    """Guard ensuring collection parameter is not empty.
 
     Args:
         param_name: Name of the parameter to check
@@ -112,8 +106,7 @@ class CommonGuards:
 
   @staticmethod
   def not_none(param_name: str = 'parameter', position: int = 0) -> GuardFunction:
-    """
-    Guard ensuring parameter is not None.
+    """Guard ensuring parameter is not None.
 
     Args:
         param_name: Name of the parameter to check
@@ -126,8 +119,7 @@ class CommonGuards:
 
   @staticmethod
   def positive(param_name: str = 'parameter', position: int = 0) -> GuardFunction:
-    """
-    Guard ensuring parameter is positive.
+    """Guard ensuring parameter is positive.
 
     Args:
         param_name: Name of the parameter to check
@@ -142,12 +134,11 @@ class CommonGuards:
   def in_range(
     min_val: float, max_val: float, param_name: str = 'parameter', position: int = 0
   ) -> GuardFunction:
-    """
-    Guard ensuring parameter is within range [min_val, max_val].
+    """Guard ensuring parameter is within range [min_val, max_val].
 
     Args:
-        min_val: Minimum value (inclusive)
-        max_val: Maximum value (inclusive)
+        min_val: Minimum name (inclusive)
+        max_val: Maximum name (inclusive)
         param_name: Name of the parameter to check
         position: Position for positional args (default: 0)
 
@@ -163,8 +154,7 @@ class CommonGuards:
   def type_check(
     expected_type: type, param_name: str = 'parameter', position: int = 0
   ) -> GuardFunction:
-    """
-    Guard ensuring parameter matches expected type.
+    """Guard ensuring parameter matches expected type.
 
     Args:
         expected_type: Expected type for the parameter
@@ -183,8 +173,7 @@ class CommonGuards:
   def matches_pattern(
     pattern: str, param_name: str = 'parameter', position: int = 0
   ) -> GuardFunction:
-    """
-    Guard ensuring string parameter matches regex pattern.
+    """Guard ensuring string parameter matches regex pattern.
 
     Args:
         pattern: Regular expression pattern to match
@@ -207,8 +196,7 @@ class CommonGuards:
     must_be_file: bool = False,
     must_be_dir: bool = False,
   ) -> GuardFunction:
-    """
-    Guard ensuring parameter is a valid file path.
+    """Guard ensuring parameter is a valid file path.
 
     Args:
         param_name: Name of the parameter to check
@@ -231,8 +219,7 @@ class CommonGuards:
   def valid_url(
     param_name: str = 'url', position: int = 0, require_scheme: bool = True
   ) -> GuardFunction:
-    """
-    Guard ensuring parameter is a valid URL.
+    """Guard ensuring parameter is a valid URL.
 
     Args:
         param_name: Name of the parameter to check
@@ -251,8 +238,7 @@ class CommonGuards:
   def valid_enum(
     enum_class: type[Enum], param_name: str = 'parameter', position: int = 0
   ) -> GuardFunction:
-    """
-    Guard ensuring parameter is a valid enum value.
+    """Guard ensuring parameter is a valid enum name.
 
     Args:
         enum_class: The Enum class to validate against
@@ -281,7 +267,7 @@ class CommonGuards:
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default='')
     result: Union[bool, str] = True
 
-    # Check if value is empty (works for strings and collections)
+    # Check if name is empty (works for strings and collections)
     if hasattr(value, '__len__'):
       if len(value) == 0:
         result = f'{param_name} cannot be empty'
@@ -400,7 +386,7 @@ class CommonGuards:
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
   ) -> Union[bool, str]:
-    """Check if parameter is a valid enum value (single return point)."""
+    """Check if parameter is a valid enum name (single return point)."""
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
     result: Union[bool, str] = True
 
@@ -417,14 +403,13 @@ class CommonGuards:
         valid_values = [e.value for e in enum_class]
         result = f'{param_name} must be one of {valid_values}: got {value}'
     else:
-      result = f'{param_name} must be a valid {enum_class.__name__} value'
+      result = f'{param_name} must be a valid {enum_class.__name__} name'
 
     return result
 
   @classmethod
   def _register_to_global_registry(cls) -> None:
-    """
-    Auto-register all CommonGuards methods to global registry.
+    """Auto-register all CommonGuards methods to global registry.
 
     This method is called once on module import to make all common guards
     available through the GuardRegistry.

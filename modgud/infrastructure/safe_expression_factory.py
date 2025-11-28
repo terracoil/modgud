@@ -1,24 +1,25 @@
+"""Factory for creating safe expression decorators."""
+
 from __future__ import annotations
 
 from typing import Any, Callable
 
-from ..domain.protocols import SafeDecoratorFactoryProtocol
-from ..domain.result_protocol import ResultProtocol
-from .err_result import Err
+from modgud.domain.ports import ResultPort, SafeDecoratorFactoryPort
+
+from .err_result import ErrResult
 from .ok_result import Ok
 
 
-class SafeExpressionFactory(SafeDecoratorFactoryProtocol):
-  """
-  Factory for creating safe expression decorators and utilities.
+class SafeExpressionFactory(SafeDecoratorFactoryPort):
+  """Factory for creating safe expression decorators and utilities.
+
   Provides error-safe functional programming patterns.
   """
 
   def create_decorator(
     self, catch_exceptions: tuple[type[Exception], ...] = (Exception,), convert_none: bool = False
   ) -> Callable[[Callable], Callable]:
-    """
-    Create a safe expression decorator function.
+    """Create a safe expression decorator function.
 
     Args:
         catch_exceptions: Tuple of exception types to catch
@@ -30,8 +31,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryProtocol):
     """
 
     def safe_decorator(func: Callable) -> Callable:
-      """
-      Decorator that wraps function results in Result types (Ok/Err).
+      """Wrap function results in Result types (Ok/Err).
 
       Args:
           func: Function to decorate
@@ -41,14 +41,14 @@ class SafeExpressionFactory(SafeDecoratorFactoryProtocol):
 
       """
 
-      def wrapper(*args, **kwargs) -> ResultProtocol:
+      def wrapper(*args, **kwargs) -> ResultPort:
         try:
           result = func(*args, **kwargs)
           if convert_none and result is None:
-            return Err('Function returned None')
+            return ErrResult('Function returned None')
           return Ok(result)
         except catch_exceptions as e:
-          return Err(e)
+          return ErrResult(e)
 
       # Preserve function metadata
       wrapper.__name__ = func.__name__
@@ -59,16 +59,15 @@ class SafeExpressionFactory(SafeDecoratorFactoryProtocol):
 
     return safe_decorator
 
-  def create_result(self, value: Any, is_success: bool = True) -> ResultProtocol:
-    """
-    Create a Result instance (Ok or Err).
+  def create_result(self, value: Any, is_success: bool = True) -> ResultPort:
+    """Create a Result instance (Ok or Err).
 
     Args:
-        value: The value to wrap
+        value: The name to wrap
         is_success: True for Ok, False for Err
 
     Returns:
-        ResultProtocol: Ok or Err instance
+        ResultPort: Ok or Err instance
 
     """
-    return Ok(value) if is_success else Err(value)
+    return Ok(value) if is_success else ErrResult(value)

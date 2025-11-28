@@ -1,5 +1,4 @@
-"""
-Custom guard registration system for extending CommonGuards.
+"""Custom guard registration system for extending CommonGuards.
 
 Allows external packages to register custom guard validators that can be
 accessed through the CommonGuards interface or separately.
@@ -7,12 +6,11 @@ accessed through the CommonGuards interface or separately.
 
 from typing import Callable, Dict, Optional
 
-from ..domain.types import GuardFunction
+from modgud.domain import GuardFunction
 
 
 class GuardRegistry:
-  """
-  Singleton registry for custom guard validators.
+  """Singleton registry for custom guard validators.
 
   Allows registration of custom guards that can be used alongside
   CommonGuards. Guards can be registered globally or namespaced
@@ -32,8 +30,7 @@ class GuardRegistry:
   _allow_direct_instantiation: bool = False
 
   def __init__(self) -> None:
-    """
-    Initialize the guard registry.
+    """Initialize the guard registry.
 
     For production code, use GuardRegistry.instance() to get the singleton.
     Direct instantiation is allowed only for testing purposes.
@@ -48,8 +45,7 @@ class GuardRegistry:
 
   @classmethod
   def _create_for_testing(cls) -> 'GuardRegistry':
-    """
-    Create a new GuardRegistry instance for testing.
+    """Create a new GuardRegistry instance for testing.
 
     This bypasses the singleton enforcement to allow isolated test instances.
 
@@ -64,8 +60,7 @@ class GuardRegistry:
 
   @classmethod
   def instance(cls) -> 'GuardRegistry':
-    """
-    Get the singleton GuardRegistry instance.
+    """Get the singleton GuardRegistry instance.
 
     Returns:
         Global GuardRegistry singleton instance
@@ -81,8 +76,7 @@ class GuardRegistry:
   def register(
     cls, name: str, guard_factory: Callable[..., GuardFunction], namespace: Optional[str] = None
   ) -> None:
-    """
-    Register a custom guard validator.
+    """Register a custom guard validator.
 
     Args:
         name: Name for the guard (e.g., 'valid_file_path')
@@ -99,8 +93,7 @@ class GuardRegistry:
   def get(
     cls, name: str, namespace: Optional[str] = None
   ) -> Optional[Callable[..., GuardFunction]]:
-    """
-    Retrieve a registered guard factory.
+    """Retrieve a registered guard factory.
 
     Args:
         name: Name of the guard
@@ -114,8 +107,7 @@ class GuardRegistry:
 
   @classmethod
   def list_guards(cls, namespace: Optional[str] = None) -> list[str]:
-    """
-    List all registered guard names.
+    """List all registered guard names.
 
     Args:
         namespace: Optional namespace to list
@@ -128,8 +120,7 @@ class GuardRegistry:
 
   @classmethod
   def list_namespaces(cls) -> list[str]:
-    """
-    List all registered namespaces.
+    """List all registered namespaces.
 
     Returns:
         List of namespace names
@@ -139,8 +130,7 @@ class GuardRegistry:
 
   @classmethod
   def has_guard(cls, name: str, namespace: Optional[str] = None) -> bool:
-    """
-    Check if a guard is registered.
+    """Check if a guard is registered.
 
     Args:
         name: Name of the guard
@@ -154,8 +144,7 @@ class GuardRegistry:
 
   @classmethod
   def unregister(cls, name: str, namespace: Optional[str] = None) -> bool:
-    """
-    Unregister a custom guard.
+    """Unregister a custom guard.
 
     Args:
         name: Name of the guard
