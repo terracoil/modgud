@@ -1,0 +1,100 @@
+<shape name="adapterInheritTop" h="100" w="100" aspect="variable" strokewidth="inherit">
+    <properties>
+        <!-- Define default gradient colors as properties -->
+        <property name="bottomGradientStart" value="#cc99cc"/>
+        <property name="bottomGradientEnd" value="#663366"/>
+        <property name="bottomStroke" value="#006600"/>
+    </properties>
+    <background>
+        <!-- Top section - uses inherited/default colors -->
+        <save/>
+        <path name="dovetailTop">
+            <move x="0.0000" y="50.0000"/>
+            <!-- leftStub -->
+            <line x="8.3333" y="50.0000"/>
+            <!-- Down Tooth #01 -->
+            <line x="5.0000" y="65.0000"/>
+            <line x="28.3333" y="65.0000"/>
+            <line x="25.0000" y="50.0000"/>
+            <!-- Up Tooth #02 -->
+            <line x="21.6667" y="35.0000"/>
+            <line x="45.0000" y="35.0000"/>
+            <line x="41.6667" y="50.0000"/>
+            <!-- Down Tooth #03 -->
+            <line x="38.3333" y="65.0000"/>
+            <line x="61.6667" y="65.0000"/>
+            <line x="58.3333" y="50.0000"/>
+            <!-- Up Tooth #04 -->
+            <line x="55.0000" y="35.0000"/>
+            <line x="78.3333" y="35.0000"/>
+            <line x="75.0000" y="50.0000"/>
+            <!-- Down Tooth #05 -->
+            <line x="71.6667" y="65.0000"/>
+            <line x="95.0000" y="65.0000"/>
+            <line x="91.6667" y="50.0000"/>
+            <!-- rightStub -->
+            <line x="100.0000" y="50.0000"/>
+            <!-- topEnclosure -->
+            <line x="100.0000" y="0.0000"/>
+            <line x="0.0000" y="0.0000"/>
+            <close/>
+        </path>
+        <!-- Uses shape's default fill and stroke properties -->
+        <fillstroke/>
+        <restore/>
+        <!-- Bottom section - custom colors -->
+        <save/>
+        <path name="dovetailBot">
+            <move x="0.0000" y="50.0000"/>
+            <!-- leftStub -->
+            <line x="8.3333" y="50.0000"/>
+            <!-- Down Tooth #01 -->
+            <line x="5.0000" y="65.0000"/>
+            <line x="28.3333" y="65.0000"/>
+            <line x="25.0000" y="50.0000"/>
+            <!-- Up Tooth #02 -->
+            <line x="21.6667" y="35.0000"/>
+            <line x="45.0000" y="35.0000"/>
+            <line x="41.6667" y="50.0000"/>
+            <!-- Down Tooth #03 -->
+            <line x="38.3333" y="65.0000"/>
+            <line x="61.6667" y="65.0000"/>
+            <line x="58.3333" y="50.0000"/>
+            <!-- Up Tooth #04 -->
+            <line x="55.0000" y="35.0000"/>
+            <line x="78.3333" y="35.0000"/>
+            <line x="75.0000" y="50.0000"/>
+            <!-- Down Tooth #05 -->
+            <line x="71.6667" y="65.0000"/>
+            <line x="95.0000" y="65.0000"/>
+            <line x="91.6667" y="50.0000"/>
+            <!-- rightStub -->
+            <line x="100.0000" y="50.0000"/>
+            <!-- botEnclosure -->
+            <line x="100.0000" y="100.0000"/>
+            <line x="0.0000" y="100.0000"/>
+            <close/>
+        </path>
+        <fillcolor color="Bottom Fill" default="#880088"/>
+        <strokecolor color="Bottom Stroke" default="#006600"/>
+        <fillstroke/>
+        <restore/>
+    </background>
+    <foreground>
+        <!-- Draw "Adapter" text -->
+        <save/>
+        <fontfamily family="Architects Daughter"/>
+        <fontsize size="16"/>
+        <fontcolor color="#000000"/>
+        <text str="Adapter" x="50" y="5" w="100" h="20" align="center" valign="top"/>
+        <restore/>
+
+        <!-- Draw "Ports" text -->
+        <save/>
+        <fontfamily family="Architects Daughter"/>
+        <fontsize size="16"/>
+        <fontcolor color="#fff"/>
+        <text str="Ports" x="50" y="95" w="100" h="20" align="center" valign="bottom"/>
+        <restore/>
+    </foreground>
+</shape>

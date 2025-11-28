@@ -44,4 +44,6 @@ logs
 junk.txt
 
 # Temporarily ignored
-docs/architecture/
+#docs/architecture/
+*.bkp
+*.dtmp
