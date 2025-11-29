@@ -401,15 +401,20 @@ class FreyjaDevTools:
         Calculate the coordinates of the points to plot
         Uses 1/2 tooth each for stub ends.
       """
+      if dovetail_pct < -0.2 or dovetail_pct > 0.2:
+        raise ValueError(f"dovetail_pct should be between -20% and 20%")
+
       tooth_height_pct = 0.5
       segment_base = width / (teeth_cnt+1.0)
+
+
       dovetail_diff = segment_base * dovetail_pct
       dovetail_width = segment_base + dovetail_diff
-      groove_height = segment_base * tooth_height_pct
+      groove_height = width * tooth_height_pct
       stub_width = dovetail_width / 2.0
 
-      if dovetail_diff > stub_width / 2.0:
-        raise ValueError(f"dovetail_pct is too great.  It should be {dovetail_pct * stub_width / 2.0} ")
+      if dovetail_diff > (segment_base / 2.0):
+        raise ValueError(f"dovetail_pct is too great.  It should be < {(segment_base/ 2.0) *100.0 / width:.2f}%")
 
       # Point = tuple[float, float]
 
