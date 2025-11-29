@@ -14,7 +14,7 @@ from .decorator_factory_protocol import (
   SafeDecoratorFactoryProtocol,
 )
 from .maybe_protocol import MaybeProtocol
-from .pipeable_protocol import PipeableProtocol, PipeableFactoryProtocol
+from .pipeable_protocol import PipeableFactoryProtocol, PipeableProtocol
 from .result_protocol import ResultProtocol
 
 __all__ = [

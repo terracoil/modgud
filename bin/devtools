@@ -14,12 +14,15 @@ import time
 import tomllib
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Optional, List, Union, Dict
+from typing import Dict, List, Optional, Union
+
+from modgud.util import Vector, VectorPath, VectorProtocol
 
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from freyja import FreyjaCLI
+
 
 # Configure cache directories to use tmp/
 # os.environ.setdefault('RUFF_CACHE_DIR', str(project_src / 'tmp' / '.ruff_cache'))
@@ -45,7 +48,6 @@ class FreyjaDevTools:
 
     # Configure cache directories to use tmp/
     os.environ.setdefault('RUFF_CACHE_DIR', str(Path(self.project_src) / 'tmp' / '.ruff_cache'))
-
 
   @classmethod
   def get_project_src(cls) -> str:
@@ -121,8 +123,8 @@ class FreyjaDevTools:
       raise  # Re-raise unexpected exceptions
 
   def _run_claude_prompt(self, prompt, retry_count=2, timeout=60, timeout_increment=60):
-    claude_result:CompletedProcess|None = None
-    last_error:str|None = None
+    claude_result: CompletedProcess | None = None
+    last_error: str | None = None
 
     # Build Claude command
     claude_cmd = ['poetry', 'run', 'claude', '-p', prompt]
@@ -179,8 +181,8 @@ class FreyjaDevTools:
       capture_output: bool = False,
       check: bool = False,
       timeout: Optional[int] = None,
-      cwd = None,
-      env = None
+      cwd=None,
+      env=None
   ) -> Union[bool, subprocess.CompletedProcess]:
     """Execute a command with unified error handling and logging.
 
@@ -209,8 +211,8 @@ class FreyjaDevTools:
           capture_output=capture_output,
           text=capture_output,  # Use text mode when capturing
           timeout=timeout,
-          cwd = cwd,
-          env = env
+          cwd=cwd,
+          env=env
         )
         result_value = result if capture_output else (result.returncode == 0)
       except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
@@ -393,6 +395,68 @@ class FreyjaDevTools:
       """Initialize with parent FreyjaDevTools instance."""
       self.parent: 'FreyjaDevTools' = parent
 
+    def dovetail(self, dovetail_pct: float = 0.1, teeth_cnt: int = 5, buffer_pct=0.5,
+                         width: float = 100.0) -> str:
+      """
+        Calculate the coordinates of the points to plot
+        Uses 1/2 tooth each for stub ends.
+      """
+      tooth_height_pct = 0.5
+      segment_base = width / (teeth_cnt+1.0)
+      dovetail_diff = segment_base * dovetail_pct
+      dovetail_width = segment_base + dovetail_diff
+      groove_height = segment_base * tooth_height_pct
+      stub_width = dovetail_width / 2.0
+
+      if dovetail_diff > stub_width / 2.0:
+        raise ValueError(f"dovetail_pct is too great.  It should be {dovetail_pct * stub_width / 2.0} ")
+
+      # Point = tuple[float, float]
+
+      def add_tooth(down: bool, tooth_id: int) -> list[VectorProtocol]:
+        direction: float = 1 if down else -1
+        dir_str = "Down" if down else "Up"
+        name = f"{dir_str} Tooth #{tooth_id:02d}"
+        return [
+          Vector(-dovetail_diff, groove_height * direction, name=name),
+          Vector(dovetail_width, 0),
+          Vector(-dovetail_diff, -groove_height * direction)
+        ] if down else [(Vector(dovetail_width, 0))]
+
+      path_top: VectorPath = VectorPath(Vector(0, 50), name="dovetailTop")
+      path_top.add_relative_segment(Vector(stub_width, 0, name="leftStub"))
+      down: bool = True
+      for t in range(teeth_cnt):
+        tooth_segments: list[VectorProtocol] = add_tooth(down=down, tooth_id=t + 1)
+        path_top.add_relative_segment(tooth_segments)
+        down = not down
+
+      path_top.add_relative_segment(Vector(stub_width, 0, name="rightStub"))
+      path_teeth: VectorPath = path_top.clone("dovetailTeeth")
+      path_bot: VectorPath = path_top.clone("dovetailBot")
+
+      # Enclose paths to make a whole area:
+      path_top.add_relative_segment(Vector(0, -50, name="topEnclosure"))
+      path_top.add_relative_segment(Vector(-100, 0))
+
+      path_bot.add_relative_segment(Vector(0, 50, name="botEnclosure"))
+      path_bot.add_relative_segment(Vector(-100, 0))
+
+      svg_top = list(path_top.svg_path(True))
+      svg_bot = list(path_bot.svg_path(True))
+      svg_teeth = list(path_teeth.svg_path(True))
+
+      max_len =max(len(svg_top), len(svg_bot), len(svg_teeth))
+
+      print(f"{'Top':<40}{'Bottom':<40}{'Teeth':<40}")
+      for i in range(max_len):
+        top:str = svg_top[i] if i < len(svg_top) else ''
+        bot:str = svg_bot[i] if i < len(svg_bot) else ''
+        tth:str = svg_teeth[i] if i < len(svg_teeth) else ''
+        print(f"{top:<40}{bot:<40}{tth:<40}")
+
+      return "\n\n".join([top, bot])
+
     def info(self) -> None:
       """Display project environment information."""
       parent = self.parent
@@ -529,6 +593,8 @@ class FreyjaDevTools:
       :param timeout_increment: Seconds to add per retry (default: 60)
       """
       import time
+
+
       parent = self.parent
       start_time = time.time()
 
@@ -545,10 +611,12 @@ class FreyjaDevTools:
         f"🤖 Generating commit message with Claude (timeout: {timeout}s, retries: {retry_count}, increment: {timeout_increment}s): \n Prompt: {prompt}",
         'info')
 
-      commit_message = parent._run_claude_prompt(prompt, retry_count=retry_count, timeout=timeout, timeout_increment=timeout_increment)
+      commit_message = parent._run_claude_prompt(prompt, retry_count=retry_count, timeout=timeout,
+                                                 timeout_increment=timeout_increment)
 
       # Check for problematic phrases and regenerate if found
-      problematic_phrases = ["Based on the git diff", "I can see", "Now I can see", "This is a", "Looking at the changes", "The changes show"]
+      problematic_phrases = ["Based on the git diff", "I can see", "Now I can see", "This is a",
+                             "Looking at the changes", "The changes show"]
       if any(phrase in commit_message for phrase in problematic_phrases):
         parent._print(f"⚠️ Generated message contains analytical text, regenerating...", 'warning')
         simple_prompt = "Generate a git commit message. Output only the message, no explanation."
@@ -814,10 +882,13 @@ class FreyjaDevTools:
 
       # Import the analyzer and formatters (at method level to avoid circular deps)
       import sys
+
+
       sys.path.insert(0, '.')
       from freyja.utils.dependency_analyzer import DependencyAnalyzer
       from freyja.utils.console_formatter import ConsoleFormatter
       from freyja.utils.json_formatter import JsonFormatter
+
 
       # Create analyzer instance
       analyzer = DependencyAnalyzer(
@@ -894,7 +965,7 @@ class FreyjaDevTools:
       # Print summary
       metadata = analysis_result['metadata']
       parent._print(f"📈 Analysis complete: {metadata['total_modules']} modules, "
-                   f"{metadata['total_packages']} packages, {metadata['total_classes']} classes", 'success')
+                    f"{metadata['total_packages']} packages, {metadata['total_classes']} classes", 'success')
       return
 
   class Quality:
@@ -1146,7 +1217,8 @@ class FreyjaDevTools:
   class Test:
     """Testing operations."""
 
-    def __init__(self, parent, pattern: str="", coverage: bool = True, parallel: bool = False, verbose: bool = False) -> None:
+    def __init__(self, parent, pattern: str = "", coverage: bool = True, parallel: bool = False,
+                 verbose: bool = False) -> None:
       """Initialize with parent and test configuration options."""
       self.parent: 'FreyjaDevTools' = parent
       self.coverage: bool = coverage

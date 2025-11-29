@@ -5,11 +5,7 @@ from threading import Thread
 from typing import List
 
 import pytest
-from modgud import positive
-from modgud import guarded_expression
-from modgud import CommonGuards
-from modgud import GuardClauseError
-from modgud import GuardRegistry
+from modgud import CommonGuards, GuardClauseError, GuardRegistry, guarded_expression, positive
 
 
 class TestThreadSafety:

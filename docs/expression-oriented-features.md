@@ -528,19 +528,23 @@ from modgud import Stream
 naturals = Stream.iterate(0, lambda x: x + 1)
 fibonacci_stream = Stream.iterate((0, 1), lambda pair: (pair[1], pair[0] + pair[1])).map(lambda pair: pair[0])
 
+
 @guarded_expression
 def take_fibonacci(n):
-    guard n > 0: return fibonacci_stream.take(n).to_list()
-    []
+  guard
+  n > 0:
+  return fibonacci_stream.take(n).to_list()
+  []
+
 
 # Stream composition and transformation
 @guarded_expression
 def process_event_stream(events):
-    Stream.from_iterable(events) \
-        .filter(lambda e: e.severity >= WARNING) \
-        .buffer(size=100, timeout=5.0) \
-        .map(aggregate_events) \
-        .subscribe(send_alert)
+  Stream.from_tuple(events)
+    .filter(lambda e: e.severity >= WARNING)
+    .buffer(size=100, timeout=5.0)
+    .map(aggregate_events)
+    .subscribe(send_alert)
 ```
 
 ### ❌ **Transducers**
@@ -583,30 +587,33 @@ Different laziness models for event processing and reactive programming patterns
 # ❌ NOT IMPLEMENTED - Proposed Observable/Stream types
 from modgud import Observable, Stream
 
+
 # Pull streams (consumer-controlled)
 @guarded_expression
 def pull_stream_example():
-    stream = Stream.from_iterable(data_source)
-    stream.take_while(is_valid) \
-          .batch(10) \
-          .map(process_batch) \
-          .consume()  # Consumer pulls when ready
+  stream = Stream.from_tuple(data_source)
+  stream.take_while(is_valid)
+    .batch(10)
+    .map(process_batch)
+    .consume()  # Consumer pulls when ready
+
 
 # Push streams (producer-controlled) 
 @guarded_expression
 def push_stream_example():
-    observable = Observable.from_events(event_source)
-    observable.filter(is_important) \
-              .debounce(1.0) \
-              .map(transform_event) \
-              .subscribe(handle_event)  # Producer pushes when data available
+  observable = Observable.from_events(event_source)
+  observable.filter(is_important)
+    .debounce(1.0)
+    .map(transform_event)
+    .subscribe(handle_event)  # Producer pushes when data available
+
 
 # Bridge between pull and push
 @guarded_expression
 def bridge_streams():
-    pull_stream = Stream.from_generator(data_generator)
-    push_observable = pull_stream.to_observable(buffer_size=1000)
-    push_observable.subscribe(process_data)
+  pull_stream = Stream.from_generator(data_generator)
+  push_observable = pull_stream.to_observable(buffer_size=1000)
+  push_observable.subscribe(process_data)
 ```
 
 ## ⚡ **Expression-Based Control Flow**

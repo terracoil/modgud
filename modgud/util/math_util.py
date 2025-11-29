@@ -21,6 +21,10 @@ class MathUtil:
     return max(min_val, min(value, max_val))
 
   @classmethod
+  def is_even(cls, val: int) -> bool:
+    return val % 2 == 0
+
+  @classmethod
   def minmax_range(cls, args: [Numeric], negative_lower: bool = False) -> tuple[Numeric, Numeric]:
     """Return min and max of arguments with optional negative lower bound."""
     lower, upper = cls.minmax(*args)

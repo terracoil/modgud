@@ -2,6 +2,7 @@
 
 import pytest
 from modgud import (
+  GuardClauseError,
   guarded_expression,
   in_range,
   matches_pattern,
@@ -10,7 +11,6 @@ from modgud import (
   positive,
   type_check,
 )
-from modgud import GuardClauseError
 
 
 class TestCommonGuardValidation:

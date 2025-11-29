@@ -169,4 +169,3 @@ class RegistrationStrategies:
       return self._container.is_registered(interface, 'default')
 
     return False
-

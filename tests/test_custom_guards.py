@@ -1,8 +1,7 @@
 """Tests for custom guard registration system."""
 
 import pytest
-from modgud import GuardRegistry, guarded_expression
-from modgud import GuardClauseError
+from modgud import GuardClauseError, GuardRegistry, guarded_expression
 
 
 class TestGuardRegistry:

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from modgud import (
+  GuardClauseError,
   guarded_expression,
   matches_pattern,
   not_empty,
@@ -13,7 +14,6 @@ from modgud import (
   valid_file_path,
   valid_url,
 )
-from modgud import GuardClauseError
 
 from .helpers import create_temp_file
 

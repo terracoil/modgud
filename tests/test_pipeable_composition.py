@@ -232,10 +232,10 @@ class TestDecoratorOrdering:
     assert hasattr(process_value, '__implicit_return__')
     assert hasattr(compound_interest, '__implicit_return__')
 
-    # Functions with modern @guarded_expression have implicit_return by default  
+    # Functions with modern @guarded_expression have implicit_return by default
     assert hasattr(add_guarded, '__implicit_return__')  # Modern pattern
     assert hasattr(calculate_discount, '__implicit_return__')  # Modern pattern
-    
+
     # Functions with explicit implicit_return=False shouldn't have it
     assert not hasattr(add_tax, '__implicit_return__')  # Uses explicit return with deprecated param
 

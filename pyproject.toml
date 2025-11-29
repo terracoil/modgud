@@ -1,11 +1,11 @@
 [project]
 name = "modgud"
-authors = [{name = "steven.miers@gmail.com"}]
+authors = [{ name = "steven.miers@gmail.com" }]
 description = "Expression-oriented programming for Python 3.13+ with guard clause decorators and implicit returns. Eliminate defensive coding clutter through declarative input validation and Ruby/Rust-style automatic return transformation, all while maintaining single return point architecture and zero runtime dependencies."
 keywords = ["guards", "validation", "decorators", "defensive-programming", "single-return-point", "implicit-return"]
-license = {text = "MIT"}
+license = { text = "MIT" }
 requires-python = ">=3.6"
-version = "1.2.6" # Uses poetry-dynamic-versioning
+version = "1.2.7" # Uses poetry-dynamic-versioning
 
 [project.urls]
 Homepage = "https://github.com/terracoil/modgud/blob/master/README.md"
@@ -26,7 +26,7 @@ classifiers = [
     "Topic :: Utilities",
 ]
 include = ["LICENSE", "README.md", "modgud/py.typed"]
-packages = [{include = "modgud"}]
+packages = [{ include = "modgud" }]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -48,70 +48,6 @@ dev = [
     "pre-commit (>=4.3.0,<5.0.0)",
     "poetry-dynamic-versioning (>=1.9.1,<2.0.0)"
 ]
-
-[tool.mypy]
-# Cache and paths
-cache_dir = "tmp/.mypy_cache"
-python_version = "3.13"
-exclude = [
-    "build/",
-    "dist/",
-    "tests/test_fixtures.py",  # Exclude test fixtures from type checking
-]
-
-# Strict mode settings (equivalent to --strict)
-strict = true
-warn_return_any = true
-warn_unused_configs = true
-disallow_any_generics = true
-disallow_subclassing_any = true
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-strict_concatenate = true
-
-# Import discovery
-ignore_missing_imports = false
-follow_imports = "normal"
-follow_imports_for_stubs = true
-namespace_packages = true
-explicit_package_bases = true
-
-# Error infrastructure
-show_error_context = true
-show_column_numbers = true
-show_error_codes = true
-pretty = true
-color_output = true
-error_summary = true
-show_absolute_path = false
-
-# Incremental checking
-incremental = true
-cache_fine_grained = true
-
-# Reports (generated when using --html-report etc)
-linecount_report = "reports/mypy"
-linecoverage_report = "reports/mypy"
-lineprecision_report = "reports/mypy"
-html_report = "reports/mypy/html"
-txt_report = "reports/mypy/txt"
-xml_report = "reports/mypy/xml"
-cobertura_xml_report = "reports/mypy"
-
-# Per-module options for test files (less strict)
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_decorators = false
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
 
 [tool.pytest.ini_options]
 cache_dir = "tmp/.pytest_cache"

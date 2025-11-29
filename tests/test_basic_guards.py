@@ -46,9 +46,7 @@ class TestGuardFailureHandling:
   def test_guard_failure_custom_exception(self):
     """Custom exception should be raised on guard failure when configured."""
 
-    @guarded_expression(
-      lambda x: x > 0 or 'Must be positive', on_error=ValueError
-    )
+    @guarded_expression(lambda x: x > 0 or 'Must be positive', on_error=ValueError)
     def double(x):
       x * 2  # implicit return
 

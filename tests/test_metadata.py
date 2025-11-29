@@ -1,7 +1,6 @@
 """Tests for metadata preservation and edge cases."""
 
-from modgud import guarded_expression
-from modgud import GuardClauseError
+from modgud import GuardClauseError, guarded_expression
 
 
 class TestMetadataPreservation:
