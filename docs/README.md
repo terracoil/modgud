@@ -340,7 +340,7 @@ def bad_function(x):
 
 ```python
 class MissingImplicitReturnError(ImplicitReturnError):
-    """Raised when code branch doesn't produce a value for implicit return."""
+    """Raised when code branch doesn't produce a vector for implicit return."""
 ```
 
 Raised when a code branch at tail position doesn't produce a value (e.g., missing else clause).
@@ -420,7 +420,7 @@ print(double(5))  # Returns 10
 ```python
 from modgud import guarded_expression, not_none
 
-@guarded_expression(not_none("value"))
+@guarded_expression(not_none("vector"))
 def classify_number(value):
     if value > 0:
         "positive"
@@ -524,7 +524,7 @@ except ValidationError as e:
 from modgud import guarded_expression, in_range
 
 def log_and_default(error_msg, *args, **kwargs):
-    """Log error and return default value."""
+    """Log error and return default vector."""
     print(f"Guard failed: {error_msg}")
     print(f"Args: {args}, Kwargs: {kwargs}")
     return {"error": True, "message": error_msg}
@@ -674,7 +674,7 @@ def process(data, validate=False):
 process("string data", validate=False)
 
 # With validation - requires dict
-process({"key": "value"}, validate=True)
+process({"key": "vector"}, validate=True)
 ```
 
 #### Guard with Logging
@@ -746,7 +746,7 @@ At tail position (the end of the function), if statements must have an else clau
 def bad_conditional(x):
     if x > 0:
         "positive"
-    # MissingImplicitReturnError - no value for x <= 0
+    # MissingImplicitReturnError - no vector for x <= 0
 
 # CORRECT: All branches covered
 @guarded_expression()
@@ -784,7 +784,7 @@ def robust_operation(data):
     try:
         result = process(data)
     except ValueError:
-        {"error": "invalid value"}
+        {"error": "invalid vector"}
     except Exception as e:
         {"error": str(e)}
     else:
@@ -893,13 +893,13 @@ def without_explicit_return(x):
 Every code path must result in an expression:
 
 ```python
-# ERROR: for loop doesn't produce a value
+# ERROR: for loop doesn't produce a vector
 @guarded_expression()
 def bad_loop(items):
     for item in items:
         process(item)  # ERROR: loops don't return values
 
-# CORRECT: Use list comprehension (produces a value)
+# CORRECT: Use list comprehension (produces a vector)
 @guarded_expression()
 def good_loop(items):
     [process(item) for item in items]
@@ -1033,7 +1033,7 @@ def min_length(min_len):
     return check_length
 
 def max_value(limit):
-    """Factory that creates a maximum value guard."""
+    """Factory that creates a maximum vector guard."""
     def check_max(*args, **kwargs):
         value = args[0] if args else 0
         return value <= limit or f"Value {value} exceeds limit {limit}"
@@ -1188,13 +1188,13 @@ logging.basicConfig(
 )
 
 @guarded_expression(
-    positive("value"),
+    positive("vector"),
     log=True  # Failures logged at WARNING level
 )
 def logged_function(value):
     value * 2
 
-# This logs: WARNING:root:Guard 'value must be positive' failed with args (-5,) kwargs {}
+# This logs: WARNING:root:Guard 'vector must be positive' failed with args (-5,) kwargs {}
 logged_function(-5)
 ```
 
@@ -1252,14 +1252,14 @@ def test_guard_failure():
 from modgud import guarded_expression, not_none
 
 @guarded_expression(
-    not_none("value"),
+    not_none("vector"),
     on_error=None
 )
 def returns_none_on_failure(value):
     value.upper()
 
 @guarded_expression(
-    not_none("value"),
+    not_none("vector"),
     on_error={"error": True}
 )
 def returns_dict_on_failure(value):

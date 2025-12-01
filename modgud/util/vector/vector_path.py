@@ -6,8 +6,10 @@ import copy
 from itertools import accumulate
 from typing import Generator
 
-from .types import VectorProtocol
+from modgud.util.math_util import MathUtil
+
 from .vector import Vector
+from .vector_protocol import VectorProtocol
 
 
 class VectorPath:
@@ -20,32 +22,44 @@ class VectorPath:
   COMMAND_STR: str = '<{verb} x="{x}" y="{y}" />'
   CLOSE_STR: str = '<close/>'
 
-  def __init__(self, start: VectorProtocol = None, close: bool = True, name: str | None = None):
+  VECTORS_FMT: str = '{idx:03d}: {name:<15}: {rel_vec} -> {abs_vec}'
+
+  def __init__(self, home: VectorProtocol = None, close: bool = True, name: str | None = None):
     """Initialize Vector Path."""
-    self.home: VectorProtocol = start if start else Vector.ZERO
-    self.rel_segments: list[VectorProtocol] = [self.home]
-    self.abs_segments: list[VectorProtocol] = [self.home]
+    self.origin: VectorProtocol = home if home else Vector.identity()
+    self.rel_segments: list[VectorProtocol] = []
+    self.abs_segments: list[VectorProtocol] = []
     self.close: bool = close
     self.name: str = name or ''
 
-  def clone(self, name=None) -> VectorPath:
-    """Clone Vector Path."""
-    new_path: VectorPath = copy.deepcopy(self)
-    new_path.name = name or (f'Copy of {self.name}' if self.name else None)
-    return new_path
+  def lerp_all(
+    self, offset: VectorProtocol = Vector(0, 0), scale: VectorProtocol = Vector(100, 100)
+  ):  # noqa: D102
+    self.sync_abs_segments()
 
-  @property
-  def absolute_segments(self, sync_relative: bool = False):
-    """Return absolute segments."""
-    if sync_relative:
+    # Local import to avoid circular dependency
+    from modgud.util.lerper import Lerper
+
+    x_min, x_max = MathUtil.minmax(*[v.x for v in self.abs_segments])
+    print(f'foo2, min={x_min}, max={x_max},')
+    y_min, y_max = MathUtil.minmax(*[v.y for v in self.abs_segments])
+    print(f'foo3, min={y_min}, max={y_max},')
+    start = Vector(x_min, y_min)
+    stop = Vector(x_max, y_max)
+    from_lerper: Lerper[VectorProtocol] = Lerper[VectorProtocol](start=start, stop=stop)
+    to_lerper: Lerper[VectorProtocol] = Lerper[VectorProtocol](start=offset, stop=scale)
+
+    def translate(v: VectorProtocol) -> VectorProtocol:
+      return to_lerper.lerp(from_lerper.rlerp(v))
+
+    self.abs_segments = [translate(v) for v in self.abs_segments]
+
+  def absolute_segments(self, sync: bool = False) -> list[VectorProtocol]:
+    """Return absolute segments; syncing if specified."""
+    if sync:
       self.sync_abs_segments()
 
     return self.abs_segments
-
-  @property
-  def relative_segments(self):
-    """Return relative segments."""
-    return self.rel_segments
 
   def add_relative_segment(self, segments: VectorProtocol | list[VectorProtocol]):
     """Add relative segment(s) to path."""
@@ -61,52 +75,46 @@ class VectorPath:
     else:
       self.abs_segments.append(segments)
 
+  def clone(self, name=None, origin: VectorProtocol | None = None) -> VectorPath:
+    """Clone Vector Path."""
+    new_path: VectorPath = copy.deepcopy(self)
+    new_path.name = name or (f'Copy of {self.name}' if self.name else None)
+    new_path.origin = origin or self.origin
+    return new_path
+
+  def relative_segments(self) -> list[VectorProtocol]:
+    """Return relative segments, including origin."""
+    return [self.origin] + self.rel_segments
+
   def sync_abs_segments(self):
     """Sync absolute segments with relative segments."""
-    self.abs_segments = list(accumulate(self.rel_segments))
-
-  def _format_vectors_at(self, idx: int) -> str:
-    assert len(self.abs_segments) == len(self.rel_segments), (
-      f'Should have equal length in segment arrays: {len(self.rel_segments)} <> {len(self.abs_segments)}'
-    )
-    assert idx < len(self.rel_segments), f'Index out of bounds: {idx} <> {len(self.rel_segments)}'
-
-    abs_vec: VectorProtocol = self.abs_segments[idx]
-    rel_vec: VectorProtocol = self.rel_segments[idx]
-
-    vec_fmt: str = '{x:000.2f}'
-
-    name: str = rel_vec.name or ''
-    x1: str = vec_fmt.format(x=rel_vec.x)
-    y1: str = vec_fmt.format(x=rel_vec.y)
-    x2: str = vec_fmt.format(x=abs_vec.x)
-    y2: str = vec_fmt.format(x=abs_vec.y)
-    return f'{idx:03d}: {name:<15}: [{x1:>7}, {y1:>7}] -> [{x2:>7}, {y2:>7}]'
-
-  def __len__(self) -> int:
-    """Return number of segments."""
-    return max(len(self.rel_segments), len(self.abs_segments))
+    rsegs: list[VectorProtocol] = self.relative_segments()
+    print(f'Syncing {len(rsegs)} relative segments to absolute segments')
+    self.abs_segments = list(accumulate(rsegs))
 
   def __str__(self) -> str:
     """Return string representation of path."""
-    assert len(self.abs_segments) == len(self.rel_segments)
-    vec_strs: list[str] = [self._format_vectors_at(i) for i in range(len(self.rel_segments))]
-    return '\n'.join(vec_strs)
+    rel_seg_strs = [v.format() for v in self.relative_segments()]
+    return '\n'.join(rel_seg_strs)
+
+  def quad_path(self, sync: bool = False) -> Generator[str, None, None]:
+    """Return quad path string."""
 
   def svg_path(self, sync: bool = False) -> Generator[str]:
     """Generate SVG path string."""
-    if sync:
-      self.sync_abs_segments()
-
     # Header:
     yield self.PATH_HDR_NAME.format(self.name) if self.name else self.PATH_HDR_STR
 
     # Walk through path and output appropriate commands
-    for i, vec in enumerate(self.abs_segments):
+    for i, vec in enumerate(self.absolute_segments(sync)):
       verb: str = 'move' if i == 0 else 'line'
       if vec.name:
         yield f'  {self.COMMENT_STR.format(vec.name)}'
-      yield f'  {self.COMMAND_STR.format(verb=verb, x=round(vec.x,4), y=round(vec.y,4))}'
+      yield f'  {self.COMMAND_STR.format(verb=verb, x=round(vec.x, 4), y=round(vec.y, 4))}'
 
     yield f'  {self.CLOSE_STR}'
     yield self.PATH_FTR_STR
+
+  def __len__(self) -> int:
+    """Return number of segments."""
+    return max(len(self.rel_segments) + 1, len(self.abs_segments))

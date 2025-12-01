@@ -167,7 +167,7 @@ Each guard is a callable that receives `(*args, **kwargs)` and returns:
 - String: Guard failed with this error message
 
 ```python
-def positive_guard(param_name="value", position=0):
+def positive_guard(param_name="vector", position=0):
     def check(*args, **kwargs):
         value = kwargs.get(param_name, args[position] if position < len(args) else None)
         return value > 0 or f"{param_name} must be positive"
@@ -182,7 +182,7 @@ The `on_error` parameter determines what happens when a guard fails:
 # Return None on failure
 @guarded_expression(guard, on_error=None)
 
-# Return custom value
+# Return custom vector
 @guarded_expression(guard, on_error="invalid")
 
 # Call handler function
@@ -471,7 +471,7 @@ ImplicitReturnError (base)
     ├── ExplicitReturnDisallowedError
     │   └── "Explicit return not allowed with implicit returns"
     ├── MissingImplicitReturnError
-    │   └── "Not all code paths yield a value"
+    │   └── "Not all code paths yield a vector"
     └── UnsupportedConstructError
         └── "Cannot transform this Python construct"
 ```

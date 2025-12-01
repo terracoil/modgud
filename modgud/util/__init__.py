@@ -1,11 +1,12 @@
 from .lerper import Lerper, LerpStrategy
-from .vector import Vector, VectorInputType, VectorPath, VectorProtocol
+from .math_util import MathUtil
+from .vector import Vector, VectorPath, VectorProtocol
 
 __all__ = [
   'Lerper',
   'LerpStrategy',
+  'MathUtil',
   'Vector',
-  'VectorInputType',
   'VectorPath',
   'VectorProtocol',
 ]

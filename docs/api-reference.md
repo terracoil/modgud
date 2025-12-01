@@ -666,7 +666,7 @@ register_guard(
 
 **Example:**
 ```python
-def positive_int(param_name="value", position=0):
+def positive_int(param_name="vector", position=0):
     def check(*args, **kwargs):
         value = kwargs.get(param_name, args[position] if position < len(args) else None)
         return (isinstance(value, int) and value > 0) or "Must be a positive integer"

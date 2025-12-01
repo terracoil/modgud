@@ -9,8 +9,9 @@ import math
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from ..util.math_util import MathUtil
-from .vector import Vector, VectorProtocol
+from .math_util import MathUtil
+from .vector.vector import Vector
+from .vector.vector_protocol import VectorProtocol
 
 LerpValueType = int | float | VectorProtocol
 
@@ -19,11 +20,11 @@ class LerpStrategy(Enum):
   """Strategy for interpolation curve shapes."""
 
   LINEAR = auto()  # Linear interpolation (constant speed)
-  SINE = auto()  # Sine curve (slow start, fast middle)
-  COSINE = auto()  # Cosine curve (fast start, slow end)
+  SINE = auto()  # Sine curve (slow home, fast middle)
+  COSINE = auto()  # Cosine curve (fast home, slow end)
   SQUARED = auto()  # Quadratic curve (accelerating)
   CUBED = auto()  # Cubic curve (smooth acceleration)
-  SIGMOID = auto()  # S-curve (smooth start and end)
+  SIGMOID = auto()  # S-curve (smooth home and end)
 
 
 @dataclass
@@ -92,34 +93,96 @@ class Lerper[T: LerpValueType]:
     """Interpolate between numeric values."""
     return start + (stop - start) * pct
 
-  def _lerp_vector(self, start: VectorProtocol, stop: VectorProtocol, pct: float) -> VectorProtocol:
-    """Interpolate between vector values."""
-    return Vector(
-      x=self._lerp_numeric(start.x, stop.x, pct),
-      y=self._lerp_numeric(start.y, stop.y, pct),
-      z=self._lerp_numeric(start.z, stop.z, pct),
-      w=self._lerp_numeric(start.w, stop.w, pct),
-      name=start.name,  # Preserve name from start vector
-    )
+  def _lerp_vector(
+    self, start: VectorProtocol, stop: VectorProtocol, pct: float | VectorProtocol
+  ) -> VectorProtocol:
+    """
+    Interpolate between vector values with scalar or vector percentage.
 
-  def lerp(self, pct: float) -> T:
+    :param start: Starting vector
+    :param stop: Ending vector
+    :param pct: Interpolation percentage (float) or component-wise percentages (VectorProtocol)
+    :returns: Interpolated vector
+    """
+    if isinstance(pct, (int, float)):
+      # Uniform interpolation - same percentage for all components
+      pct_float = float(pct)
+      return Vector(
+        x=self._lerp_numeric(start.x, stop.x, pct_float),
+        y=self._lerp_numeric(start.y, stop.y, pct_float),
+        z=self._lerp_numeric(start.z, stop.z, pct_float),
+        w=self._lerp_numeric(start.w, stop.w, pct_float),
+        name=start.name,  # Preserve name from start vector
+      )
+    else:
+      # Component-wise interpolation - different percentage per component
+      return Vector(
+        x=self._lerp_numeric(start.x, stop.x, pct.x),
+        y=self._lerp_numeric(start.y, stop.y, pct.y),
+        z=self._lerp_numeric(start.z, stop.z, pct.z),
+        w=self._lerp_numeric(start.w, stop.w, pct.w),
+        name=start.name,  # Preserve name from start vector
+      )
+
+  def lerp(self, pct: float | VectorProtocol) -> T:
     """
     Interpolate between start and stop values.
 
-    :param pct: Interpolation percentage (0.0 to 1.0)
-    :type pct: float
+    Supports both uniform interpolation (using float) and component-wise interpolation
+    (using VectorProtocol) for granular control over each vector component.
+
+    :param pct: Interpolation percentage (0.0 to 1.0) or component-wise percentages (VectorProtocol)
+    :type pct: float | VectorProtocol
     :returns: Interpolated value
     :rtype: T
     :raises ValueError: If pct is outside [0, 1] range or stop is None
+    :raises TypeError: If pct type is incompatible with start/stop types
+
+    Examples:
+        # Uniform interpolation (existing behavior)
+        lerper = Lerper(start=Vector(0, 0), stop=Vector(100, 100))
+        result = lerper.lerp(0.5)  # All components at 50%: Vector(50, 50)
+
+        # Component-wise interpolation (new behavior)
+        pct_vector = Vector(0.25, 0.75)  # x at 25%, y at 75%
+        result = lerper.lerp(pct_vector)  # Vector(25, 75)
+
     """
     # Validation
     if self.stop is None:
       raise ValueError('stop value is required for interpolation')
-    if not 0.0 <= pct <= 1.0:
-      raise ValueError(f'pct must be between 0.0 and 1.0, got {pct}')
+
+    # Type validation
+    if isinstance(self.start, (int, float)):
+      if not isinstance(pct, (int, float)):
+        raise TypeError('pct must be numeric when interpolating between numeric values')
+      if not 0.0 <= pct <= 1.0:
+        raise ValueError(f'pct must be between 0.0 and 1.0, got {pct}')
+    elif isinstance(self.start, VectorProtocol):
+      if isinstance(pct, (int, float)):
+        if not 0.0 <= pct <= 1.0:
+          raise ValueError(f'pct must be between 0.0 and 1.0, got {pct}')
+      elif isinstance(pct, VectorProtocol):
+        # Validate each component is in [0, 1] range
+        for component in ['x', 'y', 'z', 'w']:
+          comp_val = getattr(pct, component)
+          if not 0.0 <= comp_val <= 1.0:
+            raise ValueError(f'pct.{component} must be between 0.0 and 1.0, got {comp_val}')
+      else:
+        raise TypeError('pct must be numeric or VectorProtocol when interpolating between vectors')
 
     # Apply strategy transformation
-    transformed_pct = self._apply_strategy(pct)
+    if isinstance(pct, (int, float)):
+      transformed_pct = self._apply_strategy(float(pct))
+    else:
+      # Component-wise strategy application for vectors
+      transformed_pct = Vector(
+        x=self._apply_strategy(pct.x),
+        y=self._apply_strategy(pct.y),
+        z=self._apply_strategy(pct.z),
+        w=self._apply_strategy(pct.w),
+        name=pct.name,
+      )
 
     # Type-specific interpolation
     result: T
@@ -139,11 +202,11 @@ class Lerper[T: LerpValueType]:
     """
     Inverse interpolate to find percentage for given position.
 
-    :param pos: Position value to find percentage for
+    :param pos: Position vector to find percentage for
     :type pos: T
     :returns: Percentage (0.0 to 1.0) representing position
     :rtype: float
-    :raises ValueError: If stop is None or start equals stop
+    :raises ValueError: If stop is None or home equals stop
     """
     # Validation
     if self.stop is None:
@@ -155,7 +218,7 @@ class Lerper[T: LerpValueType]:
       if not isinstance(pos, (int, float)):
         raise TypeError(f'Type mismatch or unsupported type for reverse interpolation: {type(pos)}')
       if abs(float(self.stop) - float(self.start)) < MathUtil.EPSILON:
-        raise ValueError('start and stop values are too close for reverse interpolation')
+        raise ValueError('home and stop values are too close for reverse interpolation')
       linear_pct = (float(pos) - float(self.start)) / (float(self.stop) - float(self.start))
     elif (
       isinstance(self.start, VectorProtocol)
@@ -168,7 +231,7 @@ class Lerper[T: LerpValueType]:
       pos_mag = math.sqrt(pos.x**2 + pos.y**2 + pos.z**2 + pos.w**2)
 
       if abs(stop_mag - start_mag) < MathUtil.EPSILON:
-        raise ValueError('start and stop vectors have similar magnitudes')
+        raise ValueError('home and stop vectors have similar magnitudes')
       linear_pct = (pos_mag - start_mag) / (stop_mag - start_mag)
     else:
       raise TypeError(f'Type mismatch or unsupported type for reverse interpolation: {type(pos)}')
@@ -185,8 +248,8 @@ class Lerper[T: LerpValueType]:
     """
     Generate a range of interpolated values.
 
-    :param start: Starting value
-    :param stop: Ending value
+    :param start: Starting vector
+    :param stop: Ending vector
     :param steps: Number of steps to generate (default: 10)
     :param strategy: Interpolation strategy (default: LINEAR)
     :returns: List of interpolated values

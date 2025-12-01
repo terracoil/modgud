@@ -12,6 +12,7 @@ import subprocess
 import sys
 import time
 import tomllib
+from functools import partial
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Dict, List, Optional, Union
@@ -144,7 +145,7 @@ class FreyjaDevTools:
       try:
         claude_result = self._run_command(
           claude_cmd,
-          capture_output=True,
+          capture_output=False,
           timeout=current_timeout
         )
         api_elapsed = time.time() - api_start
@@ -196,7 +197,7 @@ class FreyjaDevTools:
     # Display command for verbose/dry-run
     self._display_command(command)
 
-    # Track result value for single return point
+    # Track result vector for single return point
     result_value = None
 
     if self.dry_run:
@@ -208,13 +209,13 @@ class FreyjaDevTools:
           command,
           shell=shell,
           check=check,
-          capture_output=capture_output,
-          text=capture_output,  # Use text mode when capturing
+          capture_output=False,
+          text=False,  # Use text mode when capturing
           timeout=timeout,
           cwd=cwd,
           env=env
         )
-        result_value = result if capture_output else (result.returncode == 0)
+        result_value = result.returncode == 0
       except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
         result_value = self._handle_subprocess_error(e, command, capture_output, check)
 
@@ -395,18 +396,16 @@ class FreyjaDevTools:
       """Initialize with parent FreyjaDevTools instance."""
       self.parent: 'FreyjaDevTools' = parent
 
-    def dovetail(self, dovetail_pct: float = 0.1, teeth_cnt: int = 5, buffer_pct=0.5,
-                         width: float = 100.0) -> str:
+    def dovetail(self, dovetail_pct: float = 0.1, teeth_cnt: int = 5, width: float = 100.0, angle:float=30, thickness_pct:float=0.1) -> str:
       """
         Calculate the coordinates of the points to plot
         Uses 1/2 tooth each for stub ends.
       """
-      if dovetail_pct < -0.2 or dovetail_pct > 0.2:
-        raise ValueError(f"dovetail_pct should be between -20% and 20%")
+      if dovetail_pct < -0.7 or dovetail_pct > 0.3:
+        raise ValueError(f"dovetail_pct should be between -70% and 30%")
 
       tooth_height_pct = 0.5
-      segment_base = width / (teeth_cnt+1.0)
-
+      segment_base = width / (teeth_cnt + 1.0)
 
       dovetail_diff = segment_base * dovetail_pct
       dovetail_width = segment_base + dovetail_diff
@@ -414,53 +413,68 @@ class FreyjaDevTools:
       stub_width = dovetail_width / 2.0
 
       if dovetail_diff > (segment_base / 2.0):
-        raise ValueError(f"dovetail_pct is too great.  It should be < {(segment_base/ 2.0) *100.0 / width:.2f}%")
+        raise ValueError(f"dovetail_pct is too great.  It should be < {(segment_base / 2.0) * 100.0 / width:.2f}%")
 
-      # Point = tuple[float, float]
+      print(f'Creating dovetails with: {teeth_cnt} teeth, {width}mm width, {dovetail_pct:.2f}% dovetail, {angle} degrees angle')
 
-      def add_tooth(down: bool, tooth_id: int) -> list[VectorProtocol]:
-        direction: float = 1 if down else -1
-        dir_str = "Down" if down else "Up"
-        name = f"{dir_str} Tooth #{tooth_id:02d}"
-        return [
-          Vector(-dovetail_diff, groove_height * direction, name=name),
-          Vector(dovetail_width, 0),
-          Vector(-dovetail_diff, -groove_height * direction)
-        ] if down else [(Vector(dovetail_width, 0))]
+      # Function to add teeth:
+      add_tooth = partial(self._add_tooth, dovetail_diff=dovetail_diff, dovetail_width=dovetail_width,
+                          groove_height=groove_height)
 
-      path_top: VectorPath = VectorPath(Vector(0, 50), name="dovetailTop")
-      path_top.add_relative_segment(Vector(stub_width, 0, name="leftStub"))
+      # Create teeth path, for all shapes:
+      path_teeth: VectorPath = VectorPath(Vector(0, 0), name="dovetailTeeth")
+      path_teeth.add_relative_segment(Vector(stub_width, 0, name="leftStub"))
       down: bool = True
       for t in range(teeth_cnt):
         tooth_segments: list[VectorProtocol] = add_tooth(down=down, tooth_id=t + 1)
-        path_top.add_relative_segment(tooth_segments)
+        path_teeth.add_relative_segment(tooth_segments)
         down = not down
+      path_teeth.add_relative_segment(Vector(stub_width, 0, name="rightStub"))
 
-      path_top.add_relative_segment(Vector(stub_width, 0, name="rightStub"))
-      path_teeth: VectorPath = path_top.clone("dovetailTeeth")
-      path_bot: VectorPath = path_top.clone("dovetailBot")
+      path_top: VectorPath = path_teeth.clone("dovetailTop", Vector(0, 50))
+      path_bot: VectorPath = path_top.clone("dovetailBot", Vector(0, 0))
 
-      # Enclose paths to make a whole area:
+      # Top and bottom enclosure:
       path_top.add_relative_segment(Vector(0, -50, name="topEnclosure"))
       path_top.add_relative_segment(Vector(-100, 0))
-
-      path_bot.add_relative_segment(Vector(0, 50, name="botEnclosure"))
+      path_bot.add_relative_segment(Vector(0, 100, name="botEnclosure"))
       path_bot.add_relative_segment(Vector(-100, 0))
+
+      # Give teeth dimensionality:
+      segments: list[VectorProtocol] = reversed(path_teeth.rel_segments)
+      path_teeth.add_relative_segment(Vector(0, thickness_pct*width, name="Thickness Start"))
+      for segment in segments:
+        path_teeth.add_relative_segment(
+          Vector(-segment.x, -segment.y, name=f"Thickness {segment.name}" if segment.name else None))
+
 
       svg_top = list(path_top.svg_path(True))
       svg_bot = list(path_bot.svg_path(True))
-      svg_teeth = list(path_teeth.svg_path(True))
+      path_teeth.lerp_all()
+      svg_teeth = list(path_teeth.svg_path(False))
 
-      max_len =max(len(svg_top), len(svg_bot), len(svg_teeth))
+      max_len = max(len(svg_top), len(svg_bot), len(svg_teeth))
 
       print(f"{'Top':<40}{'Bottom':<40}{'Teeth':<40}")
       for i in range(max_len):
-        top:str = svg_top[i] if i < len(svg_top) else ''
-        bot:str = svg_bot[i] if i < len(svg_bot) else ''
-        tth:str = svg_teeth[i] if i < len(svg_teeth) else ''
+        top: str = svg_top[i] if i < len(svg_top) else ''
+        bot: str = svg_bot[i] if i < len(svg_bot) else ''
+        tth: str = svg_teeth[i] if i < len(svg_teeth) else ''
         print(f"{top:<40}{bot:<40}{tth:<40}")
 
       return "\n\n".join([top, bot])
+
+    @staticmethod
+    def _add_tooth(down: bool, tooth_id: int, dovetail_diff, dovetail_width, groove_height) -> list[VectorProtocol]:
+      direction: float = 1 if down else -1
+      dir_str = "Down" if down else "Up"
+      name = f"{dir_str} Tooth #{tooth_id:02d}"
+      print(f"Adding tooth: {name}")
+      return [
+        Vector(-dovetail_diff, groove_height * direction, name=name),
+        Vector(dovetail_width, 0),
+        Vector(-dovetail_diff, -groove_height * direction)
+      ] if down else [(Vector(dovetail_width, 0))]
 
     def info(self) -> None:
       """Display project environment information."""

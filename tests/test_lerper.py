@@ -1,6 +1,5 @@
 """Comprehensive tests for Lerper implementation."""
 
-
 import pytest
 from modgud.util import Lerper, LerpStrategy, Vector
 from modgud.util.math_util import MathUtil
@@ -446,6 +445,197 @@ class TestEdgeCases:
     # Values are clamped
     assert lerper._apply_inverse_strategy(-0.1) == 0.0
     assert lerper._apply_inverse_strategy(1.1) == 1.0
+
+
+class TestVectorPercentageInterpolation:
+  """Test component-wise vector percentage interpolation (new feature)."""
+
+  def test_basic_vector_percentage_interpolation(self) -> None:
+    """Test basic component-wise interpolation with vector percentages."""
+    start = Vector(0, 0, 0, 0)
+    stop = Vector(100, 100, 100, 100)
+    lerper = Lerper(start=start, stop=stop)
+
+    # Component-wise percentages
+    pct = Vector(0.25, 0.5, 0.75, 1.0)
+    result = lerper.lerp(pct)
+
+    assert result.x == 25.0  # 0.25 * 100
+    assert result.y == 50.0  # 0.5 * 100
+    assert result.z == 75.0  # 0.75 * 100
+    assert result.w == 100.0  # 1.0 * 100
+    assert result.name == start.name  # Preserves start vector name
+
+  def test_vector_percentage_with_names(self) -> None:
+    """Test component-wise interpolation preserves vector names correctly."""
+    start = Vector(0, 0, name='origin')
+    stop = Vector(10, 20, name='target')
+    pct = Vector(0.5, 0.8, name='percentages')
+
+    lerper = Lerper(start=start, stop=stop)
+    result = lerper.lerp(pct)
+
+    assert result.x == 5.0  # 0.5 * 10
+    assert result.y == 16.0  # 0.8 * 20
+    assert result.name == 'origin'  # Preserves start vector name
+
+  def test_vector_percentage_edge_cases(self) -> None:
+    """Test component-wise interpolation with edge case percentages."""
+    start = Vector(10, 20, 30, 40)
+    stop = Vector(110, 120, 130, 140)
+    lerper = Lerper(start=start, stop=stop)
+
+    # All zeros
+    pct_zero = Vector(0, 0, 0, 0)
+    result_zero = lerper.lerp(pct_zero)
+    assert result_zero.x == 10.0 and result_zero.y == 20.0
+    assert result_zero.z == 30.0 and result_zero.w == 40.0
+
+    # All ones
+    pct_one = Vector(1, 1, 1, 1)
+    result_one = lerper.lerp(pct_one)
+    assert result_one.x == 110.0 and result_one.y == 120.0
+    assert result_one.z == 130.0 and result_one.w == 140.0
+
+  def test_vector_percentage_negative_ranges(self) -> None:
+    """Test component-wise interpolation with negative value ranges."""
+    start = Vector(-100, -50, 0, 50)
+    stop = Vector(100, 50, 100, 150)
+    lerper = Lerper(start=start, stop=stop)
+
+    pct = Vector(0.5, 0.25, 0.75, 0.1)
+    result = lerper.lerp(pct)
+
+    assert result.x == 0.0  # -100 + 0.5 * 200 = 0
+    assert result.y == -25.0  # -50 + 0.25 * 100 = -25
+    assert result.z == 75.0  # 0 + 0.75 * 100 = 75
+    assert result.w == 60.0  # 50 + 0.1 * 100 = 60
+
+  def test_mixed_scalar_and_vector_percentages(self) -> None:
+    """Test that scalar percentages still work alongside vector support."""
+    start = Vector(0, 0)
+    stop = Vector(100, 200)
+    lerper = Lerper(start=start, stop=stop)
+
+    # Scalar percentage (existing behavior)
+    scalar_result = lerper.lerp(0.3)
+    assert scalar_result.x == 30.0 and scalar_result.y == 60.0
+
+    # Vector percentage (new behavior)
+    vector_result = lerper.lerp(Vector(0.3, 0.7))
+    assert vector_result.x == 30.0 and vector_result.y == 140.0
+
+
+class TestVectorPercentageValidation:
+  """Test validation for vector percentage interpolation."""
+
+  def test_vector_percentage_component_validation(self) -> None:
+    """Test that all vector percentage components must be in [0, 1]."""
+    start = Vector(0, 0)
+    stop = Vector(100, 100)
+    lerper = Lerper(start=start, stop=stop)
+
+    # Test each component out of range
+    with pytest.raises(ValueError, match='pct.x must be between 0.0 and 1.0'):
+      lerper.lerp(Vector(-0.1, 0.5))
+
+    with pytest.raises(ValueError, match='pct.y must be between 0.0 and 1.0'):
+      lerper.lerp(Vector(0.5, 1.1))
+
+    with pytest.raises(ValueError, match='pct.z must be between 0.0 and 1.0'):
+      lerper.lerp(Vector(0.5, 0.5, -0.01))
+
+    with pytest.raises(ValueError, match='pct.w must be between 0.0 and 1.0'):
+      lerper.lerp(Vector(0.5, 0.5, 0.5, 1.01))
+
+  def test_type_mismatch_validation(self) -> None:
+    """Test validation when pct type doesn't match start/stop types."""
+    # Numeric lerper with vector pct should fail
+    numeric_lerper = Lerper(start=0.0, stop=10.0)
+    with pytest.raises(
+      TypeError, match='pct must be numeric when interpolating between numeric values'
+    ):
+      numeric_lerper.lerp(Vector(0.5, 0.5))  # type: ignore
+
+    # Vector lerper with invalid pct type should fail
+    vector_lerper = Lerper(start=Vector(0, 0), stop=Vector(10, 10))
+    with pytest.raises(TypeError, match='pct must be numeric or VectorProtocol'):
+      vector_lerper.lerp('invalid')  # type: ignore
+
+  def test_boundary_values_accepted(self) -> None:
+    """Test that exactly 0.0 and 1.0 are accepted for all components."""
+    start = Vector(10, 20, 30, 40)
+    stop = Vector(50, 60, 70, 80)
+    lerper = Lerper(start=start, stop=stop)
+
+    # All at minimum boundary
+    result_min = lerper.lerp(Vector(0.0, 0.0, 0.0, 0.0))
+    assert result_min.x == 10.0 and result_min.y == 20.0
+
+    # All at maximum boundary
+    result_max = lerper.lerp(Vector(1.0, 1.0, 1.0, 1.0))
+    assert result_max.x == 50.0 and result_max.y == 60.0
+
+
+class TestVectorPercentageWithStrategies:
+  """Test that interpolation strategies work with vector percentages."""
+
+  def test_linear_strategy_with_vector_pct(self) -> None:
+    """Test linear strategy applied component-wise."""
+    start = Vector(0, 0)
+    stop = Vector(100, 100)
+    lerper = Lerper(start=start, stop=stop, strategy=LerpStrategy.LINEAR)
+
+    pct = Vector(0.5, 0.25)
+    result = lerper.lerp(pct)
+
+    # Linear strategy should not change percentages
+    assert result.x == 50.0  # 0.5 * 100
+    assert result.y == 25.0  # 0.25 * 100
+
+  def test_squared_strategy_with_vector_pct(self) -> None:
+    """Test squared strategy applied component-wise."""
+    start = Vector(0, 0)
+    stop = Vector(100, 100)
+    lerper = Lerper(start=start, stop=stop, strategy=LerpStrategy.SQUARED)
+
+    pct = Vector(0.5, 0.8)
+    result = lerper.lerp(pct)
+
+    # Squared strategy: 0.5^2 = 0.25, 0.8^2 = 0.64
+    assert abs(result.x - 25.0) < 0.01  # 0.25 * 100
+    assert abs(result.y - 64.0) < 0.01  # 0.64 * 100
+
+  def test_sine_strategy_with_vector_pct(self) -> None:
+    """Test sine strategy applied component-wise."""
+    import math
+
+    start = Vector(0, 0)
+    stop = Vector(100, 100)
+    lerper = Lerper(start=start, stop=stop, strategy=LerpStrategy.SINE)
+
+    pct = Vector(0.5, 1.0)
+    result = lerper.lerp(pct)
+
+    # Sine strategy transformations
+    expected_x = math.sin(0.5 * math.pi / 2) * 100  # sin(π/4) ≈ 0.707
+    expected_y = math.sin(1.0 * math.pi / 2) * 100  # sin(π/2) = 1.0
+
+    assert abs(result.x - expected_x) < 0.1
+    assert abs(result.y - expected_y) < 0.1
+
+  def test_sigmoid_strategy_with_vector_pct(self) -> None:
+    """Test sigmoid strategy applied component-wise."""
+    start = Vector(0, 0)
+    stop = Vector(100, 100)
+    lerper = Lerper(start=start, stop=stop, strategy=LerpStrategy.SIGMOID)
+
+    # Test with midpoint - sigmoid at 0.5 should give exactly 0.5
+    pct = Vector(0.5, 0.5)
+    result = lerper.lerp(pct)
+
+    assert abs(result.x - 50.0) < 1.0  # Should be close to 50
+    assert abs(result.y - 50.0) < 1.0
 
 
 class TestMathematicalCorrectness:

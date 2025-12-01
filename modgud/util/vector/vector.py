@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, ClassVar, Iterable
+from typing import Any, Iterable
 
-from .types import VectorInputType, VectorProtocol
+from .vector_protocol import VectorProtocol
+
+VectorSingularType = dict[str, Any] | VectorProtocol | tuple[float]
+VectorInputType = list[VectorSingularType] | VectorSingularType
 
 
 @dataclass(frozen=True)
@@ -18,8 +21,7 @@ class Vector(VectorProtocol):
   w: float = 0
   name: str | None = None
 
-  ZERO: ClassVar[VectorProtocol]
-  IDENTITY: ClassVar[VectorProtocol]
+  ATTRS = ['x', 'y', 'z', 'w']
 
   def __post_init__(self) -> None:
     """Ensure all coordinates are floats."""
@@ -32,6 +34,12 @@ class Vector(VectorProtocol):
   def as_tuple(self) -> tuple[float, float, float, float]:
     """Return as tuple."""
     return self.x, self.y, self.z, self.w
+
+  def format(self, dim=2, precision: int = 4, name: bool = True) -> str:
+    """Format vector as string."""
+    f_vals: list[float] = [round(getattr(self, a), precision) for a in self.ATTRS[:dim]]
+    nm = f'{self.name}:' if name else ''
+    return f'{nm}[{", ".join(f_vals)}]'
 
   @classmethod
   def from_input(cls, t: VectorInputType) -> list[VectorProtocol]:
@@ -109,6 +117,16 @@ class Vector(VectorProtocol):
       y=self.y + other.y,
       z=self.z + other.z,
       w=self.w + other.w,
+      name=other.name,
+    )
+
+  def __sub__(self, other: Vector) -> VectorProtocol:
+    """Subtract two vectors."""
+    return Vector(
+      x=self.x - other.x,
+      y=self.y - other.y,
+      z=self.z - other.z,
+      w=self.w - other.w,
       name=other.name,
     )
 
