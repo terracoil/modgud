@@ -18,7 +18,7 @@ class TextUtil:
 
   @classmethod
   def json_pretty(cls, obj: Any) -> str:
-    """Format any object or collection as a pretty JSON string"""
+    """Format any object or collection as a pretty JSON string."""
     return json.dumps(DataStructUtil.simplify(obj), indent=4, sort_keys=True)
 
   @classmethod

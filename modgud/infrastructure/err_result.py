@@ -15,9 +15,7 @@ E = TypeVar('E')
 
 
 class Err(ResultProtocol[T, E]):
-  """
-  Represents a failed result containing an error value.
-  """
+  """Represents a failed result containing an error value."""
 
   def __init__(self, error: E) -> None:
     """

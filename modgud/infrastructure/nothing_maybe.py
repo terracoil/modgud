@@ -14,9 +14,7 @@ U = TypeVar('U')
 
 
 class Nothing(MaybeProtocol[T]):
-  """
-  Represents a Maybe that contains no value.
-  """
+  """Represents a Maybe that contains no value."""
 
   def __init__(self) -> None:
     """Initialize a Nothing value."""

@@ -114,7 +114,7 @@ class DependencyAnalyzer(ast.NodeVisitor):
       deps = set()
 
       # Check from imports
-      for from_module, imports in data['from_imports'].items():
+      for from_module, _imports in data['from_imports'].items():
         if from_module and from_module.startswith(f'{project_name}.'):
           deps.add(from_module)
         elif from_module and from_module.startswith('.'):

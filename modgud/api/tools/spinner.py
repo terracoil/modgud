@@ -142,11 +142,12 @@ class ExecutionSpinner:
         if self.color_formatter and hasattr(self.color_formatter, 'apply_style'):
           # Apply command_output styling if available
           try:
-            from ..theme.defaults import create_default_theme
-
-            theme = create_default_theme()
-            styled_line = self.color_formatter.apply_style(self.status_line, theme.command_output)
-            print(styled_line)
+            # TODO: Theme support removed during migration to api/tools
+            # from ..theme.defaults import create_default_theme
+            # theme = create_default_theme()
+            # styled_line = self.color_formatter.apply_style(self.status_line, theme.command_output)
+            # print(styled_line)
+            print(self.status_line)
           except Exception:
             # Fall back to plain text if styling fails
             print(self.status_line)
@@ -231,11 +232,12 @@ class ExecutionSpinner:
 
           if self.color_formatter and hasattr(self.color_formatter, 'apply_style'):
             try:
-              from ..theme.defaults import create_default_theme
-
-              theme = create_default_theme()
-              styled_status = self.color_formatter.apply_style(final_status, theme.command_output)
-              print(styled_status)
+              # TODO: Theme support removed during migration to api/tools
+              # from ..theme.defaults import create_default_theme
+              # theme = create_default_theme()
+              # styled_status = self.color_formatter.apply_style(final_status, theme.command_output)
+              # print(styled_status)
+              print(final_status)
             except Exception:
               print(final_status)
           else:

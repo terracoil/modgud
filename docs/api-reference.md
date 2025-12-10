@@ -336,13 +336,15 @@ not_none(param_name: str = 'parameter', position: int = 0) -> GuardFunction
 - `position`: Position in args (default: 0)
 
 **Example:**
+
 ```python
 from modgud import guarded_expression, implicit_return, not_none
+
 
 @guarded_expression(not_none("user"))
 @implicit_return
 def greet(user):
-    f"Hello, {user.name}"
+  f"Hello, {user.item_name}"
 ```
 
 ---

@@ -14,9 +14,7 @@ U = TypeVar('U')
 
 
 class Some(MaybeProtocol[T]):
-  """
-  Represents a Maybe that contains a value.
-  """
+  """Represents a Maybe that contains a value."""
 
   def __init__(self, value: T) -> None:
     """

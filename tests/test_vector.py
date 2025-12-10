@@ -355,7 +355,7 @@ class TestVectorRepresentation:
     """Test string representation with all coordinates."""
     vector = Vector(1.5, 2.5, 3.5, 4.5)
     result = repr(vector)
-    assert 'Vector(x=1.5, y=2.5, z=3.5, w=4.5, name=None)' == result
+    assert "Vector(x=1.5, y=2.5, z=3.5, w=4.5, name='')" == result
 
 
 class TestEdgeCases:
@@ -405,6 +405,391 @@ class TestEdgeCases:
     assert vector.w == 0xBABE
 
 
+class TestArithmeticOperations:
+  """Test vector arithmetic operations."""
+
+  def test_addition(self) -> None:
+    """Test vector addition."""
+    v1 = Vector(1.0, 2.0, 3.0, 4.0, name='v1')
+    v2 = Vector(5.0, 6.0, 7.0, 8.0, name='v2')
+    result = v1 + v2
+
+    assert result.x == 6.0
+    assert result.y == 8.0
+    assert result.z == 10.0
+    assert result.w == 12.0
+    assert result.name == 'v2'  # Preserves other vector's name
+
+  def test_subtraction(self) -> None:
+    """Test vector subtraction."""
+    v1 = Vector(10.0, 8.0, 6.0, 4.0, name='v1')
+    v2 = Vector(5.0, 3.0, 2.0, 1.0, name='v2')
+    result = v1 - v2
+
+    assert result.x == 5.0
+    assert result.y == 5.0
+    assert result.z == 4.0
+    assert result.w == 3.0
+    assert result.name == 'v2'  # Preserves other vector's name
+
+  def test_multiplication(self) -> None:
+    """Test component-wise multiplication."""
+    v1 = Vector(2.0, 3.0, 4.0, 5.0, name='v1')
+    v2 = Vector(10.0, 20.0, 30.0, 40.0, name='v2')
+    result = v1 * v2
+
+    assert result.x == 20.0
+    assert result.y == 60.0
+    assert result.z == 120.0
+    assert result.w == 200.0
+    assert result.name == 'v2'  # Preserves other vector's name
+
+  def test_division(self) -> None:
+    """Test component-wise division."""
+    v1 = Vector(100.0, 50.0, 25.0, 10.0, name='v1')
+    v2 = Vector(10.0, 5.0, 5.0, 2.0, name='v2')
+    result = v1 / v2
+
+    assert result.x == 10.0
+    assert result.y == 10.0
+    assert result.z == 5.0
+    assert result.w == 5.0
+    assert result.name == 'v2'  # Preserves other vector's name
+
+  def test_division_by_zero(self) -> None:
+    """Test division by zero raises exception."""
+    v1 = Vector(1.0, 2.0, 3.0, 4.0)
+    v2 = Vector(0.0, 1.0, 0.0, 1.0)
+
+    with pytest.raises(ZeroDivisionError):
+      _ = v1 / v2
+
+
+class TestVectorClone:
+  """Test Vector clone method."""
+
+  def test_clone_no_changes(self) -> None:
+    """Test clone with no parameters creates identical copy."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone()
+
+    assert cloned == original
+    assert cloned is not original  # Different instance
+    assert cloned.x == 1.0
+    assert cloned.y == 2.0
+    assert cloned.z == 3.0
+    assert cloned.w == 4.0
+    assert cloned.name == 'original'
+
+  def test_clone_change_x(self) -> None:
+    """Test clone with x override."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone(x=10.0)
+
+    assert cloned.x == 10.0
+    assert cloned.y == 2.0
+    assert cloned.z == 3.0
+    assert cloned.w == 4.0
+    assert cloned.name == 'original'
+
+  def test_clone_change_y(self) -> None:
+    """Test clone with y override."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone(y=20.0)
+
+    assert cloned.x == 1.0
+    assert cloned.y == 20.0
+    assert cloned.z == 3.0
+    assert cloned.w == 4.0
+    assert cloned.name == 'original'
+
+  def test_clone_change_z(self) -> None:
+    """Test clone with z override."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone(z=30.0)
+
+    assert cloned.x == 1.0
+    assert cloned.y == 2.0
+    assert cloned.z == 30.0
+    assert cloned.w == 4.0
+    assert cloned.name == 'original'
+
+  def test_clone_change_w(self) -> None:
+    """Test clone with w override."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone(w=40.0)
+
+    assert cloned.x == 1.0
+    assert cloned.y == 2.0
+    assert cloned.z == 3.0
+    assert cloned.w == 40.0
+    assert cloned.name == 'original'
+
+  def test_clone_change_name(self) -> None:
+    """Test clone with name override."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone(name='cloned')
+
+    assert cloned.x == 1.0
+    assert cloned.y == 2.0
+    assert cloned.z == 3.0
+    assert cloned.w == 4.0
+    assert cloned.name == 'cloned'
+
+  def test_clone_multiple_changes(self) -> None:
+    """Test clone with multiple component overrides."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone(x=10.0, z=30.0, name='modified')
+
+    assert cloned.x == 10.0
+    assert cloned.y == 2.0  # unchanged
+    assert cloned.z == 30.0
+    assert cloned.w == 4.0  # unchanged
+    assert cloned.name == 'modified'
+
+  def test_clone_all_changes(self) -> None:
+    """Test clone with all components overridden."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone(x=10.0, y=20.0, z=30.0, w=40.0, name='new')
+
+    assert cloned.x == 10.0
+    assert cloned.y == 20.0
+    assert cloned.z == 30.0
+    assert cloned.w == 40.0
+    assert cloned.name == 'new'
+
+  def test_clone_with_zero_values(self) -> None:
+    """Test clone with zero value overrides."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone(x=0.0, y=0.0)
+
+    assert cloned.x == 0.0
+    assert cloned.y == 0.0
+    assert cloned.z == 3.0
+    assert cloned.w == 4.0
+    assert cloned.name == 'original'
+
+  def test_clone_with_negative_values(self) -> None:
+    """Test clone with negative value overrides."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    cloned = original.clone(x=-10.0, w=-40.0)
+
+    assert cloned.x == -10.0
+    assert cloned.y == 2.0
+    assert cloned.z == 3.0
+    assert cloned.w == -40.0
+    assert cloned.name == 'original'
+
+  def test_clone_empty_name_to_named(self) -> None:
+    """Test clone from vector with empty name to named vector."""
+    original = Vector(1.0, 2.0, 3.0, 4.0)  # name=''
+    cloned = original.clone(name='named')
+
+    assert cloned.x == 1.0
+    assert cloned.y == 2.0
+    assert cloned.z == 3.0
+    assert cloned.w == 4.0
+    assert cloned.name == 'named'
+    assert original.name == ''
+
+  def test_clone_named_to_empty_name(self) -> None:
+    """Test clone from named vector to empty name - name parameter should be explicitly set."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    # Note: passing name='' explicitly should set name to empty string
+    cloned = original.clone(name='')
+
+    assert cloned.x == 1.0
+    assert cloned.y == 2.0
+    assert cloned.z == 3.0
+    assert cloned.w == 4.0
+    assert cloned.name == ''
+    assert original.name == 'original'
+
+  def test_clone_type_coercion(self) -> None:
+    """Test clone with integer inputs that get coerced to float."""
+    original = Vector(1.5, 2.5, 3.5, 4.5, name='original')
+    cloned = original.clone(x=10, y=20)  # integers
+
+    assert cloned.x == 10.0
+    assert cloned.y == 20.0
+    assert isinstance(cloned.x, float)
+    assert isinstance(cloned.y, float)
+    assert cloned.z == 3.5
+    assert cloned.w == 4.5
+
+  def test_clone_returns_vector_protocol(self) -> None:
+    """Test clone returns object satisfying VectorProtocol."""
+    original = Vector(1.0, 2.0, 3.0, 4.0)
+    cloned = original.clone(x=10.0)
+
+    # Should satisfy protocol
+    assert isinstance(cloned, VectorProtocol)
+    assert hasattr(cloned, 'x')
+    assert hasattr(cloned, 'y')
+    assert hasattr(cloned, 'z')
+    assert hasattr(cloned, 'w')
+    assert hasattr(cloned, 'name')
+
+
+class TestVectorInverse:
+  """Test Vector inverse method."""
+
+  def test_inverse_basic(self) -> None:
+    """Test inverse with positive components."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    inverted = original.inverse()
+
+    assert inverted.x == -1.0
+    assert inverted.y == -2.0
+    assert inverted.z == -3.0
+    assert inverted.w == -4.0
+    assert inverted.name == 'original'  # Name preserved
+
+  def test_inverse_negative_components(self) -> None:
+    """Test inverse with negative components."""
+    original = Vector(-1.0, -2.0, -3.0, -4.0, name='negative')
+    inverted = original.inverse()
+
+    assert inverted.x == 1.0
+    assert inverted.y == 2.0
+    assert inverted.z == 3.0
+    assert inverted.w == 4.0
+    assert inverted.name == 'negative'
+
+  def test_inverse_mixed_components(self) -> None:
+    """Test inverse with mixed positive/negative components."""
+    original = Vector(-1.0, 2.0, -3.0, 4.0, name='mixed')
+    inverted = original.inverse()
+
+    assert inverted.x == 1.0
+    assert inverted.y == -2.0
+    assert inverted.z == 3.0
+    assert inverted.w == -4.0
+    assert inverted.name == 'mixed'
+
+  def test_inverse_zero_components(self) -> None:
+    """Test inverse with zero components."""
+    original = Vector(0.0, 0.0, 0.0, 0.0, name='zero')
+    inverted = original.inverse()
+
+    assert inverted.x == 0.0
+    assert inverted.y == 0.0
+    assert inverted.z == 0.0
+    assert inverted.w == 0.0
+    assert inverted.name == 'zero'
+
+  def test_inverse_2d_vector(self) -> None:
+    """Test inverse with 2D vector (z=0, w=0)."""
+    original = Vector(5.0, -3.0)  # z=0, w=0 by default
+    inverted = original.inverse()
+
+    assert inverted.x == -5.0
+    assert inverted.y == 3.0
+    assert inverted.z == 0.0
+    assert inverted.w == 0.0
+
+  def test_inverse_preserves_name(self) -> None:
+    """Test that inverse preserves the original name."""
+    original = Vector(1.0, 2.0, name='test_name')
+    inverted = original.inverse()
+
+    assert inverted.name == 'test_name'
+    assert original.name == 'test_name'  # Original unchanged
+
+  def test_inverse_empty_name(self) -> None:
+    """Test inverse with empty name."""
+    original = Vector(1.0, 2.0)  # name='' by default
+    inverted = original.inverse()
+
+    assert inverted.name == ''
+    assert inverted.x == -1.0
+    assert inverted.y == -2.0
+
+  def test_inverse_additive_identity_property(self) -> None:
+    """Test that v + v.inverse() = ZERO (additive identity property)."""
+    original = Vector(3.0, 4.0, 5.0, 6.0, name='test')
+    inverted = original.inverse()
+    result = original + inverted
+
+    # Should equal ZERO vector (allowing for floating point precision)
+    assert abs(result.x) < 1e-10
+    assert abs(result.y) < 1e-10
+    assert abs(result.z) < 1e-10
+    assert abs(result.w) < 1e-10
+
+  def test_inverse_double_negation(self) -> None:
+    """Test that inverse of inverse returns original (double negation)."""
+    original = Vector(2.0, -3.0, 4.0, -5.0, name='original')
+    double_inverse = original.inverse().inverse()
+
+    assert double_inverse.x == original.x
+    assert double_inverse.y == original.y
+    assert double_inverse.z == original.z
+    assert double_inverse.w == original.w
+    assert double_inverse.name == original.name
+
+  def test_inverse_returns_new_instance(self) -> None:
+    """Test that inverse creates a new instance, not modifying the original."""
+    original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
+    inverted = original.inverse()
+
+    # Should be different instances
+    assert inverted is not original
+
+    # Original should be unchanged
+    assert original.x == 1.0
+    assert original.y == 2.0
+    assert original.z == 3.0
+    assert original.w == 4.0
+    assert original.name == 'original'
+
+  def test_inverse_with_zero_vector(self) -> None:
+    """Test inverse of ZERO vector."""
+    zero = Vector.ZERO
+    inverted = zero.inverse()
+
+    assert inverted == Vector.ZERO
+    assert inverted.x == 0.0
+    assert inverted.y == 0.0
+    assert inverted.z == 0.0
+    assert inverted.w == 0.0
+
+  def test_inverse_returns_vector_protocol(self) -> None:
+    """Test inverse returns object satisfying VectorProtocol."""
+    original = Vector(1.0, 2.0)
+    inverted = original.inverse()
+
+    # Should satisfy protocol
+    assert isinstance(inverted, VectorProtocol)
+    assert hasattr(inverted, 'x')
+    assert hasattr(inverted, 'y')
+    assert hasattr(inverted, 'z')
+    assert hasattr(inverted, 'w')
+    assert hasattr(inverted, 'name')
+
+  def test_inverse_with_large_values(self) -> None:
+    """Test inverse with large floating point values."""
+    large_val = 1e10
+    original = Vector(large_val, -large_val, large_val, -large_val)
+    inverted = original.inverse()
+
+    assert inverted.x == -large_val
+    assert inverted.y == large_val
+    assert inverted.z == -large_val
+    assert inverted.w == large_val
+
+  def test_inverse_with_small_values(self) -> None:
+    """Test inverse with very small floating point values."""
+    small_val = 1e-10
+    original = Vector(small_val, -small_val, small_val, -small_val)
+    inverted = original.inverse()
+
+    assert inverted.x == -small_val
+    assert inverted.y == small_val
+    assert inverted.z == -small_val
+    assert inverted.w == small_val
+
+
 class TestProtocolSatisfaction:
   """Test that Vector satisfies VectorProtocol protocol."""
 
@@ -427,3 +812,108 @@ class TestProtocolSatisfaction:
     assert isinstance(vector.y, float)
     assert isinstance(vector.z, float)
     assert isinstance(vector.w, float)
+
+
+class TestVectorPathSubscriptable:
+  """Test VectorPath subscriptable functionality."""
+
+  def test_getitem_origin(self) -> None:
+    """Test accessing origin via index 0."""
+    from modgud.util import VectorPath
+
+    origin = Vector(1.0, 2.0)
+    path = VectorPath(rel_segments=origin)
+
+    result = path[0]
+    assert result == origin
+    assert result.x == 1.0
+    assert result.y == 2.0
+
+  def test_getitem_rel_segments(self) -> None:
+    """Test accessing relative segments via index > 0."""
+    from modgud.util import VectorPath
+
+    origin = Vector(0.0, 0.0)
+    seg1 = Vector(1.0, 0.0)
+    seg2 = Vector(0.0, 1.0)
+    seg3 = Vector(-1.0, 0.0)
+
+    path = VectorPath(rel_segments=origin)
+    path.push_segment([seg1, seg2, seg3])
+
+    # Test accessing each segment
+    assert path[0] == origin
+    assert path[1] == seg1
+    assert path[2] == seg2
+    assert path[3] == seg3
+
+  def test_getitem_index_out_of_bounds_negative(self) -> None:
+    """Test accessing with negative index raises IndexError."""
+    from modgud.util import VectorPath
+
+    path = VectorPath(rel_segments=Vector(0.0, 0.0))
+    path.push_segment(Vector(1.0, 1.0))
+
+    with pytest.raises(IndexError, match='Path index -1 out of range'):
+      _ = path[-1]
+
+  def test_getitem_index_out_of_bounds_too_high(self) -> None:
+    """Test accessing with index >= length raises IndexError."""
+    from modgud.util import VectorPath
+
+    path = VectorPath(rel_segments=Vector(0.0, 0.0))
+    path.push_segment(Vector(1.0, 1.0))
+
+    # Path has length 2 (origin + 1 segment), so index 2 should be out of bounds
+    with pytest.raises(IndexError, match='Path index 2 out of range'):
+      _ = path[2]
+
+  def test_getitem_empty_path(self) -> None:
+    """Test accessing path with only origin."""
+    from modgud.util import VectorPath
+
+    origin = Vector(5.0, 10.0)
+    path = VectorPath(rel_segments=origin)
+
+    # Should be able to access origin
+    assert path[0] == origin
+
+    # Index 1 should be out of bounds
+    with pytest.raises(IndexError, match='Path index 1 out of range'):
+      _ = path[1]
+
+  def test_getitem_consistency_with_len(self) -> None:
+    """Test that subscriptable access is consistent with __len__."""
+    from modgud.util import VectorPath
+
+    origin = Vector(0.0, 0.0)
+    segments = [Vector(1.0, 0.0), Vector(0.0, 1.0), Vector(-1.0, 0.0)]
+
+    path = VectorPath(rel_segments=origin)
+    path.push_segment(segments)
+
+    path_length = len(path)
+    assert path_length == 4  # origin + 3 segments
+
+    # Should be able to access indices 0 through length-1
+    for i in range(path_length):
+      _ = path[i]  # Should not raise
+
+    # Index equal to length should raise
+    with pytest.raises(IndexError):
+      _ = path[path_length]
+
+  def test_getitem_with_named_vectors(self) -> None:
+    """Test accessing path with named vectors preserves names."""
+    from modgud.util import VectorPath
+
+    origin = Vector(0.0, 0.0, name='start')
+    seg1 = Vector(1.0, 0.0, name='right')
+    seg2 = Vector(0.0, 1.0, name='up')
+
+    path = VectorPath(rel_segments=origin)
+    path.push_segment([seg1, seg2])
+
+    assert path[0].name == 'start'
+    assert path[1].name == 'right'
+    assert path[2].name == 'up'

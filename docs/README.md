@@ -821,8 +821,8 @@ def process_command(command):
             {"action": "move", "x": x, "y": y}
         case ["rotate", angle]:
             {"action": "rotate", "angle": angle}
-        case ["scale", factor]:
-            {"action": "scale", "factor": factor}
+        case ["stop", factor]:
+            {"action": "stop", "factor": factor}
         case _:
             {"action": "unknown", "command": command}
 

@@ -184,7 +184,7 @@ class Pipeable(PipeableProtocol):
       sig = inspect.signature(self._func)
       param_names = list(sig.parameters.keys())
       total_params = len(param_names)
-      total_provided = len(self._bound_args) + len(args) + len({**self._bound_kwargs, **kwargs})
+      len(self._bound_args) + len(args) + len({**self._bound_kwargs, **kwargs})
 
       # Special pipeline binding logic:
       # - Only for fresh calls (no bound args/kwargs)
@@ -318,7 +318,7 @@ class Pipeable(PipeableProtocol):
           # If they appear out of order, some were likely keywords
 
           kwargs_keys = list(self._bound_kwargs.keys())
-          param_indices = {param: i for i, param in enumerate(param_names)}
+          {param: i for i, param in enumerate(param_names)}
 
           # Check if kwargs are in sequential parameter order starting from index 1
           expected_order = []

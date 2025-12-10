@@ -1,3 +1,3 @@
-"""Types, interfaces, etc for Vectors"""
+"""Types, interfaces, etc for Vectors."""
 
 from __future__ import annotations

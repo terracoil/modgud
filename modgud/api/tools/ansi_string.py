@@ -10,7 +10,7 @@ from typing import Union
 
 
 class AnsiString:
-  """
+  r"""
   String wrapper that implements proper alignment with ANSI escape codes.
 
   This class wraps a string containing ANSI escape codes and provides

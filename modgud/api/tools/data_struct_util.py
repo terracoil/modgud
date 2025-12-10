@@ -8,7 +8,7 @@ Simple = dict[str, SimpleType] | list[SimpleType] | SimpleType
 
 
 class DataStructUtil:
-  """Utility methods for collections (list, dict, set, etc)"""
+  """Utility methods for collections (list, dict, set, etc)."""
 
   @classmethod
   def simplify(cls, obj: Any, max_depth: int = 10) -> Simple:

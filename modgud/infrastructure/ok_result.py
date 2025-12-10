@@ -15,9 +15,7 @@ E = TypeVar('E')
 
 
 class Ok(ResultProtocol[T, E]):
-  """
-  Represents a successful result containing a value.
-  """
+  """Represents a successful result containing a value."""
 
   def __init__(self, value: T) -> None:
     """

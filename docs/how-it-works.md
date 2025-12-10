@@ -504,13 +504,14 @@ Enable built-in logging with `log=True`:
 ```python
 from modgud import guarded_expression, implicit_return, not_none
 
+
 @guarded_expression(
-    not_none("user"),
-    log=True  # Logs failures at INFO level
+  not_none("user"),
+  log=True  # Logs failures at INFO level
 )
 @implicit_return
 def greet_user(user):
-    f"Hello, {user.name}!"
+  f"Hello, {user.item_name}!"
 ```
 
 ---

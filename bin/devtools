@@ -4,20 +4,23 @@ Development Tools CLI
 Consolidates all development scripts into a single FreyjaCLI implementation.
 """
 import glob
+import json
 import os
 import re
 import shlex
 import shutil
 import subprocess
 import sys
+import textwrap
 import time
 import tomllib
+from dataclasses import dataclass, field, make_dataclass
 from functools import partial
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
-from modgud.util import Vector, VectorPath, VectorProtocol
+from modgud.util import MathUtil, Vector, VectorPath, VectorProtocol
 
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -145,7 +148,7 @@ class FreyjaDevTools:
       try:
         claude_result = self._run_command(
           claude_cmd,
-          capture_output=False,
+          capture_output=True,
           timeout=current_timeout
         )
         api_elapsed = time.time() - api_start
@@ -167,10 +170,11 @@ class FreyjaDevTools:
         last_error = f"Claude API timed out after {api_elapsed:.2f}s"
         continue
 
-    if claude_result:
+    if claude_result and claude_result.stdout:
       commit_message = claude_result.stdout.strip()
     else:
-      raise RuntimeError(f"Error running claude command: {claude_cmd}: {last_error}")
+      error_detail = f"stdout was {claude_result.stdout if claude_result else 'None'}" if claude_result else last_error
+      raise RuntimeError(f"Error running claude command: {claude_cmd}: {error_detail}")
 
     return commit_message
 
@@ -205,17 +209,17 @@ class FreyjaDevTools:
       result_value = subprocess.CompletedProcess(command, 0, '', '') if capture_output else True
     else:
       try:
-        result = self._execute_subprocess(
+        result_value = self._execute_subprocess(
           command,
           shell=shell,
           check=check,
-          capture_output=False,
-          text=False,  # Use text mode when capturing
+          capture_output=capture_output,
+          text=capture_output,  # Use text mode when capturing output
           timeout=timeout,
           cwd=cwd,
           env=env
         )
-        result_value = result.returncode == 0
+        # result_value = result.returncode == 0
       except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
         result_value = self._handle_subprocess_error(e, command, capture_output, check)
 
@@ -396,85 +400,161 @@ class FreyjaDevTools:
       """Initialize with parent FreyjaDevTools instance."""
       self.parent: 'FreyjaDevTools' = parent
 
-    def dovetail(self, dovetail_pct: float = 0.1, teeth_cnt: int = 5, width: float = 100.0, angle:float=30, thickness_pct:float=0.1) -> str:
+    def dovetail(self, slope_pct: float = 0.1, teeth_cnt: int = 3, tooth_depth_pct: float = 0.20) -> dict[str, Any]:
       """
         Calculate the coordinates of the points to plot
         Uses 1/2 tooth each for stub ends.
       """
-      if dovetail_pct < -0.7 or dovetail_pct > 0.3:
-        raise ValueError(f"dovetail_pct should be between -70% and 30%")
+      if slope_pct < -0.7 or slope_pct > 0.3:
+        raise ValueError(f"dovetail-pct should be between -70% and 30%")
 
-      tooth_height_pct = 0.5
-      segment_base = width / (teeth_cnt + 1.0)
+      if tooth_depth_pct < 0.1 or tooth_depth_pct > 0.9:
+        raise ValueError(f"tooth-depth-pct should be between 10% and 90%")
 
-      dovetail_diff = segment_base * dovetail_pct
-      dovetail_width = segment_base + dovetail_diff
-      groove_height = width * tooth_height_pct
-      stub_width = dovetail_width / 2.0
+      base_pct = 1.0 / (teeth_cnt * 2.0)
 
-      if dovetail_diff > (segment_base / 2.0):
-        raise ValueError(f"dovetail_pct is too great.  It should be < {(segment_base / 2.0) * 100.0 / width:.2f}%")
+      slant_diff = base_pct * slope_pct
+      groove_width = base_pct + slant_diff
+      stub_size = groove_width / 2.0
+      depth_pct = 1.0
 
-      print(f'Creating dovetails with: {teeth_cnt} teeth, {width}mm width, {dovetail_pct:.2f}% dovetail, {angle} degrees angle')
+      if slant_diff > (base_pct / 2.0):
+        raise ValueError(
+          f"dovetail_pct is too great.  It should be <= {(slant_diff / base_pct):.2f} with the current parameters.")
+
+      print("Creating dovetails with: {0}".format(json.dumps({
+        'dov_diff': slant_diff,
+        'groove_width': groove_width,
+        'depth_pct': depth_pct,
+        'stub_size': stub_size,
+        'tooth_depth_pct': tooth_depth_pct,
+      },
+        indent=4
+      )))
+
+      if MathUtil.is_zero(slope_pct):
+        name = "notched"
+      elif slope_pct > 0.0:
+        name = "dovetail"
+      else:
+        name = "slanted"
 
       # Function to add teeth:
-      add_tooth = partial(self._add_tooth, dovetail_diff=dovetail_diff, dovetail_width=dovetail_width,
-                          groove_height=groove_height)
+      add_tooth = partial(self._add_tooth, slant_diff=slant_diff, width=groove_width)
 
       # Create teeth path, for all shapes:
-      path_teeth: VectorPath = VectorPath(Vector(0, 0), name="dovetailTeeth")
-      path_teeth.add_relative_segment(Vector(stub_width, 0, name="leftStub"))
-      down: bool = True
+      path_teeth: VectorPath = VectorPath(rel_segments=Vector.ZERO, name=f"{name}Teeth")
+      path_teeth.push_segment(Vector(0, stub_size, name="begStub"))
       for t in range(teeth_cnt):
-        tooth_segments: list[VectorProtocol] = add_tooth(down=down, tooth_id=t + 1)
-        path_teeth.add_relative_segment(tooth_segments)
-        down = not down
-      path_teeth.add_relative_segment(Vector(stub_width, 0, name="rightStub"))
+        path_teeth.push_segment(add_tooth(tooth_idx=t, gap=t < teeth_cnt - 1))
+      path_teeth.push_segment(Vector(0, stub_size, name="endStub"))
 
-      path_top: VectorPath = path_teeth.clone("dovetailTop", Vector(0, 50))
-      path_bot: VectorPath = path_top.clone("dovetailBot", Vector(0, 0))
+      path_notches: VectorPath = path_teeth.clone(name=f"{name}Slots")  # .reverse()
+
+      i:int = -1
+      skip:int = -1
+      while i < len(path_notches):
+        i = i + 1 if skip < 0 else skip
+        skip = -1
+        
+        # Bounds check after calculating new i
+        if i >= len(path_notches):
+          break
+          
+        v:VectorProtocol = path_notches[i]
+        if v.name == "begStub":
+          path_notches[i] = v.clone(name="endStub")
+        elif v.name == "endStub":
+          path_notches[i] = v.clone(name="begStub")
+        elif v.name:
+          target_idx = i
+          target_name = v.name.replace("tooth", "slot")
+          for n, seg in enumerate(path_notches[i+1: len(path_notches)]):
+            actual_idx = i + 1 + n  # Convert enumeration index to actual path index
+            if seg.name:
+              skip = actual_idx
+              break
+            else:
+              target_idx = actual_idx
+
+          # Bounds check before assignment
+          if target_idx < len(path_notches):
+            path_notches[target_idx] = path_notches[i].clone(name=target_name)
+            path_notches[i] = path_notches[i].clone(name='')
+
+
+      print("\n\nTeeth Relative Path:")
+      for p in path_teeth.svg_path():
+        print(p)
+
+      print(f"{'*' * 50}\n\n")
 
       # Top and bottom enclosure:
-      path_top.add_relative_segment(Vector(0, -50, name="topEnclosure"))
-      path_top.add_relative_segment(Vector(-100, 0))
-      path_bot.add_relative_segment(Vector(0, 100, name="botEnclosure"))
-      path_bot.add_relative_segment(Vector(-100, 0))
+      # TODO scale teeth to tooth_depth_pct
+      path_left: VectorPath = path_teeth.clone(name=f"{name}Top", origin=Vector(0.5, 0.0))
+      path_left.push_segment(Vector(-0.5, 0, name="begEnclosure"))
+      path_left.push_segment(Vector(0, -1.0))
+      path_left.lerp_all(Vector(100, 100))
+
+      path_right: VectorPath = path_teeth.clone(name=f"{name}Bot", origin=Vector.ZERO)
+      path_right.reverse()
+      # path_right[0].name, path_right[-1].name = path_right[-1].name, path_right[0].name
+      path_right.push_segment(Vector(1.0, 0, name="endEnclosure"))
+      path_right.push_segment(Vector(0.0, 1.0))
+      path_right.lerp_all(Vector(100, 100))
+      # print("-"*50)
+      # print(f"Path Right: {path_right}")
+      # print("-"*50)
+      # path_right.push_segment(Vector(0, -1.0))
+      # path_right.lerp_all(Vector(100, 100))
 
       # Give teeth dimensionality:
-      segments: list[VectorProtocol] = reversed(path_teeth.rel_segments)
-      path_teeth.add_relative_segment(Vector(0, thickness_pct*width, name="Thickness Start"))
-      for segment in segments:
-        path_teeth.add_relative_segment(
-          Vector(-segment.x, -segment.y, name=f"Thickness {segment.name}" if segment.name else None))
+      path_teeth *= Vector(2.0, 1.0)
+      path_teeth.lerp_all(Vector(100, 100))
 
+      # path_quad = VectorPath(name=f"{name}Quads", abs_segments=path_teeth.gen_absolute_segments(), close=False)
+      # for t in path_teeth.gen_absolute_segments():
+      #   # Point, control point:
+      #   path_quad.push_segment([Vector(0.0, t.y), Vector(t.x,0.0)])
 
-      svg_top = list(path_top.svg_path(True))
-      svg_bot = list(path_bot.svg_path(True))
-      path_teeth.lerp_all()
-      svg_teeth = list(path_teeth.svg_path(False))
+      svg_left = list(path_left.svg_path())
+      svg_right = list(path_right.svg_path())
+      # svg_teeth = list(path_quad.quad_path())
+      svg_teeth = list(path_teeth.svg_path())
 
-      max_len = max(len(svg_top), len(svg_bot), len(svg_teeth))
+      wrap = partial(textwrap.wrap, width=40, replace_whitespace=False, drop_whitespace=False)
 
-      print(f"{'Top':<40}{'Bottom':<40}{'Teeth':<40}")
+      # print(f"{wrap(svg_top)}{wrap(svg_right)}{wrap(svg_teeth)}")
+
+      max_len = max(len(svg_left), len(svg_right), len(svg_teeth))
+      #
+      print(f"{'Left':<40}{'Right':<40}{'Teeth':<40}")
       for i in range(max_len):
-        top: str = svg_top[i] if i < len(svg_top) else ''
-        bot: str = svg_bot[i] if i < len(svg_bot) else ''
+        lft: str = svg_left[i] if i < len(svg_left) else ''
+        rgt: str = svg_right[i] if i < len(svg_right) else ''
         tth: str = svg_teeth[i] if i < len(svg_teeth) else ''
-        print(f"{top:<40}{bot:<40}{tth:<40}")
+        print(f"{lft:<40}{rgt:<40}{tth:<40}")
 
-      return "\n\n".join([top, bot])
+      return {
+        "left": svg_left,
+        "right": svg_right,
+        "teeth": svg_teeth
+      }
 
     @staticmethod
-    def _add_tooth(down: bool, tooth_id: int, dovetail_diff, dovetail_width, groove_height) -> list[VectorProtocol]:
-      direction: float = 1 if down else -1
-      dir_str = "Down" if down else "Up"
-      name = f"{dir_str} Tooth #{tooth_id:02d}"
-      print(f"Adding tooth: {name}")
-      return [
-        Vector(-dovetail_diff, groove_height * direction, name=name),
-        Vector(dovetail_width, 0),
-        Vector(-dovetail_diff, -groove_height * direction)
-      ] if down else [(Vector(dovetail_width, 0))]
+    def _add_tooth(slant_diff: float, width: float, tooth_idx: int, gap: bool) -> list[VectorProtocol]:
+      """ Add a single tooth segment to a path (sloping in the amount of dove diff) """
+      depth_pct = 1.0
+      tooth_name = f"tooth-{tooth_idx + 1}"
+      # print(f"Adding tooth: {tooth_name}")
+      tooth_segments = [
+        Vector(depth_pct, -slant_diff, name=tooth_name),
+        Vector(0, width),
+        Vector(-depth_pct, -slant_diff)
+      ]
+
+      # Return tooth segments (with gap if specified):
+      return tooth_segments + [Vector(0, width)] if gap else tooth_segments
 
     def info(self) -> None:
       """Display project environment information."""
@@ -904,8 +984,8 @@ class FreyjaDevTools:
 
 
       sys.path.insert(0, '.')
-      from freyja.utils.dependency_analyzer import DependencyAnalyzer
       from freyja.utils.console_formatter import ConsoleFormatter
+      from freyja.utils.dependency_analyzer import DependencyAnalyzer
       from freyja.utils.json_formatter import JsonFormatter
 
 

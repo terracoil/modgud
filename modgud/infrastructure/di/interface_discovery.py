@@ -52,7 +52,7 @@ class InterfaceDiscovery:
     # Scan sub-modules if it's a package
     try:
       if hasattr(module, '__path__'):
-        for _, name, ispkg in pkgutil.iter_modules(module.__path__, module.__name__ + '.'):
+        for _, name, _ispkg in pkgutil.iter_modules(module.__path__, module.__name__ + '.'):
           if name not in self._scanned_modules:
             try:
               submodule = importlib.import_module(name)

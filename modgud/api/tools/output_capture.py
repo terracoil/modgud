@@ -222,12 +222,13 @@ class OutputFormatter:
     # Apply styling to prefix if color formatter is available
     if self.color_formatter and hasattr(self.color_formatter, 'apply_style'):
       try:
-        from ..theme.defaults import create_default_theme
-
-        theme = create_default_theme()
-        styled_prefix = self.color_formatter.apply_style(
-          prefix, getattr(theme, style_name, theme.command_output)
-        )
+        # TODO: Theme support removed during migration to api/tools
+        # from ..theme.defaults import create_default_theme
+        # theme = create_default_theme()
+        # styled_prefix = self.color_formatter.apply_style(
+        #   prefix, getattr(theme, style_name, theme.command_output)
+        # )
+        styled_prefix = prefix
       except Exception:
         # Fall back to plain prefix if styling fails
         styled_prefix = prefix

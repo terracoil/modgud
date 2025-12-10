@@ -17,9 +17,7 @@ T = TypeVar('T')
 
 
 class ChainedExpressionDecorator:
-  """
-  Decorator that wraps function results in ChainableExpression for method chaining.
-  """
+  """Decorator that wraps function results in ChainableExpression for method chaining."""
 
   def __init__(self, auto_unwrap: bool = False) -> None:
     """
