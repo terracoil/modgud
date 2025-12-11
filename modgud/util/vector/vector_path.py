@@ -128,7 +128,9 @@ class VectorPath:
       yield prev.inverse() + seg
       prev = seg
 
-  def lerp_all(self, stop: VectorProtocol, offset: VectorProtocol = Vector.ZERO) -> VectorPath:
+  def transform_all(
+    self, scale: VectorProtocol, offset: VectorProtocol = Vector.ZERO
+  ) -> VectorPath:
     """
     Apply scaling transformation to entire path using enhanced Lerper functionality.
 
@@ -137,15 +139,13 @@ class VectorPath:
     between coordinate systems.
     """
     # Create transformer using enhanced Lerper
-    transformer = Lerper.from_transform(scale=stop, offset=offset)
-    
+    transformer = Lerper.from_transform(scale=scale, offset=offset)
+
     # Transform all absolute positions using the Lerper's scale method
-    abs_segments = [transformer.scale(v, stop, offset) for v in self.gen_absolute_segments()]
-    
+    abs_segments = [transformer.scale(v, scale, offset) for v in self.gen_absolute_segments()]
+
     # Convert back to relative segments
-    self.rel_segments = (
-      list(self.gen_relative_segments(abs_segments))[1:] if len(abs_segments) > 1 else []
-    )
+    self.rel_segments = list(self.gen_relative_segments(abs_segments))
     return self
 
   def push_segment(self, segments: SegmentType, index: int = -1) -> None:
@@ -166,7 +166,10 @@ class VectorPath:
           self.rel_segments.insert(index, s)
         self.rel_segments.insert(index, *segments)
     else:
-      self.rel_segments.append(segments)
+      if index == -1 or index >= len(self.rel_segments):
+        self.rel_segments.append(segments)
+      else:
+        self.rel_segments.insert(index, segments)
 
   def clone(self, name: str | None = None, origin: VectorProtocol | None = None) -> VectorPath:
     """
@@ -326,7 +329,7 @@ class VectorPath:
     :raises IndexError: If index is out of bounds
     """
     total_length = len(self.rel_segments)
-    
+
     if isinstance(key, slice):
       result: list[VectorProtocol] = self.rel_segments[key]
     elif isinstance(key, int):

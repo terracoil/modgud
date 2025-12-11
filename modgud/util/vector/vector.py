@@ -57,6 +57,10 @@ class Vector(VectorProtocol):
     """Convert to tuple. See VectorProtocol.as_tuple for details."""
     return self.x, self.y, self.z, self.w
 
+  def magnitude(self) -> float:
+    """Calculate magnitude. See VectorProtocol.magnitude for details."""
+    return (self.x**2 + self.y**2 + self.z**2 + self.w**2) ** 0.5
+
   def format(self, dim: int = 2, precision: int = 4, name: bool = True) -> str:
     """Format for display. See VectorProtocol.format for details."""
     # Extract and format only requested dimensions
@@ -181,11 +185,17 @@ class Vector(VectorProtocol):
 
   def __eq__(self, other: object) -> bool:
     """Compare by components. See VectorProtocol.__eq__ for details."""
-    # Exact equality by design; use epsilon_equal() for approximate comparison
+    from ..math_util import MathUtil
+
     result = False
     if isinstance(other, VectorProtocol):
-      # Compare all components but ignore name
-      result = self.x == other.x and self.y == other.y and self.z == other.z and self.w == other.w
+      # Compare all components using epsilon-based equality, ignoring name
+      result = (
+        MathUtil.is_equal(self.x, other.x)
+        and MathUtil.is_equal(self.y, other.y)
+        and MathUtil.is_equal(self.z, other.z)
+        and MathUtil.is_equal(self.w, other.w)
+      )
     return result
 
   def clone(

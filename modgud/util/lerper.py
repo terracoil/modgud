@@ -122,14 +122,18 @@ class Lerper[T: LerpValueType]:
     if self.stop is None:
       raise ValueError('stop value is required for interpolation')
 
+    # Determine types once
+    start_is_numeric = isinstance(self.start, (int, float))
+    pct_is_numeric = isinstance(pct, (int, float))
+    
     # Type validation with optional range checking
-    if isinstance(self.start, (int, float)):
-      if not isinstance(pct, (int, float)):
+    if start_is_numeric:
+      if not pct_is_numeric:
         raise TypeError('pct must be numeric when interpolating between numeric values')
       if clamp:
         self._check_zero_to_one(pct, 'pct')
-    elif isinstance(self.start, VectorProtocol):
-      if isinstance(pct, (int, float)):
+    else:  # start is VectorProtocol
+      if pct_is_numeric:
         if clamp:
           self._check_zero_to_one(pct, 'pct')
       elif isinstance(pct, VectorProtocol):
@@ -143,7 +147,7 @@ class Lerper[T: LerpValueType]:
 
     # Apply strategy transformation
     transformed_pct: float | VectorProtocol
-    if isinstance(pct, (int, float)):
+    if pct_is_numeric:
       transformed_pct = self._apply_strategy(float(pct))
     else:
       # Component-wise strategy application for vectors
@@ -157,19 +161,19 @@ class Lerper[T: LerpValueType]:
 
     # Type-specific interpolation
     result: T
-    if isinstance(self.start, (int, float)) and isinstance(self.stop, (int, float)):
+    if start_is_numeric:
+      # Both start and stop must be numeric (validated in __post_init__)
+      assert isinstance(self.stop, (int, float)), 'stop should be numeric when start is numeric'
       # In numeric branch, transformed_pct is always float due to logic above
       assert isinstance(transformed_pct, (int, float)), (
         'transformed_pct should be numeric in numeric branch'
       )
       interpolated = self._lerp_numeric(float(self.start), float(self.stop), float(transformed_pct))
       result = type(self.start)(interpolated) if isinstance(self.start, int) else interpolated  # type: ignore
-    elif isinstance(self.start, VectorProtocol) and isinstance(self.stop, VectorProtocol):
-      result = self._lerp_vector(self.start, self.stop, transformed_pct)  # type: ignore
     else:
-      raise TypeError(
-        f'Unsupported types for interpolation: {type(self.start)} and {type(self.stop)}'
-      )
+      # Both start and stop must be VectorProtocol (validated in __post_init__)
+      assert isinstance(self.stop, VectorProtocol), 'stop should be VectorProtocol when start is VectorProtocol'
+      result = self._lerp_vector(self.start, self.stop, transformed_pct)  # type: ignore
 
     return result
 
@@ -248,7 +252,10 @@ class Lerper[T: LerpValueType]:
 
   @classmethod
   def from_transform(
-    cls, scale: float | VectorProtocol, offset: T | None = None, strategy: LerpStrategy = LerpStrategy.LINEAR
+    cls,
+    scale: float | VectorProtocol,
+    offset: T | None = None,
+    strategy: LerpStrategy = LerpStrategy.LINEAR,
   ) -> 'Lerper[T]':
     """
     Create lerper for scaling and offset transformations without interpolation.
@@ -277,10 +284,12 @@ class Lerper[T: LerpValueType]:
 
     """
     # Use offset as start, with stop=None to indicate transform-only mode
-    start_value = offset if offset is not None else (Vector.ZERO if isinstance(scale, VectorProtocol) else 0)  # type: ignore
+    start_value = (
+      offset if offset is not None else (Vector.ZERO if isinstance(scale, VectorProtocol) else 0)
+    )  # type: ignore
     return cls(start=start_value, stop=None, strategy=strategy)  # type: ignore
 
-  def rlerp(self, pos: T) -> float:
+  def rlerp(self, pos: T) -> T:
     """
     Inverse interpolate to find percentage for given position.
 
@@ -294,34 +303,33 @@ class Lerper[T: LerpValueType]:
     if self.stop is None:
       raise ValueError('stop value is required for reverse interpolation')
 
-    # Calculate linear percentage first
-    linear_pct: float
+    pct: T
     if isinstance(self.start, (int, float)) and isinstance(self.stop, (int, float)):
-      if not isinstance(pos, (int, float)):
-        raise TypeError(f'Type mismatch or unsupported type for reverse interpolation: {type(pos)}')
-      if abs(float(self.stop) - float(self.start)) < MathUtil.EPSILON:
-        raise ValueError('origin and stop values are too close for reverse interpolation')
-      linear_pct = (float(pos) - float(self.start)) / (float(self.stop) - float(self.start))
+      # Reverse-lerp simple numeric:
+      pct = self._rlerp_numeric(pos, self.start, self.stop)
     elif (
       isinstance(self.start, VectorProtocol)
       and isinstance(self.stop, VectorProtocol)
       and isinstance(pos, VectorProtocol)
     ):
-      # Use magnitude for vector rlerp
-      start_mag = math.sqrt(self.start.x**2 + self.start.y**2 + self.start.z**2 + self.start.w**2)
-      stop_mag = math.sqrt(self.stop.x**2 + self.stop.y**2 + self.stop.z**2 + self.stop.w**2)
-      pos_mag = math.sqrt(pos.x**2 + pos.y**2 + pos.z**2 + pos.w**2)
+      # Reverse-lerp Vector:
+      if self.start == self.stop:
+        raise ValueError('origin and stop vectors are very similar, cannot interpolate')
 
-      if abs(stop_mag - start_mag) < MathUtil.EPSILON:
-        raise ValueError('origin and stop vectors have similar magnitudes')
-      linear_pct = (pos_mag - start_mag) / (stop_mag - start_mag)
+      pct = Vector(
+        x=self._rlerp_numeric(pos.x, self.start.x, self.stop.x),
+        y=self._rlerp_numeric(pos.y, self.start.y, self.stop.y),
+        z=self._rlerp_numeric(pos.z, self.start.z, self.stop.z),
+        w=self._rlerp_numeric(pos.w, self.start.w, self.stop.w),
+        name=pos.name or self.start.name or self.stop.name,
+      )
     else:
-      raise TypeError(f'Type mismatch or unsupported type for reverse interpolation: {type(pos)}')
+      raise TypeError(
+        f'Type mismatch or unsupported type for reverse interpolation: type(pos)={type(pos)} should match type(start)={type(self.start)} and type(stop)={type(self.stop)}'
+      )
 
     # Apply inverse strategy transformation
-    result = self._apply_inverse_strategy(linear_pct)
-
-    return result
+    return pct
 
   @classmethod
   def range(
@@ -352,6 +360,16 @@ class Lerper[T: LerpValueType]:
   def _lerp_numeric(cls, start: float, stop: float, pct: float) -> float:
     """Interpolate between numeric values."""
     return start + (stop - start) * pct
+
+  def _rlerp_numeric(self, pos: int | float, start: int | float, stop: int | float) -> float:
+    """Determine percentage for given position in numeric interpolation and apply inverse strategy."""
+    if not isinstance(pos, (int, float)):
+      raise TypeError(f'Type mismatch or unsupported type for reverse interpolation: {type(pos)}')
+    if MathUtil.is_equal(stop, start):
+      raise ValueError('origin and stop values are too close for reverse interpolation')
+
+    linear_pct: float = (float(pos) - float(start)) / (float(stop) - float(start))
+    return self._apply_inverse_strategy(linear_pct)
 
   @classmethod
   def _lerp_vector(

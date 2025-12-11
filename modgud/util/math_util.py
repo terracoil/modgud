@@ -63,11 +63,11 @@ class MathUtil:
     return val / float(max_val)
 
   @classmethod
-  def is_equal(cls, v: float, value: float) -> bool:
+  def is_equal(cls, v: float | int, value: float | int) -> bool:
     """Check if two floats are equal within epsilon (Anything less than EPSILON of difference)."""
     return abs(v - value) < cls.EPSILON
 
   @classmethod
-  def is_zero(cls, v: float) -> bool:
+  def is_zero(cls, v: float | int) -> bool:
     """Check if a float is close to zero.  (Anything less than EPSILON of difference)."""
     return cls.is_equal(v, 0.0)

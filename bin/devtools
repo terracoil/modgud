@@ -400,7 +400,7 @@ class FreyjaDevTools:
       """Initialize with parent FreyjaDevTools instance."""
       self.parent: 'FreyjaDevTools' = parent
 
-    def dovetail(self, slope_pct: float = 0.1, teeth_cnt: int = 3, tooth_depth_pct: float = 0.20) -> dict[str, Any]:
+    def dovetail(self, slope_pct: float = 0.1, teeth_cnt: int = 3, tooth_depth_pct: float = 0.35) -> dict[str, Any]:
       """
         Calculate the coordinates of the points to plot
         Uses 1/2 tooth each for stub ends.
@@ -449,68 +449,50 @@ class FreyjaDevTools:
         path_teeth.push_segment(add_tooth(tooth_idx=t, gap=t < teeth_cnt - 1))
       path_teeth.push_segment(Vector(0, stub_size, name="endStub"))
 
+      # Get teeth "slots": clone teeth path (rename with "slot" instead of "tooth")
+      # and reverse it so we have two mated shapes:
       path_notches: VectorPath = path_teeth.clone(name=f"{name}Slots")  # .reverse()
-
-      i:int = -1
-      skip:int = -1
-      while i < len(path_notches):
-        i = i + 1 if skip < 0 else skip
-        skip = -1
-        
-        # Bounds check after calculating new i
-        if i >= len(path_notches):
-          break
-          
-        v:VectorProtocol = path_notches[i]
+      for i in range(len(path_notches)):
+        v: VectorProtocol = path_notches[i]
         if v.name == "begStub":
           path_notches[i] = v.clone(name="endStub")
         elif v.name == "endStub":
           path_notches[i] = v.clone(name="begStub")
         elif v.name:
-          target_idx = i
-          target_name = v.name.replace("tooth", "slot")
-          for n, seg in enumerate(path_notches[i+1: len(path_notches)]):
-            actual_idx = i + 1 + n  # Convert enumeration index to actual path index
-            if seg.name:
-              skip = actual_idx
-              break
-            else:
-              target_idx = actual_idx
+          path_notches[i] = v.clone(name= v.name.replace("tooth", "slot"))
+      path_notches.reverse()
 
-          # Bounds check before assignment
-          if target_idx < len(path_notches):
-            path_notches[target_idx] = path_notches[i].clone(name=target_name)
-            path_notches[i] = path_notches[i].clone(name='')
-
-
-      print("\n\nTeeth Relative Path:")
-      for p in path_teeth.svg_path():
-        print(p)
-
-      print(f"{'*' * 50}\n\n")
 
       # Top and bottom enclosure:
-      # TODO scale teeth to tooth_depth_pct
-      path_left: VectorPath = path_teeth.clone(name=f"{name}Top", origin=Vector(0.5, 0.0))
-      path_left.push_segment(Vector(-0.5, 0, name="begEnclosure"))
-      path_left.push_segment(Vector(0, -1.0))
-      path_left.lerp_all(Vector(100, 100))
+      # Scale teeth to tooth_depth_pct
+      enclosure_pct = 1.0 - tooth_depth_pct
+      path_left: VectorPath = path_teeth.clone(name=f"{name}Left")
+      path_left.transform_all(Vector(tooth_depth_pct, 1))
+      path_left.origin=Vector(enclosure_pct, 0.0)
+      print(f"Set origin to {Vector(enclosure_pct, 0.0)}={path_left.origin} == {path_left[0]} / {path_left.rel_segments[0]}")
 
-      path_right: VectorPath = path_teeth.clone(name=f"{name}Bot", origin=Vector.ZERO)
-      path_right.reverse()
-      # path_right[0].name, path_right[-1].name = path_right[-1].name, path_right[0].name
+
+
+
+      path_left.push_segment(Vector(-enclosure_pct, 0, name="begEnclosure"))
+      path_left.push_segment(Vector(0, -1.0))
+
+
+      path_left.transform_all(Vector(100, 100))
+      print("\n\npath_left Teeth Relative Path:")
+      for p in path_left.svg_path():
+        print(p)
+      print(f"{'*' * 50}\n\n")
+
+
+      path_right: VectorPath = path_notches.clone(name=f"{name}Right")
+      path_right.transform_all(Vector(tooth_depth_pct, 1))
       path_right.push_segment(Vector(1.0, 0, name="endEnclosure"))
       path_right.push_segment(Vector(0.0, 1.0))
-      path_right.lerp_all(Vector(100, 100))
-      # print("-"*50)
-      # print(f"Path Right: {path_right}")
-      # print("-"*50)
-      # path_right.push_segment(Vector(0, -1.0))
-      # path_right.lerp_all(Vector(100, 100))
+      path_right.transform_all(Vector(100, 100))
 
       # Give teeth dimensionality:
-      path_teeth *= Vector(2.0, 1.0)
-      path_teeth.lerp_all(Vector(100, 100))
+      path_teeth.transform_all(Vector(100, 100))
 
       # path_quad = VectorPath(name=f"{name}Quads", abs_segments=path_teeth.gen_absolute_segments(), close=False)
       # for t in path_teeth.gen_absolute_segments():
@@ -545,16 +527,16 @@ class FreyjaDevTools:
     def _add_tooth(slant_diff: float, width: float, tooth_idx: int, gap: bool) -> list[VectorProtocol]:
       """ Add a single tooth segment to a path (sloping in the amount of dove diff) """
       depth_pct = 1.0
-      tooth_name = f"tooth-{tooth_idx + 1}"
+      name_base = f"tooth-{tooth_idx + 1}"
       # print(f"Adding tooth: {tooth_name}")
       tooth_segments = [
-        Vector(depth_pct, -slant_diff, name=tooth_name),
-        Vector(0, width),
-        Vector(-depth_pct, -slant_diff)
+        Vector(depth_pct, -slant_diff, name=f"{name_base}-side-a"),
+        Vector(0, width, name=f"{name_base}-end"),
+        Vector(-depth_pct, -slant_diff, name=f"{name_base}-side-b")
       ]
 
       # Return tooth segments (with gap if specified):
-      return tooth_segments + [Vector(0, width)] if gap else tooth_segments
+      return tooth_segments + [Vector(0, width, name=f"{name_base}-gap")] if gap else tooth_segments
 
     def info(self) -> None:
       """Display project environment information."""

@@ -73,6 +73,9 @@ class VectorProtocol(Protocol):
     :returns: Formatted string like 'name:[1.0, 2.0]' or '[1.0, 2.0, 0.0]'
     """
 
+  def magnitude(self) -> float:
+    """Calculate vector magnitude using Pythagorean theorem."""
+
   @classmethod
   def from_input(cls, t: Any) -> list[VectorProtocol]:
     """

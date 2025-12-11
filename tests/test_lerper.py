@@ -239,15 +239,21 @@ class TestReverseInterpolation:
     assert abs(lerper.rlerp(100.0) - 1.0) < MathUtil.EPSILON
 
   def test_vector_rlerp(self) -> None:
-    """Test reverse interpolation with vectors using magnitude."""
-    start = Vector(0, 0, 0, 0)  # magnitude 0
-    stop = Vector(3, 4, 0, 0)  # magnitude 5
+    """Test reverse interpolation with vectors using component-wise reverse interpolation."""
+    start = Vector(0, 0, 0, 0)
+    stop = Vector(6, 8, 10, 12)
     lerper = Lerper(start=start, stop=stop)
 
-    # Test with vector at midpoint magnitude (2.5)
-    mid = Vector(1.5, 2, 0, 0)  # magnitude 2.5
+    # Test with vector at midpoint
+    mid = Vector(3, 4, 5, 6)  # 50% of each component
     result = lerper.rlerp(mid)
-    assert abs(result - 0.5) < 0.01
+
+    # Should return Vector with component-wise percentages
+    assert isinstance(result, Vector)
+    assert abs(result.x - 0.5) < MathUtil.EPSILON
+    assert abs(result.y - 0.5) < MathUtil.EPSILON
+    assert abs(result.z - 0.5) < MathUtil.EPSILON
+    assert abs(result.w - 0.5) < MathUtil.EPSILON
 
   def test_rlerp_divide_by_zero(self) -> None:
     """Test rlerp with identical start and stop values."""
@@ -255,21 +261,28 @@ class TestReverseInterpolation:
     with pytest.raises(ValueError, match='too close for reverse interpolation'):
       lerper.rlerp(5.0)
 
-  def test_vector_rlerp_similar_magnitudes(self) -> None:
-    """Test vector rlerp with similar magnitudes."""
-    start = Vector(1, 0, 0, 0)
-    stop = Vector(0, 1, 0, 0)  # Same magnitude, different direction
+  def test_vector_rlerp_component_edge_cases(self) -> None:
+    """Test vector rlerp with different component values."""
+    start = Vector(1, 2, 0, 0)
+    stop = Vector(3, 6, 4, 8)
     lerper = Lerper(start=start, stop=stop)
 
-    with pytest.raises(ValueError, match='similar magnitudes'):
-      lerper.rlerp(Vector(0.5, 0.5, 0, 0))
+    # Test with various intermediate values
+    test_vector = Vector(2, 4, 2, 4)  # 50% between start and stop for each component
+    result = lerper.rlerp(test_vector)
+
+    assert isinstance(result, Vector)
+    assert abs(result.x - 0.5) < MathUtil.EPSILON  # (2-1)/(3-1) = 0.5
+    assert abs(result.y - 0.5) < MathUtil.EPSILON  # (4-2)/(6-2) = 0.5
+    assert abs(result.z - 0.5) < MathUtil.EPSILON  # (2-0)/(4-0) = 0.5
+    assert abs(result.w - 0.5) < MathUtil.EPSILON  # (4-0)/(8-0) = 0.5
 
   def test_rlerp_out_of_range(self) -> None:
     """Test rlerp with values outside range."""
     lerper = Lerper(start=0.0, stop=10.0)
-    # Should clamp to [0, 1]
-    assert lerper.rlerp(-5.0) == 0.0
-    assert lerper.rlerp(15.0) == 1.0
+    # rlerp clamps results to [0, 1] range due to _apply_inverse_strategy
+    assert abs(lerper.rlerp(-5.0) - 0.0) < MathUtil.EPSILON  # Clamped to 0.0
+    assert abs(lerper.rlerp(15.0) - 1.0) < MathUtil.EPSILON  # Clamped to 1.0
 
 
 class TestStrategiesRoundTrip:
@@ -692,19 +705,19 @@ class TestLerperScaling:
   def test_scale_numeric_uniform(self) -> None:
     """Test uniform scaling of numeric values."""
     lerper = Lerper(start=0, stop=100)
-    
+
     # Basic scaling without offset
     result = lerper.scale(10, 2.5)
     assert result == 25.0
-    
+
     # Scaling with offset
     result = lerper.scale(10, 2.5, 5)
     assert result == 30.0  # 10 * 2.5 + 5
 
   def test_scale_vector_uniform(self) -> None:
-    """Test uniform scaling of vector values.""" 
+    """Test uniform scaling of vector values."""
     lerper = Lerper(start=Vector.ZERO, stop=Vector(1, 1))
-    
+
     # Basic uniform scaling
     vec = Vector(2, 4, 6, 8)
     result = lerper.scale(vec, 0.5)
@@ -715,28 +728,28 @@ class TestLerperScaling:
   def test_scale_vector_component_wise(self) -> None:
     """Test component-wise scaling of vector values."""
     lerper = Lerper(start=Vector.ZERO, stop=Vector(1, 1))
-    
+
     # Component-wise scaling
-    vec = Vector(10, 20, 30, 40, name="test")
+    vec = Vector(10, 20, 30, 40, name='test')
     scale_vec = Vector(0.5, 2.0, 0.1, 1.0)
     result = lerper.scale(vec, scale_vec)
-    
-    assert result.x == 5.0   # 10 * 0.5
-    assert result.y == 40.0  # 20 * 2.0  
-    assert result.z == 3.0   # 30 * 0.1
+
+    assert result.x == 5.0  # 10 * 0.5
+    assert result.y == 40.0  # 20 * 2.0
+    assert result.z == 3.0  # 30 * 0.1
     assert result.w == 40.0  # 40 * 1.0
-    assert result.name == "test"
+    assert result.name == 'test'
 
   def test_scale_vector_with_offset(self) -> None:
     """Test vector scaling with offset."""
     lerper = Lerper(start=Vector.ZERO, stop=Vector(1, 1))
-    
+
     vec = Vector(5, 10, 15, 20)
     scale_vec = Vector(2, 0.5, 1, 1)
     offset_vec = Vector(10, 20, 30, 40)
-    
+
     result = lerper.scale(vec, scale_vec, offset_vec)
-    
+
     assert result.x == 20.0  # 5 * 2 + 10
     assert result.y == 25.0  # 10 * 0.5 + 20
     assert result.z == 45.0  # 15 * 1 + 30
@@ -745,23 +758,23 @@ class TestLerperScaling:
   def test_scale_type_validation(self) -> None:
     """Test type validation in scale method."""
     lerper = Lerper(start=Vector.ZERO, stop=Vector(1, 1))
-    
+
     # Invalid scale factor type for vector
     with pytest.raises(TypeError, match='scale_factor must be numeric or VectorProtocol'):
-      lerper.scale(Vector(1, 2), "invalid")  # type: ignore
+      lerper.scale(Vector(1, 2), 'invalid')  # type: ignore
 
     # Invalid value type
     with pytest.raises(TypeError, match='Unsupported type for scaling'):
-      lerper.scale("invalid", 2.0)  # type: ignore
+      lerper.scale('invalid', 2.0)  # type: ignore
 
 
 class TestLerperFromTransform:
   """Test from_transform class method functionality."""
-  
+
   def test_from_transform_basic(self) -> None:
     """Test basic from_transform creation."""
     transformer = Lerper.from_transform(scale=2.0, offset=Vector(10, 20))
-    
+
     assert transformer.start == Vector(10, 20)
     assert transformer.stop is None
     assert transformer.strategy == LerpStrategy.LINEAR
@@ -770,26 +783,22 @@ class TestLerperFromTransform:
     """Test from_transform with vector scaling."""
     scale_vec = Vector(2, 0.5, 1, 1)
     transformer = Lerper.from_transform(scale=scale_vec, offset=Vector.ZERO)
-    
+
     assert transformer.start == Vector.ZERO
     assert transformer.stop is None
 
   def test_from_transform_no_offset(self) -> None:
     """Test from_transform with no offset."""
     transformer = Lerper.from_transform(scale=3.0)
-    
+
     # Should default to appropriate zero value
     assert transformer.start == 0
     assert transformer.stop is None
 
   def test_from_transform_with_strategy(self) -> None:
     """Test from_transform with custom strategy."""
-    transformer = Lerper.from_transform(
-      scale=2.0, 
-      offset=Vector(5, 5), 
-      strategy=LerpStrategy.SINE
-    )
-    
+    transformer = Lerper.from_transform(scale=2.0, offset=Vector(5, 5), strategy=LerpStrategy.SINE)
+
     assert transformer.strategy == LerpStrategy.SINE
 
 
@@ -799,40 +808,40 @@ class TestLerperExtrapolation:
   def test_lerp_extrapolation_numeric(self) -> None:
     """Test numeric extrapolation beyond [0,1] range."""
     lerper = Lerper(start=10.0, stop=20.0)
-    
+
     # Extrapolate beyond 1.0
     result = lerper.lerp(1.5, clamp=False)
     assert result == 25.0  # 10 + (20-10) * 1.5
-    
-    # Extrapolate below 0.0  
+
+    # Extrapolate below 0.0
     result = lerper.lerp(-0.5, clamp=False)
-    assert result == 5.0   # 10 + (20-10) * -0.5
+    assert result == 5.0  # 10 + (20-10) * -0.5
 
   def test_lerp_extrapolation_vector(self) -> None:
     """Test vector extrapolation beyond [0,1] range."""
     start = Vector(0, 10)
     stop = Vector(100, 20)
     lerper = Lerper(start=start, stop=stop)
-    
+
     # Extrapolate with scalar
     result = lerper.lerp(1.2, clamp=False)
     assert result.x == 120.0  # 0 + (100-0) * 1.2
-    assert result.y == 22.0   # 10 + (20-10) * 1.2
-    
+    assert result.y == 22.0  # 10 + (20-10) * 1.2
+
     # Extrapolate with vector
     pct_vec = Vector(1.5, -0.5)
     result = lerper.lerp(pct_vec, clamp=False)
     assert result.x == 150.0  # 0 + 100 * 1.5
-    assert result.y == 5.0    # 10 + 10 * -0.5
+    assert result.y == 5.0  # 10 + 10 * -0.5
 
   def test_lerp_clamping_validation(self) -> None:
     """Test that clamping validation works as expected."""
     lerper = Lerper(start=0.0, stop=10.0)
-    
+
     # Should fail with clamp=True (default)
     with pytest.raises(ValueError, match='pct must be between 0.0 and 1.0'):
       lerper.lerp(1.5)
-    
+
     # Should succeed with clamp=False
     result = lerper.lerp(1.5, clamp=False)
     assert result == 15.0
@@ -840,13 +849,13 @@ class TestLerperExtrapolation:
   def test_vector_component_clamping_validation(self) -> None:
     """Test that vector component clamping validation works."""
     lerper = Lerper(start=Vector.ZERO, stop=Vector(10, 10))
-    
+
     # Should fail with clamp=True for out-of-range components
     invalid_pct = Vector(0.5, 1.5)  # y component out of range
     with pytest.raises(ValueError, match='pct.y must be between 0.0 and 1.0'):
       lerper.lerp(invalid_pct)
-    
+
     # Should succeed with clamp=False
     result = lerper.lerp(invalid_pct, clamp=False)
-    assert result.x == 5.0   # 0.5 * 10
+    assert result.x == 5.0  # 0.5 * 10
     assert result.y == 15.0  # 1.5 * 10
