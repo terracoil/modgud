@@ -1,38 +1,34 @@
 <shape name="slantTeethRight" h="100" w="100" aspect="variable" strokewidth="inherit">
     <background>
-        <path name="notchedLeft">
-            <move x="50.0" y="0.0"/>
+        <path name="notchedAdapter">
+            <move x="0.0" y="65.0"/>
             <!-- begStub -->
-            <line x="50.0" y="8.33"/>
+            <line x="12.5" y="65.0"/>
             <!-- tooth-1-side-a -->
-            <line x="100.0" y="8.33"/>
+            <line x="12.5" y="100.0"/>
             <!-- tooth-1-end -->
-            <line x="100.0" y="25.0"/>
+            <line x="37.5" y="100.0"/>
             <!-- tooth-1-side-b -->
-            <line x="50.0" y="25.0"/>
+            <line x="37.5" y="65.0"/>
             <!-- tooth-1-gap -->
-            <line x="50.0" y="41.67"/>
+            <line x="62.5" y="65.0"/>
             <!-- tooth-2-side-a -->
-            <line x="100.0" y="41.67"/>
+            <line x="62.5" y="100.0"/>
             <!-- tooth-2-end -->
-            <line x="100.0" y="58.33"/>
+            <line x="87.5" y="100.0"/>
             <!-- tooth-2-side-b -->
-            <line x="50.0" y="58.33"/>
-            <!-- tooth-2-gap -->
-            <line x="50.0" y="75.0"/>
-            <!-- tooth-3-side-a -->
-            <line x="100.0" y="75.0"/>
-            <!-- tooth-3-end -->
-            <line x="100.0" y="91.67"/>
-            <!-- tooth-3-side-b -->
-            <line x="50.0" y="91.67"/>
+            <line x="87.5" y="65.0"/>
             <!-- endStub -->
-            <line x="50.0" y="100.0"/>
-            <!-- begEnclosure -->
-            <line x="0.0" y="100.0"/>
-            <line x="0.0" y="-0.0"/>
+            <line x="100.0" y="65.0"/>
+            <!-- adapterEnclosureBottom -->
+            <line x="100.0" y="0.0"/>
+            <!-- adapterEnclosureLeft -->
+            <line x="10.0" y="0.0"/>
+            <!-- adapterEnclosureCorner -->
+            <line x="-0.0" y="20.0"/>
             <close/>
         </path>
+
         <fillstroke/>
     </background>
 </shape>

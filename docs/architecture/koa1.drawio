@@ -1,13 +1,13 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3">
   <diagram name="Layered Architecture" id="0">
-    <mxGraphModel dx="2620" dy="1638" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="850" background="#FFF2DC" math="0" shadow="0">
+    <mxGraphModel dx="2620" dy="788" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="850" background="#FFF2DC" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" style="" parent="0" />
-        <mxCell id="7Hk6Cir3RlUFnBtDNoPb-383" value="" style="rounded=1;whiteSpace=wrap;html=1;gradientColor=light-dark(#BFB59A,#BFB59A);fillColor=light-dark(#E8DCBA,#E8DCBA);gradientDirection=north;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;aspect=fixed;opacity=30;" parent="1" vertex="1">
+        <mxCell id="7Hk6Cir3RlUFnBtDNoPb-383" value="" style="rounded=1;whiteSpace=wrap;html=1;gradientColor=light-dark(#BFB59A,#BFB59A);fillColor=light-dark(#E8DCBA,#E8DCBA);gradientDirection=north;movable=0;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;aspect=fixed;opacity=30;arcSize=2;strokeColor=none;" parent="1" vertex="1">
           <mxGeometry width="1400" height="850" as="geometry" />
         </mxCell>
-        <mxCell id="Qe06BEYx4EeCoE_slbOP-2" value="" style="shape=hexagon;perimeter=hexagonPerimeter2;html=1;fixedSize=1;size=140;align=center;verticalAlign=top;fontColor=default;spacing=0;spacingLeft=136;spacingRight=307;rounded=0;shadow=1;dashed=0;sketch=1;jiggle=1;curveFitting=1;sketchStyle=comic;strokeColor=#96969680;strokeWidth=3;fontFamily=Architects Daughter;fontSize=18;fillColor=#DDDDDD;gradientColor=#969696;gradientDirection=west;spacingTop=2;whiteSpace=wrap;shadowOffsetX=-7;shadowOffsetY=-7;shadowBlur=7;perimeterSpacing=0;hachureGap=-1;" parent="1" vertex="1">
+        <mxCell id="Qe06BEYx4EeCoE_slbOP-2" value="" style="shape=hexagon;perimeter=hexagonPerimeter2;html=1;fixedSize=1;size=140;align=center;verticalAlign=top;fontColor=default;spacing=0;spacingLeft=136;spacingRight=307;rounded=0;shadow=1;dashed=0;sketchStyle=comic;strokeColor=#96969680;strokeWidth=3;fontFamily=Architects Daughter;fontSize=18;fillColor=#DDDDDD;gradientColor=#969696;gradientDirection=west;spacingTop=2;whiteSpace=wrap;shadowOffsetX=-7;shadowOffsetY=-7;shadowBlur=7;perimeterSpacing=0;hachureGap=-1;sketch=1;curveFitting=1;jiggle=2;" parent="1" vertex="1">
           <mxGeometry x="45" y="120" width="765" height="610" as="geometry" />
         </mxCell>
         <mxCell id="7Hk6Cir3RlUFnBtDNoPb-392" value="&lt;span style=&quot;font-weight: 700; text-wrap-mode: nowrap;&quot;&gt;&lt;font&gt;Layered Ports Architecture&lt;/font&gt;&lt;/span&gt;" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Architects Daughter;fontSize=51;spacing=0;" parent="1" vertex="1">
@@ -208,7 +208,7 @@
         <mxCell id="Qe06BEYx4EeCoE_slbOP-128" value="" style="shape=hexagon;perimeter=hexagonPerimeter2;html=1;fixedSize=1;size=140;align=center;verticalAlign=top;fontColor=default;spacing=0;spacingLeft=136;spacingRight=307;rounded=0;shadow=1;dashed=0;sketch=1;jiggle=2;curveFitting=1;sketchStyle=comic;strokeColor=light-dark(#8080804D,#8080804D);strokeWidth=4;fontFamily=Architects Daughter;fontSize=18;fillColor=#DDDDDD;gradientColor=#969696;gradientDirection=west;spacingTop=2;whiteSpace=wrap;shadowOffsetX=-7;shadowOffsetY=-7;shadowBlur=7;perimeterSpacing=8;hachureGap=-1;" parent="1" vertex="1">
           <mxGeometry x="230" y="140" width="600" height="600" as="geometry" />
         </mxCell>
-        <mxCell id="7Hk6Cir3RlUFnBtDNoPb-254" value="ArchLayers" style="locked=1;" parent="0" />
+        <mxCell id="7Hk6Cir3RlUFnBtDNoPb-254" value="ArchLayers" style="" parent="0" visible="0" />
         <mxCell id="5NpcnGMMfbPNfJmeVRa8-1" value="" style="group" parent="7Hk6Cir3RlUFnBtDNoPb-254" vertex="1" connectable="0">
           <mxGeometry x="53" y="140" width="997" height="600" as="geometry" />
         </mxCell>
@@ -321,7 +321,7 @@
             <mxPoint x="-6" y="50" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="7Hk6Cir3RlUFnBtDNoPb-538" value="Foreground" style="" parent="0" />
+        <mxCell id="7Hk6Cir3RlUFnBtDNoPb-538" value="Foreground" style="" parent="0" visible="0" />
         <mxCell id="7Hk6Cir3RlUFnBtDNoPb-539" value="" style="line;strokeWidth=1;direction=south;html=1;dashed=1;portConstraint=north;editable=1;movable=1;resizable=1;rotatable=1;deletable=1;locked=0;connectable=1;backgroundOutline=1;fixedWidth=1;fillColor=#1A1A1A;fontColor=#ffffff;strokeColor=#647687;gradientColor=default;pointerEvents=0;align=center;verticalAlign=top;fontFamily=Helvetica;fontSize=12;autosize=1;gradientDirection=radial;opacity=50;dashPattern=8 8;" parent="7Hk6Cir3RlUFnBtDNoPb-538" vertex="1">
           <mxGeometry x="2090" y="110" width="10" height="140" as="geometry" />
         </mxCell>
