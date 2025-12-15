@@ -1,7 +1,7 @@
 """Comprehensive tests for Lerper implementation."""
 
 import pytest
-from modgud.util import Lerper, LerpStrategy, Vector
+from modgud.api.geometry import Lerper, LerpStrategy, Vector
 from modgud.util.math_util import MathUtil
 
 

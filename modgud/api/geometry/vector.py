@@ -185,7 +185,7 @@ class Vector(VectorProtocol):
 
   def __eq__(self, other: object) -> bool:
     """Compare by components. See VectorProtocol.__eq__ for details."""
-    from ..math_util import MathUtil
+    from ...util.math_util import MathUtil
 
     result = False
     if isinstance(other, VectorProtocol):

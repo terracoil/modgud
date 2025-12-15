@@ -9,9 +9,9 @@ import math
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from .math_util import MathUtil
-from .vector.vector import Vector
-from .vector.vector_protocol import VectorProtocol
+from ...util.math_util import MathUtil
+from .vector import Vector
+from .vector_protocol import VectorProtocol
 
 LerpValueType = int | float | VectorProtocol
 
@@ -125,7 +125,7 @@ class Lerper[T: LerpValueType]:
     # Determine types once
     start_is_numeric = isinstance(self.start, (int, float))
     pct_is_numeric = isinstance(pct, (int, float))
-    
+
     # Type validation with optional range checking
     if start_is_numeric:
       if not pct_is_numeric:
@@ -172,7 +172,9 @@ class Lerper[T: LerpValueType]:
       result = type(self.start)(interpolated) if isinstance(self.start, int) else interpolated  # type: ignore
     else:
       # Both start and stop must be VectorProtocol (validated in __post_init__)
-      assert isinstance(self.stop, VectorProtocol), 'stop should be VectorProtocol when start is VectorProtocol'
+      assert isinstance(self.stop, VectorProtocol), (
+        'stop should be VectorProtocol when start is VectorProtocol'
+      )
       result = self._lerp_vector(self.start, self.stop, transformed_pct)  # type: ignore
 
     return result

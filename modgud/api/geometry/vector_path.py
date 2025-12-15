@@ -8,8 +8,7 @@ import textwrap
 from enum import IntEnum, StrEnum, auto
 from typing import Callable, Generator, Iterable, Sequence
 
-from modgud.util.lerper import Lerper
-
+from .lerper import Lerper
 from .vector import Vector
 from .vector_protocol import VectorProtocol
 

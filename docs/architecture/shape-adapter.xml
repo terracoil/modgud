@@ -1,4 +1,15 @@
 <shape name="slantTeethRight" h="100" w="100" aspect="variable" strokewidth="inherit">
+    <connections>
+        <constraint x="0" y="0" perimeter="1"/>
+        <constraint x="0.5" y="0" perimeter="1"/>
+        <constraint x="1" y="0" perimeter="1"/>
+        <constraint x="0" y="0.5" perimeter="1"/>
+        <constraint x="1" y="0.5" perimeter="1"/>
+        <constraint x="0" y="1" perimeter="1"/>
+        <constraint x="0.5" y="1" perimeter="1"/>
+        <constraint x="1" y="1" perimeter="1"/>
+    </connections>
+
     <background>
         <path name="notchedAdapter">
             <move x="0.0" y="65.0"/>

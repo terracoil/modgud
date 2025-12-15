@@ -7,7 +7,7 @@ import re
 from functools import lru_cache
 from typing import Any
 
-from .data_struct_util import DataStructUtil
+from ...util.data_struct_util import DataStructUtil
 
 
 class TextUtil:

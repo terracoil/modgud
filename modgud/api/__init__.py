@@ -11,45 +11,25 @@ Following KLA (Kinetic Layer Architecture) principles:
 - Pure functions and immutable objects where possible
 
 Primary modules:
-  - tools: Development and analysis utilities
+  - geometry: Mathematical and geometric utilities (Vector, Lerper, Joinery)
+  - tools: Specialized API tools (Ranger, TextUtil)
 """
 
-# Re-export commonly used tools
-from .tools import (
-  AnsiString,
-  AppLogger,
-  CommandContext,
-  ConsoleFormatter,
-  DataStructUtil,
-  DependencyAnalyzer,
-  ExecutionSpinner,
-  JsonFormatter,
-  LoggerConfig,
-  OutputCapture,
-  OutputCaptureConfig,
-  OutputFormatter,
-  Ranger,
-  TextUtil,
-  format_title_with_version,
-  get_project_version,
-)
+# Re-export from geometry
+from .geometry import Joinery, Lerper, LerpStrategy, Vector, VectorPath, VectorProtocol
+
+# Re-export from tools
+from .tools import Ranger, TextUtil
 
 __all__ = [
-  # Re-exported from tools
-  'AnsiString',
-  'AppLogger',
-  'LoggerConfig',
-  'CommandContext',
-  'ConsoleFormatter',
-  'DataStructUtil',
-  'DependencyAnalyzer',
-  'ExecutionSpinner',
-  'JsonFormatter',
-  'OutputCapture',
-  'OutputCaptureConfig',
-  'OutputFormatter',
+  # Geometry exports
+  'Joinery',
+  'Lerper',
+  'LerpStrategy',
+  'Vector',
+  'VectorPath',
+  'VectorProtocol',
+  # Tools exports
   'Ranger',
   'TextUtil',
-  'get_project_version',
-  'format_title_with_version',
 ]
