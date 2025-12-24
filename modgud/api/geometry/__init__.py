@@ -11,6 +11,7 @@ This module provides geometry-related functionality including:
 from .joinery import Joinery
 from .lerper import Lerper, LerpStrategy
 from .simplex_noise import SimplexNoise
+from .stackable_trapezoid import StackableTrapezoid
 from .vector import Vector
 from .vector_path import VectorPath
 from .vector_protocol import VectorProtocol
@@ -20,6 +21,7 @@ __all__ = [
   'Lerper',
   'LerpStrategy',
   'SimplexNoise',
+  'StackableTrapezoid',
   'Vector',
   'VectorPath',
   'VectorProtocol',

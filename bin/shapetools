@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""
+Shape Tools CLI
+Focused CLI tool for joinery operations, specifically dovetail joint calculations.
+"""
+import json
+import math
+import sys
+import tomllib
+from pathlib import Path
+from typing import Any, Dict
+
+from modgud.api.geometry import Joinery, StackableTrapezoid, Vector, VectorPath, VectorProtocol
+from modgud.util import MathUtil
+
+# Add the project root to the Python path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from freyja import FreyjaCLI
+
+
+class ShapeTools:
+  """Shape tools for joinery calculations, focused on dovetail joint operations."""
+
+  def __init__(self, verbose: bool = False, dry_run: bool = False) -> None:
+    """Initialize with optional verbose output and dry-run mode."""
+    self.verbose: bool = verbose
+    self.dry_run: bool = dry_run
+    self.colors: Dict[str, str] = {
+      'red': '\033[0;31m',
+      'green': '\033[0;32m',
+      'yellow': '\033[1;33m',
+      'blue': '\033[0;34m',
+      'nc': '\033[0m'  # No Color
+    }
+
+    self.project_src: str = self.get_project_src()
+    self.project_name: str = self.get_project_name()
+
+  @classmethod
+  def get_project_src(cls) -> str:
+    """Get pyproject source root"""
+    with open("pyproject.toml", "rb") as f:
+      proj_map = tomllib.load(f)
+
+      try:
+        proj_root: str = proj_map["tool"]["poetry"]["packages"][0]["include"]
+      except Exception as x:
+        print(f"Error getting proj_root; falling back to project_name: {x}")
+        proj_root: str = cls.get_project_name()
+
+    return proj_root
+
+  @classmethod
+  def get_project_name(cls) -> str:
+    """Get project name from pyproject.toml"""
+    with open("pyproject.toml", "rb") as f:
+      proj_map = tomllib.load(f)
+      return proj_map["project"]["name"]
+
+  class Joinery:
+    """Joinery operations for calculating joint coordinates."""
+    def __init__(self, parent) -> None:
+      """Initialize with parent ShapeTools instance."""
+      self.parent: 'ShapeTools' = parent
+
+    def dovetail(self, teeth_slope_pct: float = 0.1, teeth_cnt: int = 2, tooth_depth_pct: float = 0.35,
+                 corner_pct=0.1) -> dict[str, Any]:
+      """
+      Calculate the coordinates of dovetail joint points.
+
+      Uses the Joinery class for all calculations.
+      """
+      # Create joinery instance and calculate dovetail
+      joinery = Joinery()
+
+      shapeResult = joinery.calculate_dovetail(
+        slope_pct=teeth_slope_pct,
+        teeth_cnt=teeth_cnt,
+        tooth_depth_pct=tooth_depth_pct,
+        corner_pct=corner_pct
+      )
+
+      # Print formatted output
+      svg_left = shapeResult['left']
+      svg_right = shapeResult['right']
+      svg_teeth = shapeResult['teeth']
+
+      for k,v in shapeResult.items():
+        print(f"\n{k}: {'\n'.join(v)}\n\n")
+
+      max_len = max(len(svg_left), len(svg_right), len(svg_teeth))
+      print(f"{'Left':<40}{'Right':<40}{'Teeth':<40}")
+      for i in range(max_len):
+        lft: str = svg_left[i] if i < len(svg_left) else ''
+        rgt: str = svg_right[i] if i < len(svg_right) else ''
+        tth: str = svg_teeth[i] if i < len(svg_teeth) else ''
+        print(f"{lft:<40}{rgt:<40}{tth:<40}")
+
+      return shapeResult
+
+  class Shape:
+    def __init__(self, parent) -> None:
+        """Initialize with parent ShapeTools instance."""
+        self.parent: 'ShapeTools' = parent
+
+    def stackable_trapezoid(self, angle: float = 70, notch_height: float = 0.2, width: float = 100, height: float = 100, invert: bool = False) -> dict[str, Any]:
+      """Generate a stackable trapezoid using the proper geometry module."""
+      trapezoid = StackableTrapezoid()
+
+      trap_path:dict[str, list[str]] = trapezoid.calculate_trapezoid(
+        angle=angle,
+        notch_height=notch_height,
+        width=width,
+        height=height,
+        invert=invert
+      )
+
+      # Print formatted output
+      svg_shape = trap_path['shape']
+      print(f"\nStackable Trapezoid (angle={angle}°, stackable_pct={notch_height}):")
+      for line in svg_shape:
+        print(line)
+
+      return trap_path
+
+    def stackable_trapezoid_demo(self, count: int = 3, angle: float = 70, stackable_pct: float = 0.2, width: float = 100, height: float = 100) -> dict[str, Any]:
+      """Generate a demo of nested stackable trapezoids."""
+      trapezoid = StackableTrapezoid()
+
+      result = trapezoid.calculate_nesting_demo(
+        count=count,
+        angle=angle,
+        stackable_pct=stackable_pct,
+        width=width,
+        height=height
+      )
+
+      # Print formatted output
+      shapes = result['shapes']
+      print(f"\nStackable Trapezoid Demo ({count} shapes, angle={angle}°):")
+      for i, shape in enumerate(shapes):
+        print(f"\n--- Shape {i+1} ---")
+        for line in shape:
+          print(line)
+
+      return result
+
+if __name__ == '__main__':
+  # Create the CLI instance for Shape Tools
+  cli = FreyjaCLI(ShapeTools, title=f"{ShapeTools.get_project_name().capitalize()} Shape Tools")
+  result = cli.run()
+  sys.exit(result if isinstance(result, int) else 0)

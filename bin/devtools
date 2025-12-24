@@ -399,59 +399,7 @@ class FreyjaDevTools:
       """Initialize with parent FreyjaDevTools instance."""
       self.parent: 'FreyjaDevTools' = parent
 
-    def dovetail(self, slope_pct: float = 0.1, teeth_cnt: int = 2, tooth_depth_pct: float = 0.35,
-                 corner_pct=0.1) -> dict[str, Any]:
-      """
-      Calculate the coordinates of dovetail joint points.
-      
-      Uses the Joinery class for all calculations.
-      """
-      # Create joinery instance and calculate dovetail
-      joinery = Joinery()
-      result = joinery.calculate_dovetail(
-        slope_pct=slope_pct,
-        teeth_cnt=teeth_cnt,
-        tooth_depth_pct=tooth_depth_pct,
-        corner_pct=corner_pct
-      )
-      
-      # Print debug info
-      base_pct = 1.0 / (teeth_cnt * 2.0)
-      slant_diff = base_pct * slope_pct
-      end_width = base_pct + slant_diff
-      stub_size = end_width / 2.0
-      
-      print("Creating dovetails with: {0}".format(json.dumps({
-        'dov_diff': slant_diff,
-        'groove_width': end_width,
-        'depth_pct': 1.0,
-        'stub_size': stub_size,
-        'tooth_depth_pct': tooth_depth_pct,
-      }, indent=4)))
-      
-      # Determine joint type name
-      name = 'notched'
-      if not MathUtil.is_zero(slope_pct):
-        name = 'dovetail' if slope_pct > 0.0 else 'slanted'
-      
-      # Print formatted output
-      svg_left = result['left']
-      svg_right = result['right']
-      svg_teeth = result['teeth']
-      
-      print(f"\npath_adapter: {'\n'.join(svg_teeth)}\n\n")
-      
-      max_len = max(len(svg_left), len(svg_right), len(svg_teeth))
-      print(f"{'Left':<40}{'Right':<40}{'Teeth':<40}")
-      for i in range(max_len):
-        lft: str = svg_left[i] if i < len(svg_left) else ''
-        rgt: str = svg_right[i] if i < len(svg_right) else ''
-        tth: str = svg_teeth[i] if i < len(svg_teeth) else ''
-        print(f"{lft:<40}{rgt:<40}{tth:<40}")
-      
-      return result
-
-    # Note: _add_tooth method has been moved to Joinery class and is no longer needed here
+# Note: dovetail method has been moved to bin/shapetools and is no longer needed here
 
     def info(self) -> None:
       """Display project environment information."""

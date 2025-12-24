@@ -47,6 +47,7 @@ class TestSimplexNoiseCore:
     """Test that SimplexNoise instances are immutable."""
     noise = SimplexNoise()
 
+    # Verify that attributes on frozen dataclass cannot be changed directly:
     with pytest.raises(AttributeError):
       noise.seed = 42
 

@@ -1,0 +1,40 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.0.3 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36" version="29.0.3">
+  <diagram name="Page-1" id="mWxEpqnHthecxly5c9YZ">
+    <mxGraphModel dx="1220" dy="790" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-1" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rounded=0;shadow=0;glass=0;dashed=0;comic=0;sketchStyle=comic;pointerEvents=0;strokeColor=default;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=4;spacingRight=0;spacingTop=0;spacingBottom=0;spacing=0;arcSize=0;absoluteArcSize=0;shadowOffsetX=7;shadowOffsetY=7;shadowBlur=4;fontFamily=Architects Daughter;fontSize=12;fontColor=default;horizontal=1;fillColor=light-dark(#EE5500,#EE5500);gradientColor=#FF0000;gradientDirection=west;" vertex="1" parent="1">
+          <mxGeometry x="320" y="130" width="370" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-2" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rounded=0;shadow=0;glass=0;dashed=0;comic=0;sketchStyle=comic;pointerEvents=0;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=4;spacingRight=0;spacingTop=0;spacingBottom=0;spacing=0;arcSize=0;absoluteArcSize=0;shadowOffsetX=7;shadowOffsetY=7;shadowBlur=4;fontFamily=Architects Daughter;fontSize=12;horizontal=1;gradientDirection=west;strokeColor=default;fillColor=#fff2cc;gradientColor=#ffd966;" vertex="1" parent="1">
+          <mxGeometry x="320" y="210" width="370" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-3" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rounded=0;shadow=0;glass=0;dashed=0;comic=0;sketchStyle=comic;pointerEvents=0;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=4;spacingRight=0;spacingTop=0;spacingBottom=0;spacing=0;arcSize=0;absoluteArcSize=0;shadowOffsetX=7;shadowOffsetY=7;shadowBlur=4;fontFamily=Architects Daughter;fontSize=12;horizontal=1;gradientDirection=west;strokeColor=default;fillColor=#d5e8d4;gradientColor=#97d077;" vertex="1" parent="1">
+          <mxGeometry x="320" y="290" width="370" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-4" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rounded=0;shadow=0;glass=0;dashed=0;comic=0;sketchStyle=comic;pointerEvents=0;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=4;spacingRight=0;spacingTop=0;spacingBottom=0;spacing=0;arcSize=0;absoluteArcSize=0;shadowOffsetX=7;shadowOffsetY=7;shadowBlur=4;fontFamily=Architects Daughter;fontSize=12;horizontal=1;gradientDirection=west;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="320" y="360" width="370" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-8" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rounded=1;shadow=0;glass=0;dashed=0;comic=0;sketchStyle=comic;pointerEvents=0;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=4;spacingRight=0;spacingTop=0;spacingBottom=0;spacing=0;arcSize=0;absoluteArcSize=0;shadowOffsetX=7;shadowOffsetY=7;shadowBlur=4;fontFamily=Architects Daughter;fontSize=12;horizontal=1;gradientDirection=west;strokeColor=default;fillColor=#d5e8d4;gradientColor=#97d077;container=0;rotation=-180;" vertex="1" parent="1">
+          <mxGeometry x="750" y="130" width="370" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-9" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rounded=1;shadow=0;glass=0;dashed=0;comic=0;sketchStyle=comic;pointerEvents=0;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=4;spacingRight=0;spacingTop=0;spacingBottom=0;spacing=0;arcSize=0;absoluteArcSize=0;shadowOffsetX=7;shadowOffsetY=7;shadowBlur=4;fontFamily=Architects Daughter;fontSize=12;horizontal=1;gradientDirection=west;strokeColor=default;fillColor=#fff2cc;gradientColor=#ffd966;container=0;rotation=-180;" vertex="1" parent="1">
+          <mxGeometry x="780" y="210" width="310" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-10" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rounded=1;shadow=0;glass=0;dashed=0;comic=0;sketchStyle=comic;pointerEvents=0;strokeColor=default;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=4;spacingRight=0;spacingTop=0;spacingBottom=0;spacing=0;arcSize=0;absoluteArcSize=0;shadowOffsetX=7;shadowOffsetY=7;shadowBlur=4;fontFamily=Architects Daughter;fontSize=12;fontColor=default;horizontal=1;fillColor=light-dark(#EE5500,#EE5500);gradientColor=#FF0000;gradientDirection=west;container=0;rotation=-180;" vertex="1" parent="1">
+          <mxGeometry x="810" y="290" width="250" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-11" value="" style="shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;html=1;fixedSize=1;rounded=1;shadow=0;glass=0;dashed=0;comic=0;sketchStyle=comic;pointerEvents=0;strokeWidth=2;align=left;verticalAlign=top;spacingLeft=4;spacingRight=0;spacingTop=0;spacingBottom=0;spacing=0;arcSize=0;absoluteArcSize=0;shadowOffsetX=7;shadowOffsetY=7;shadowBlur=4;fontFamily=Architects Daughter;fontSize=12;horizontal=1;gradientDirection=west;strokeColor=none;container=0;rotation=-180;" vertex="1" parent="1">
+          <mxGeometry x="840" y="360" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-12" value="Stacked trapezoids" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Architects Daughter;fontSize=24;" vertex="1" parent="1">
+          <mxGeometry x="390" y="90" width="230" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Qn1YW8qrkbWAqKGRAxJn-13" value="Inverted stacked trapezoids" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Architects Daughter;fontSize=24;" vertex="1" parent="1">
+          <mxGeometry x="775" y="90" width="320" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

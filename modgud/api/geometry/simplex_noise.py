@@ -34,7 +34,7 @@ class SimplexNoise:
   persistence: float = 0.5
   lacunarity: float = 2.0
   amplitude: float = 1.0
-  
+
   # Private attributes for permutation tables (set in __post_init__)
   _perm: np.ndarray = field(init=False)
   _perm_mod8: np.ndarray = field(init=False)
@@ -457,7 +457,7 @@ class SimplexNoise:
     # Ensure inputs are numpy arrays
     x_coords = np.asarray(x_coords, dtype=np.float32)
     y_coords = np.asarray(y_coords, dtype=np.float32)
-    
+
     # Handle empty arrays
     if x_coords.size == 0 or y_coords.size == 0:
       return np.array([], dtype=np.float32)
@@ -467,7 +467,7 @@ class SimplexNoise:
     flat_x = x_coords.flat
     flat_y = y_coords.flat
     flat_result = result.flat
-    
+
     for i, (x_val, y_val) in enumerate(zip(flat_x, flat_y)):
       flat_result[i] = self.noise2d(float(x_val), float(y_val))
 
@@ -484,7 +484,7 @@ class SimplexNoise:
     # Ensure inputs are numpy arrays
     x_coords = np.asarray(x_coords, dtype=np.float32)
     y_coords = np.asarray(y_coords, dtype=np.float32)
-    
+
     # Handle empty arrays
     if x_coords.size == 0 or y_coords.size == 0:
       return np.array([], dtype=np.float32)
@@ -494,7 +494,7 @@ class SimplexNoise:
     flat_x = x_coords.flat
     flat_y = y_coords.flat
     flat_result = result.flat
-    
+
     for i, (x_val, y_val) in enumerate(zip(flat_x, flat_y)):
       flat_result[i] = self.fbm2d(float(x_val), float(y_val))
 

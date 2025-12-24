@@ -243,7 +243,7 @@ class VectorPath:
 
     return verb
 
-  def svg_path(self, absolute: bool = True) -> Generator[str, None, None]:
+  def svg_path(self, absolute: bool = True) -> Generator[str]:
     """
     Generate SVG path markup from vector segments.
 
