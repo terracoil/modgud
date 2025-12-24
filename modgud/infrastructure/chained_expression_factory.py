@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from ..domain.protocols import ChainableDecoratorFactoryProtocol
+from ..domain.ports import ChainableDecoratorFactoryPort
 from .chainable_expression import ChainableExpression
 
 
-class ChainedExpressionFactory(ChainableDecoratorFactoryProtocol):
+class ChainedExpressionFactory(ChainableDecoratorFactoryPort):
   """
   Factory for creating chained expression decorators and utilities.
   Provides a clean interface for functional programming patterns.

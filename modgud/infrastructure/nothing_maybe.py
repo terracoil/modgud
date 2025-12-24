@@ -7,13 +7,13 @@ following the single class per file principle.
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.maybe_protocol import MaybeProtocol
+from ..domain.ports.maybe_port import MaybePort
 
 T = TypeVar('T')
 U = TypeVar('U')
 
 
-class Nothing(MaybeProtocol[T]):
+class Nothing(MaybePort[T]):
   """Represents a Maybe that contains no value."""
 
   def __init__(self) -> None:
@@ -36,11 +36,11 @@ class Nothing(MaybeProtocol[T]):
     """Return the default value since there is no wrapped value."""
     return default
 
-  def map(self, func: Callable[[T], U]) -> MaybeProtocol[U]:
+  def map(self, func: Callable[[T], U]) -> MaybePort[U]:
     """Return Nothing unchanged."""
     return Nothing()
 
-  def and_then(self, func: Callable[[T], MaybeProtocol[U]]) -> MaybeProtocol[U]:
+  def and_then(self, func: Callable[[T], MaybePort[U]]) -> MaybePort[U]:
     """Return Nothing unchanged."""
     return Nothing()
 

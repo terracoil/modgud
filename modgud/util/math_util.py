@@ -25,7 +25,9 @@ class MathUtil:
     return val % 2 == 0
 
   @classmethod
-  def minmax_range(cls, args: list[Numeric], negative_lower: bool = False) -> tuple[Numeric, Numeric]:
+  def minmax_range(
+    cls, args: list[Numeric], negative_lower: bool = False
+  ) -> tuple[Numeric, Numeric]:
     """Return min and max of arguments with optional negative lower bound."""
     lower, upper = cls.minmax(*args)
 

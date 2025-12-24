@@ -32,12 +32,14 @@ class GuardRuntime:
         None if all guards pass, or error message string if any guard fails
 
     """
+    result = None
     for guard in guards:
       guard_result = guard(*args, **kwargs)
-      # Early exit on first failure - fail fast principle
+      # Fail fast principle
       if guard_result is not True:  # Must be exact True, not just truthy
-        return guard_result if isinstance(guard_result, str) else 'Guard clause failed'
-    return None
+        result = guard_result if isinstance(guard_result, str) else 'Guard clause failed'
+        break
+    return result
 
   @classmethod
   def handle_failure(

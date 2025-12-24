@@ -1,7 +1,7 @@
 """
-Pipeable protocol for the modgud domain layer.
+Pipeable port for the modgud domain layer.
 
-This module defines the interface for pipeable objects that support
+This module defines the port (interface) for pipeable objects that support
 functional-style pipeline operations using the | operator with partial application.
 """
 
@@ -14,15 +14,15 @@ R = TypeVar('R')
 
 
 @runtime_checkable
-class PipeableProtocol(Protocol):
+class PipeablePort(Protocol):
   """
-  Protocol for objects that support pipeline operations via | operator.
+  Port for objects that support pipeline operations via | operator.
 
-  This protocol defines the interface for pipeable objects that enable
+  This port defines the interface for pipeable objects that enable
   functional-style pipeline composition with partial application support.
   """
 
-  def __or__(self, other: Union['PipeableProtocol', Any]) -> Any:
+  def __or__(self, other: Union['PipeablePort', Any]) -> Any:
     """
     Enable func | func syntax for pipeline operations.
 
@@ -50,7 +50,7 @@ class PipeableProtocol(Protocol):
     """
     ...
 
-  def __call__(self, *args: Any, **kwargs: Any) -> Union['PipeableProtocol', Any]:
+  def __call__(self, *args: Any, **kwargs: Any) -> Union['PipeablePort', Any]:
     """
     Execute the wrapped function or create a partial application.
 
@@ -74,10 +74,10 @@ class PipeableProtocol(Protocol):
 
 
 @runtime_checkable
-class PipeableFactoryProtocol(Protocol):
+class PipeableFactoryPort(Protocol):
   """Interface for factories that create pipeable objects."""
 
-  def create_pipeable(self, func: Callable[..., Any]) -> PipeableProtocol:
+  def create_pipeable(self, func: Callable[..., Any]) -> PipeablePort:
     """
     Create a pipeable wrapper around a function.
 
@@ -85,12 +85,12 @@ class PipeableFactoryProtocol(Protocol):
         func: The function to make pipeable
 
     Returns:
-        PipeableProtocol: Pipeable wrapper around the function
+        PipeablePort: Pipeable wrapper around the function
 
     """
     ...
 
-  def pipeable_decorator(self, func: Callable[..., T]) -> PipeableProtocol:
+  def pipeable_decorator(self, func: Callable[..., T]) -> PipeablePort:
     """
     Decorator that makes functions pipeable via | operator.
 

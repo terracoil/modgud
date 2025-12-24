@@ -7,7 +7,7 @@ and performing Result operations, following the single class per file principle.
 
 from typing import Callable, TypeVar
 
-from ..domain.result_protocol import ResultProtocol as Result
+from ..domain.ports.result_port import ResultPort as Result
 from .err_result import Err
 from .ok_result import Ok
 

@@ -7,13 +7,13 @@ following the single class per file principle.
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.maybe_protocol import MaybeProtocol
+from ..domain.ports.maybe_port import MaybePort
 
 T = TypeVar('T')
 U = TypeVar('U')
 
 
-class Some(MaybeProtocol[T]):
+class Some(MaybePort[T]):
   """Represents a Maybe that contains a value."""
 
   def __init__(self, value: T) -> None:
@@ -47,11 +47,11 @@ class Some(MaybeProtocol[T]):
     """Return the wrapped value, ignoring the default."""
     return self._value
 
-  def map(self, func: Callable[[T], U]) -> MaybeProtocol[U]:
+  def map(self, func: Callable[[T], U]) -> MaybePort[U]:
     """Apply the function to the wrapped value."""
     return Some(func(self._value))
 
-  def and_then(self, func: Callable[[T], MaybeProtocol[U]]) -> MaybeProtocol[U]:
+  def and_then(self, func: Callable[[T], MaybePort[U]]) -> MaybePort[U]:
     """Apply the function to the wrapped value."""
     return func(self._value)
 

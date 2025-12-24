@@ -1,7 +1,7 @@
 """
-Decorator factory protocols for the modgud domain layer.
+Decorator factory ports for the modgud domain layer.
 
-This module defines the interfaces that decorator factories must implement,
+This module defines the ports (interfaces) that decorator factories must implement,
 allowing the app layer to depend on abstractions rather than concrete implementations.
 """
 
@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from typing import Any, Callable, Protocol, runtime_checkable
 
-from .result_protocol import ResultProtocol
+from .result_port import ResultPort
 
 
 @runtime_checkable
-class ChainableDecoratorFactoryProtocol(Protocol):
+class ChainableDecoratorFactoryPort(Protocol):
   """Interface for factories that create chainable expression decorators."""
 
   def create_decorator(self) -> Callable[[Callable], Callable]:
@@ -41,7 +41,7 @@ class ChainableDecoratorFactoryProtocol(Protocol):
 
 
 @runtime_checkable
-class SafeDecoratorFactoryProtocol(Protocol):
+class SafeDecoratorFactoryPort(Protocol):
   """Interface for factories that create safe expression decorators."""
 
   def create_decorator(
@@ -60,7 +60,7 @@ class SafeDecoratorFactoryProtocol(Protocol):
     """
     ...
 
-  def create_result(self, value: Any, is_success: bool = True) -> ResultProtocol:
+  def create_result(self, value: Any, is_success: bool = True) -> ResultPort:
     """
     Create a Result instance.
 

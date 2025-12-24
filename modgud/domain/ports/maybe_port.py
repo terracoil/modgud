@@ -1,22 +1,22 @@
 """
-MaybeProtocol for modgud domain layer.
+MaybePort for modgud domain layer.
 
-Protocol definition for Maybe types following domain-driven design
-principles. This protocol defines the interface for optional value
+Port definition for Maybe types following domain-driven design
+principles. This port defines the interface for optional value
 containers that may or may not contain a value.
 """
 
 from typing import Callable, Generic, Protocol, TypeVar
 
-__all__ = ['MaybeProtocol']
+__all__ = ['MaybePort']
 
 T = TypeVar('T')
 U = TypeVar('U')
 
 
-class MaybeProtocol(Protocol, Generic[T]):
+class MaybePort(Protocol, Generic[T]):
   """
-  Protocol for Maybe types.
+  Port for Maybe types.
 
   Maybe represents a value that may or may not exist, providing safe operations
   for working with optional values without null pointer exceptions.
@@ -51,24 +51,24 @@ class MaybeProtocol(Protocol, Generic[T]):
     """
     ...
 
-  def map(self, func: Callable[[T], U]) -> 'MaybeProtocol[U]':
+  def map(self, func: Callable[[T], U]) -> 'MaybePort[U]':
     """
     Transform the Some value using the provided function.
 
     :param func: Function to apply to the Some value
     :type func: Callable[[T], U]
     :returns: Some with transformed value if this is Some, otherwise Nothing
-    :rtype: MaybeProtocol[U]
+    :rtype: MaybePort[U]
     """
     ...
 
-  def and_then(self, func: Callable[[T], 'MaybeProtocol[U]']) -> 'MaybeProtocol[U]':
+  def and_then(self, func: Callable[[T], 'MaybePort[U]']) -> 'MaybePort[U]':
     """
     Chain Maybe operations (monadic bind).
 
     :param func: Function that takes Some value and returns a Maybe
-    :type func: Callable[[T], MaybeProtocol[U]]
+    :type func: Callable[[T], MaybePort[U]]
     :returns: Result of applying func if this is Some, otherwise Nothing
-    :rtype: MaybeProtocol[U]
+    :rtype: MaybePort[U]
     """
     ...

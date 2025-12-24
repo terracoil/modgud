@@ -94,18 +94,18 @@ class StrUtils:
     """Truncate text to max length with suffix."""
     if len(text) <= max_length:
       return text
-    return text[:max_length - len(suffix)] + suffix
+    return text[: max_length - len(suffix)] + suffix
 
   @classmethod
   def remove_prefix(cls, text: str, prefix: str) -> str:
     """Remove prefix from string if present."""
     if text.startswith(prefix):
-      return text[len(prefix):]
+      return text[len(prefix) :]
     return text
 
   @classmethod
   def remove_suffix(cls, text: str, suffix: str) -> str:
     """Remove suffix from string if present."""
     if text.endswith(suffix):
-      return text[:-len(suffix)]
+      return text[: -len(suffix)]
     return text

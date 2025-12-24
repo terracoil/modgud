@@ -1,6 +1,5 @@
 """Joinery calculations for woodworking joints like dovetails and notches."""
 
-
 from ...util.math_util import MathUtil
 from .vector import Vector
 from .vector_path import VectorPath
@@ -15,7 +14,7 @@ class Joinery:
     slope_pct: float = 0.1,
     teeth_cnt: int = 2,
     tooth_depth_pct: float = 0.35,
-    corner_pct: float = 0.1
+    corner_pct: float = 0.1,
   ) -> dict[str, list[str]]:
     """
     Calculate the coordinates of dovetail joint points.

@@ -9,7 +9,7 @@ return semantics.
 from __future__ import annotations
 
 import ast
-from typing import List, Optional, Tuple
+# Using native Python types for 3.13+ compatibility
 
 from ..domain.exceptions import (
   ExplicitReturnDisallowedError,
@@ -28,7 +28,7 @@ class _NoExplicitReturnChecker(ast.NodeVisitor):
   """
 
   def __init__(self) -> None:
-    self.found: Optional[Tuple[int, int]] = None  # (lineno, col)
+    self.found: tuple[int, int] | None = None  # (lineno, col)
 
   def visit_Return(self, node: ast.Return) -> None:
     # If we are called, it means we're at top-level (we never recurse into nested defs)
@@ -67,7 +67,7 @@ class _TailRewriter:
   def _assign(self, value: ast.expr) -> ast.Assign:
     return ast.Assign(targets=[ast.Name(id=self.result_name, ctx=ast.Store())], value=value)
 
-  def rewrite_tail_stmt(self, stmt: ast.stmt) -> List[ast.stmt]:
+  def rewrite_tail_stmt(self, stmt: ast.stmt) -> list[ast.stmt]:
     """
     Rewrite tail statement to assign to result variable.
 
@@ -126,7 +126,7 @@ class _TailRewriter:
       getattr(stmt, 'col_offset', None),
     )
 
-  def rewrite_block(self, body: List[ast.stmt]) -> List[ast.stmt]:
+  def rewrite_block(self, body: list[ast.stmt]) -> list[ast.stmt]:
     if not body:
       # Empty block yields None (mimics Python's implicit return None)
       return [self._assign(ast.Constant(value=None))]
@@ -215,7 +215,7 @@ class ImplicitReturnTransformer:
   @classmethod
   def apply_implicit_return_transform(
     cls, func_source: str, func_name: str
-  ) -> Tuple[ast.Module, str]:
+  ) -> tuple[ast.Module, str]:
     """
     Apply implicit return transformation to function source code.
 

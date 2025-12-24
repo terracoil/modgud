@@ -9,19 +9,19 @@ from __future__ import annotations
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.protocols import PipeableFactoryProtocol, PipeableProtocol
+from ..domain.ports import PipeableFactoryPort, PipeablePort
 from .pipeable_wrapper import Pipeable
 
 T = TypeVar('T')
 
 
-class PipeableFactory(PipeableFactoryProtocol):
+class PipeableFactory(PipeableFactoryPort):
   """
   Factory for creating pipeable decorators and utilities.
   Provides clean interface for functional programming patterns.
   """
 
-  def create_pipeable(self, func: Callable[..., Any]) -> PipeableProtocol:
+  def create_pipeable(self, func: Callable[..., Any]) -> PipeablePort:
     """
     Create a pipeable wrapper around a function.
 
@@ -29,7 +29,7 @@ class PipeableFactory(PipeableFactoryProtocol):
         func: The function to make pipeable
 
     Returns:
-        PipeableProtocol: Pipeable wrapper around the function
+        PipeablePort: Pipeable wrapper around the function
 
     """
     # Handle built-in types that need special treatment
@@ -44,7 +44,7 @@ class PipeableFactory(PipeableFactoryProtocol):
 
     return Pipeable(func)
 
-  def pipeable_decorator(self, func: Callable[..., T]) -> PipeableProtocol:
+  def pipeable_decorator(self, func: Callable[..., T]) -> PipeablePort:
     """
     Decorator that makes functions pipeable via | operator.
 

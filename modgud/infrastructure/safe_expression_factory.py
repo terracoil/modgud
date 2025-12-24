@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from ..domain.protocols import SafeDecoratorFactoryProtocol
-from ..domain.result_protocol import ResultProtocol
+from ..domain.ports import SafeDecoratorFactoryPort
+from ..domain.ports.result_port import ResultPort
 from .err_result import Err
 from .ok_result import Ok
 
 
-class SafeExpressionFactory(SafeDecoratorFactoryProtocol):
+class SafeExpressionFactory(SafeDecoratorFactoryPort):
   """
   Factory for creating safe expression decorators and utilities.
   Provides error-safe functional programming patterns.
@@ -41,7 +41,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryProtocol):
 
       """
 
-      def wrapper(*args, **kwargs) -> ResultProtocol:
+      def wrapper(*args, **kwargs) -> ResultPort:
         try:
           result = func(*args, **kwargs)
           if convert_none and result is None:
@@ -59,7 +59,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryProtocol):
 
     return safe_decorator
 
-  def create_result(self, value: Any, is_success: bool = True) -> ResultProtocol:
+  def create_result(self, value: Any, is_success: bool = True) -> ResultPort:
     """
     Create a Result instance (Ok or Err).
 
@@ -68,7 +68,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryProtocol):
         is_success: True for Ok, False for Err
 
     Returns:
-        ResultProtocol: Ok or Err instance
+        ResultPort: Ok or Err instance
 
     """
     return Ok(value) if is_success else Err(value)

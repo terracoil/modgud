@@ -13,7 +13,7 @@ only data structures and interface definitions.
 """
 
 # Core types
-# Domain enums
+# Domain enums (from enums package) 
 from .enums import FailureStrategy, GuardStrategy, ServiceLifetime
 
 # Domain exceptions
@@ -27,13 +27,20 @@ from .exceptions import (
   UnsupportedConstructError,
 )
 
-# Domain protocols
-from .maybe_protocol import MaybeProtocol
-
 # Message templates
 from .messages import ErrorMessages, InfoMessages
-from .pipeable_protocol import PipeableProtocol
-from .result_protocol import ResultProtocol
+
+# Domain protocols (ports) - import both new and legacy aliases
+from .protocols import (
+  # New port classes
+  MaybePort,
+  PipeablePort,
+  ResultPort,
+  # Legacy aliases
+  MaybeProtocol,
+  PipeableProtocol,
+  ResultProtocol,
+)
 from .types import FailureBehavior, FailureTypes, GuardFunction
 
 __all__ = [
@@ -49,7 +56,11 @@ __all__ = [
   'UnsupportedConstructError',
   'DependencyInjectionError',
   'ServiceNotFoundError',
-  # Protocols
+  # Ports (new)
+  'MaybePort',
+  'PipeablePort',
+  'ResultPort',
+  # Protocols (legacy aliases)
   'MaybeProtocol',
   'PipeableProtocol',
   'ResultProtocol',

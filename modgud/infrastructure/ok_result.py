@@ -7,14 +7,14 @@ following the single class per file principle.
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.result_protocol import ResultProtocol
+from ..domain.ports.result_port import ResultPort
 
 T = TypeVar('T')
 U = TypeVar('U')
 E = TypeVar('E')
 
 
-class Ok(ResultProtocol[T, E]):
+class Ok(ResultPort[T, E]):
   """Represents a successful result containing a value."""
 
   def __init__(self, value: T) -> None:
@@ -43,11 +43,11 @@ class Ok(ResultProtocol[T, E]):
     """Return the wrapped value, ignoring the default."""
     return self._value
 
-  def map(self, func: Callable[[T], U]) -> ResultProtocol[U, E]:
+  def map(self, func: Callable[[T], U]) -> ResultPort[U, E]:
     """Apply the function to the wrapped value."""
     return Ok(func(self._value))
 
-  def and_then(self, func: Callable[[T], ResultProtocol[U, E]]) -> ResultProtocol[U, E]:
+  def and_then(self, func: Callable[[T], ResultPort[U, E]]) -> ResultPort[U, E]:
     """Apply the function to the wrapped value."""
     return func(self._value)
 

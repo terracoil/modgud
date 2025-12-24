@@ -1,7 +1,6 @@
 """Tests for the StackableTrapezoid geometry generator."""
 
 import pytest
-
 from modgud.api.geometry import StackableTrapezoid
 
 

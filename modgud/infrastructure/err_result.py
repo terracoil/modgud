@@ -7,14 +7,14 @@ following the single class per file principle.
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.result_protocol import ResultProtocol
+from ..domain.ports.result_port import ResultPort
 
 T = TypeVar('T')
 U = TypeVar('U')
 E = TypeVar('E')
 
 
-class Err(ResultProtocol[T, E]):
+class Err(ResultPort[T, E]):
   """Represents a failed result containing an error value."""
 
   def __init__(self, error: E) -> None:
@@ -43,11 +43,11 @@ class Err(ResultProtocol[T, E]):
     """Return the default value since this is an error."""
     return default
 
-  def map(self, func: Callable[[T], U]) -> ResultProtocol[U, E]:
+  def map(self, func: Callable[[T], U]) -> ResultPort[U, E]:
     """Return self unchanged since this is an error."""
     return Err(self._error)
 
-  def and_then(self, func: Callable[[T], ResultProtocol[U, E]]) -> ResultProtocol[U, E]:
+  def and_then(self, func: Callable[[T], ResultPort[U, E]]) -> ResultPort[U, E]:
     """Return self unchanged since this is an error."""
     return Err(self._error)
 

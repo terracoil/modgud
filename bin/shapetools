@@ -10,7 +10,7 @@ import tomllib
 from pathlib import Path
 from typing import Any, Dict
 
-from modgud.api.geometry import Joinery, StackableTrapezoid, Vector, VectorPath, VectorProtocol
+from modgud.api.geometry import Joinery, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorProtocol
 from modgud.util import MathUtil
 
 # Add the project root to the Python path
@@ -143,6 +143,38 @@ class ShapeTools:
         print(f"\n--- Shape {i+1} ---")
         for line in shape:
           print(line)
+
+      return result
+
+    def torn_box(
+      self,
+      width: float = 100,
+      height: float = 100,
+      torn_sides: str = 'NS',
+      segments: int = 100,
+      amplitude: float = 5.0,
+      noise_scale: float = 0.1,
+      octaves: int = 3,
+      seed: int = 42,
+    ) -> dict[str, Any]:
+      """Generate a torn paper box with specified torn edges."""
+      torn_paper = TornPaper(seed=seed)
+
+      result = torn_paper.calculate_torn_paper(
+        torn_sides=torn_sides,
+        segments=segments,
+        amplitude=amplitude,
+        width=width,
+        height=height,
+        noise_scale=noise_scale,
+        octaves=octaves,
+      )
+
+      # Print formatted output
+      svg_shape = result['shape']
+      print(f"\nTorn Paper Box (sides={torn_sides}, amplitude={amplitude}, seed={seed}):")
+      for line in svg_shape:
+        print(line)
 
       return result
 

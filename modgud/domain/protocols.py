@@ -5,19 +5,36 @@ Protocol definitions (interfaces) used throughout the modgud library
 following domain-driven design principles. Protocols are preferred over
 ABC base classes for better flexibility and duck typing support.
 
-This module re-exports protocol definitions from their individual files
-following the single class per file principle.
+This module re-exports port definitions from the ports package for
+backward compatibility. New code should import from .ports directly.
 """
 
-from .decorator_factory_protocol import (
-  ChainableDecoratorFactoryProtocol,
-  SafeDecoratorFactoryProtocol,
+from .ports import (
+  ChainableDecoratorFactoryPort,
+  MaybePort,
+  PipeableFactoryPort,
+  PipeablePort,
+  ResultPort,
+  SafeDecoratorFactoryPort,
 )
-from .maybe_protocol import MaybeProtocol
-from .pipeable_protocol import PipeableFactoryProtocol, PipeableProtocol
-from .result_protocol import ResultProtocol
+
+# Legacy aliases for backward compatibility
+ChainableDecoratorFactoryProtocol = ChainableDecoratorFactoryPort
+MaybeProtocol = MaybePort
+PipeableProtocol = PipeablePort
+PipeableFactoryProtocol = PipeableFactoryPort
+ResultProtocol = ResultPort
+SafeDecoratorFactoryProtocol = SafeDecoratorFactoryPort
 
 __all__ = [
+  # New port classes
+  'ChainableDecoratorFactoryPort',
+  'MaybePort',
+  'PipeablePort',
+  'PipeableFactoryPort',
+  'ResultPort',
+  'SafeDecoratorFactoryPort',
+  # Legacy aliases (deprecated)
   'ChainableDecoratorFactoryProtocol',
   'MaybeProtocol',
   'PipeableProtocol',

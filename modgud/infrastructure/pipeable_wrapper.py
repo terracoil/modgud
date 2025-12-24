@@ -10,13 +10,13 @@ import functools
 import inspect
 from typing import Any, Callable, TypeVar, Union
 
-from ..domain.protocols import PipeableProtocol
+from ..domain.ports import PipeablePort
 
 T = TypeVar('T')
 R = TypeVar('R')
 
 
-class Pipeable(PipeableProtocol):
+class Pipeable(PipeablePort):
   """
   Wrapper that enables pipeline operations via __or__ overloading.
 

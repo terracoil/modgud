@@ -1,23 +1,23 @@
 """
-ResultProtocol for modgud domain layer.
+ResultPort for modgud domain layer.
 
-Protocol definition for Result types following domain-driven design
-principles. This protocol defines the interface for success/error
+Port definition for Result types following domain-driven design
+principles. This port defines the interface for success/error
 containers that can be either Ok or Err.
 """
 
 from typing import Callable, Generic, Protocol, TypeVar
 
-__all__ = ['ResultProtocol']
+__all__ = ['ResultPort']
 
 T = TypeVar('T')
 U = TypeVar('U')
 E = TypeVar('E')
 
 
-class ResultProtocol(Protocol, Generic[T, E]):
+class ResultPort(Protocol, Generic[T, E]):
   """
-  Protocol for Result types.
+  Port for Result types.
 
   Result represents a value that can be either a success (Ok) or an error (Err).
   This enables safe error handling without exceptions.
@@ -52,24 +52,24 @@ class ResultProtocol(Protocol, Generic[T, E]):
     """
     ...
 
-  def map(self, func: Callable[[T], U]) -> 'ResultProtocol[U, E]':
+  def map(self, func: Callable[[T], U]) -> 'ResultPort[U, E]':
     """
     Transform the Ok value using the provided function.
 
     :param func: Function to apply to the Ok value
     :type func: Callable[[T], U]
     :returns: Ok with transformed value if this is Ok, otherwise unchanged Err
-    :rtype: ResultProtocol[U, E]
+    :rtype: ResultPort[U, E]
     """
     ...
 
-  def and_then(self, func: Callable[[T], 'ResultProtocol[U, E]']) -> 'ResultProtocol[U, E]':
+  def and_then(self, func: Callable[[T], 'ResultPort[U, E]']) -> 'ResultPort[U, E]':
     """
     Chain Result operations (monadic bind).
 
     :param func: Function that takes Ok value and returns a Result
-    :type func: Callable[[T], ResultProtocol[U, E]]
+    :type func: Callable[[T], ResultPort[U, E]]
     :returns: Result of applying func if this is Ok, otherwise unchanged Err
-    :rtype: ResultProtocol[U, E]
+    :rtype: ResultPort[U, E]
     """
     ...

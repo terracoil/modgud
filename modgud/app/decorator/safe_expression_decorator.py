@@ -8,7 +8,7 @@ in Result types, following the single class per file principle.
 import functools
 from typing import Any, Callable, TypeVar
 
-from ...domain.result_protocol import ResultProtocol as Result
+from ...domain.ports.result_port import ResultPort as Result
 from ...infrastructure.err_result import Err
 from ...infrastructure.ok_result import Ok
 
