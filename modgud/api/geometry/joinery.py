@@ -1,43 +1,123 @@
 """Joinery calculations for woodworking joints like dovetails and notches."""
 
-from ...util.math_util import MathUtil
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Sequence
+
+from modgud.util.math_util import MathUtil
+
+from ...domain.ports.vector_port import VectorPort
 from .vector import Vector
 from .vector_path import VectorPath
-from .vector_protocol import VectorProtocol
 
 
+@dataclass(frozen=True)
 class Joinery:
   """Calculate coordinates for woodworking joints including dovetails, notches, and slanted joints."""
 
-  def calculate_dovetail(
-    self,
-    slope_pct: float = 0.1,
-    teeth_cnt: int = 2,
-    tooth_depth_pct: float = 0.35,
-    corner_pct: float = 0.1,
-  ) -> dict[str, list[str]]:
+  slope_pct: float = 0.1
+  teeth_cnt: int = 2
+  tooth_depth_pct: float = 0.35
+  corner_pct: float = 0.1
+
+  def __post_init__(self):
+    """Validate parameters after initialization."""
+    self._validate_parameters()
+
+  def build_shape(self) -> Sequence[VectorPort]:
     """
-    Calculate the coordinates of dovetail joint points.
+    Build the primary teeth shape for the joint.
 
-    Uses 1/2 tooth each for stub ends. Creates mating teeth and slots
-    that fit together for woodworking joints.
+    Returns the main teeth component as a sequence of vectors.
+    Use build_adapter_shape() and build_port_shape() for other components.
+    Use build_all_shapes() for backward compatibility with multi-component output.
 
-    :param slope_pct: Slope percentage for dovetail angle (-0.7 to 0.3)
-    :param teeth_cnt: Number of teeth in the joint
-    :param tooth_depth_pct: Depth of teeth as percentage (0.1 to 0.9)
-    :param corner_pct: Corner size as percentage for enclosure
+    :returns: Sequence of VectorPort objects representing the teeth
+    """
+    teeth_path = self._create_teeth_path_internal()
+
+    # Scale to final dimensions and return absolute positions
+    teeth_path.transform_all(Vector(100, 100))
+    return list(teeth_path.gen_absolute_segments())
+
+  def build_adapter_shape(self) -> Sequence[VectorPort]:
+    """
+    Build the adapter (left) enclosure shape.
+
+    :returns: Sequence of VectorPort objects representing the adapter
+    """
+    teeth_path = self._create_teeth_path_internal()
+    adapter_path = self._create_adapter_path(
+      teeth_path, self._get_joint_type_name(), self.tooth_depth_pct, self.corner_pct
+    )
+    return list(adapter_path.gen_absolute_segments())
+
+  def build_port_shape(self) -> Sequence[VectorPort]:
+    """
+    Build the port (right) enclosure shape.
+
+    :returns: Sequence of VectorPort objects representing the port
+    """
+    teeth_path = self._create_teeth_path_internal()
+    notches_path = self._create_notches_path(teeth_path, self._get_joint_type_name())
+    port_path = self._create_port_path(
+      notches_path, self._get_joint_type_name(), self.tooth_depth_pct, self.corner_pct
+    )
+    return list(port_path.gen_absolute_segments())
+
+  def build_all_shapes(self) -> dict[str, list[str]]:
+    """
+    Build all shapes in legacy dictionary format for backward compatibility.
+
     :returns: Dictionary with 'left', 'right', and 'teeth' SVG path arrays
     """
-    # Validate parameters
-    if slope_pct < -0.7 or slope_pct > 0.3:
+    # Get all three components
+    teeth_vectors = self.build_shape()
+    adapter_vectors = self.build_adapter_shape()
+    port_vectors = self.build_port_shape()
+
+    # Convert to legacy SVG format using the SVG converter
+    from .svg_converter import SVGConverter
+
+    result = {
+      'teeth': SVGConverter.vectors_to_svg(teeth_vectors, close=True, name='teeth'),
+      'left': SVGConverter.vectors_to_svg(adapter_vectors, close=True, name='adapter'),
+      'right': SVGConverter.vectors_to_svg(port_vectors, close=True, name='port'),
+    }
+
+    return result
+
+  def _validate_parameters(self) -> None:
+    """Validate all input parameters."""
+    # Validate slope_pct
+    if self.slope_pct < -0.7 or self.slope_pct > 0.3:
       raise ValueError('slope_pct should be between -70% and 30%')
 
-    if tooth_depth_pct < 0.1 or tooth_depth_pct > 0.9:
+    # Validate tooth_depth_pct
+    if self.tooth_depth_pct < 0.1 or self.tooth_depth_pct > 0.9:
       raise ValueError('tooth_depth_pct should be between 10% and 90%')
 
+    # Validate teeth_cnt
+    if self.teeth_cnt < 1 or self.teeth_cnt > 10:
+      raise ValueError('teeth_cnt should be between 1 and 10')
+
+    # Validate corner_pct
+    if self.corner_pct < 0.0 or self.corner_pct > 0.5:
+      raise ValueError('corner_pct should be between 0% and 50%')
+
+  def _get_joint_type_name(self) -> str:
+    """Get the joint type name based on slope."""
+    name = 'notched'
+    if not MathUtil.is_zero(self.slope_pct):
+      name = 'dovetail' if self.slope_pct > 0.0 else 'slanted'
+    return name
+
+  def _create_teeth_path_internal(self) -> VectorPath:
+    """Create the internal teeth path for calculations."""
     # Calculate base dimensions
-    base_pct = 1.0 / (teeth_cnt * 2.0)
-    slant_diff = base_pct * slope_pct
+    base_pct = 1.0 / (self.teeth_cnt * 2.0)
+    slant_diff = base_pct * self.slope_pct
     end_width = base_pct + slant_diff
     stub_size = end_width / 2.0
 
@@ -48,34 +128,11 @@ class Joinery:
         f'slope_pct is too great. It should be <= {max_slope:.2f} with the current parameters.'
       )
 
-    # Determine joint type name based on slope
-    name = 'notched'
-    if not MathUtil.is_zero(slope_pct):
-      name = 'dovetail' if slope_pct > 0.0 else 'slanted'
-
     # Create teeth path
-    path_teeth = self._create_teeth_path(name, teeth_cnt, stub_size, slant_diff, end_width)
+    name = self._get_joint_type_name()
+    path_teeth = self._create_teeth_path(name, self.teeth_cnt, stub_size, slant_diff, end_width)
 
-    # Create slots (mating notches) by cloning and modifying teeth
-    path_notches = self._create_notches_path(path_teeth, name)
-
-    # Create adapter enclosure (left side)
-    path_adapter = self._create_adapter_path(path_teeth, name, tooth_depth_pct, corner_pct)
-
-    # Create port enclosure (right side)
-    path_port = self._create_port_path(path_notches, name, tooth_depth_pct, corner_pct)
-
-    # Scale teeth to final dimensions
-    path_teeth.transform_all(Vector(100, 100))
-
-    # Generate SVG paths
-    result = {
-      'left': list(path_adapter.svg_path()),
-      'right': list(path_port.svg_path()),
-      'teeth': list(path_teeth.svg_path()),
-    }
-
-    return result
+    return path_teeth
 
   def _create_teeth_path(
     self, name: str, teeth_cnt: int, stub_size: float, slant_diff: float, end_width: float
@@ -162,7 +219,7 @@ class Joinery:
   @staticmethod
   def _create_tooth_segments(
     slant_diff: float, end_width: float, tooth_idx: int, gap: bool
-  ) -> list[VectorProtocol]:
+  ) -> list[VectorPort]:
     """
     Create segments for a single tooth.
 

@@ -3,22 +3,29 @@
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
+from typing import Sequence
 
+from ...domain.ports.vector_port import VectorPort
 from .vector import Vector
 from .vector_path import VectorPath
 
 
+@dataclass(frozen=True)
 class StackableTrapezoid:
   """Generate stackable trapezoid shapes with bottom notch for nesting."""
 
-  def calculate_trapezoid(
-    self,
-    angle: float = 70,
-    notch_height: float = 0.2,
-    width: float = 100,
-    height: float = 100,
-    invert: bool = False,
-  ) -> dict[str, list[str]]:
+  angle: float = 70
+  notch_height: float = 0.2
+  width: float = 100
+  height: float = 100
+  invert: bool = False
+
+  def __post_init__(self):
+    """Validate parameters after initialization."""
+    self._validate_parameters()
+
+  def build_shape(self) -> Sequence[VectorPort]:
     """
     Calculate coordinates for a symmetric stackable trapezoid with centered bottom notch.
 
@@ -27,22 +34,10 @@ class StackableTrapezoid:
     - Centered rectangular notch at bottom for stacking
     - Mathematical precision ensuring proper closure
 
-    :param angle: Side angle in degrees from vertical (10-80)
-    :param notch_height: Notch depth as percentage of height (0.1-0.4)
-    :param width: Width of trapezoid base
-    :param height: Height of trapezoid
-    :param invert: Whether to invert (notch at top)
-    :returns: Dictionary with 'shape' SVG path array
+    :returns: Sequence of VectorPort objects representing the trapezoid outline
     """
-    # Validate parameters
-    if angle < 70 or angle > 85:
-      raise ValueError('angle should be between 70° and 85°')
-
-    if notch_height < 0.1 or notch_height > 0.4:
-      raise ValueError('stackable_pct should be between 10% and 40%')
-
     # Convert to radians and calculate slope
-    rad_angle = math.radians(angle)
+    rad_angle = math.radians(self.angle)
 
     # For a trapezoid with sides at 'angle' degrees from vertical:
     # The horizontal offset per unit height is 1/tan(angle) = cot(angle)
@@ -57,12 +52,12 @@ class StackableTrapezoid:
 
     # Ensure top width is reasonable
     if top_width < 0.2:
-      raise ValueError(f'Angle {angle}° is too steep - reduces top width to {top_width:.2f}')
+      raise ValueError(f'Angle {self.angle}° is too steep - reduces top width to {top_width:.2f}')
 
     # Notch dimensions - must fit the TOP of another identical trapezoid
-    notch_depth = notch_height  # How far up the notch cuts
+    notch_depth = self.notch_height  # How far up the notch cuts
 
-    if not invert:
+    if not self.invert:
       # Normal trapezoid: notch should fit the top edge of another trapezoid
       # The top width of this trapezoid is what needs to fit in the notch
       notch_top_width = top_width  # Width at the top of the notch (narrow part)
@@ -79,9 +74,9 @@ class StackableTrapezoid:
     # Bottom: (0,1) to (1,1) with centered notch
     # Top: (slope_offset, 0) to (1-slope_offset, 0)
 
-    path_name = f'trapezoid_{angle:.0f}°_{notch_height:.1f}'
+    path_name = f'trapezoid_{self.angle:.0f}°_{self.notch_height:.1f}'
 
-    if not invert:
+    if not self.invert:
       # Build trapezoid path - start at the actual top-left corner, go clockwise
       path = VectorPath(
         name=path_name,
@@ -127,32 +122,32 @@ class StackableTrapezoid:
       )
 
     # Scale to actual dimensions
-    path.transform_all(Vector(width, height))
+    path.transform_all(Vector(self.width, self.height))
 
-    # Generate SVG paths
-    result = {'shape': list(path.svg_path())}
+    # Return the absolute vector positions
+    result = list(path.gen_absolute_segments())
 
     return result
 
-  def calculate_nesting_demo(
-    self,
-    count: int = 3,
-    angle: float = 70,
-    stackable_pct: float = 0.2,
-    width: float = 100,
-    height: float = 100,
-  ) -> dict[str, list[list[str]]]:
-    """
-    Generate a demonstration of nested trapezoids.
+  def _validate_parameters(self) -> None:
+    """Validate all input parameters."""
+    # Validate angle
+    if self.angle < 70 or self.angle > 85:
+      raise ValueError('angle should be between 70° and 85°')
 
-    Creates multiple trapezoids positioned to show how they stack together.
+    # Validate notch_height
+    if self.notch_height < 0.1 or self.notch_height > 0.4:
+      raise ValueError('notch_height should be between 10% and 40%')
+
+  def calculate_nesting_positions(self, count: int = 3) -> list[Sequence[VectorPort]]:
+    """
+    Calculate positions for nested trapezoids.
+
+    Creates multiple copies of the current trapezoid with vertical offsets
+    to demonstrate how they stack together.
 
     :param count: Number of trapezoids to generate (2-5)
-    :param angle: Side angle in degrees
-    :param stackable_pct: Depth of notch as percentage
-    :param width: Width of the base trapezoid
-    :param height: Height of the base trapezoid
-    :returns: Dictionary with 'shapes' containing list of SVG paths
+    :returns: List of vector sequences representing stacked trapezoids
     """
     if count < 2 or count > 5:
       raise ValueError('count should be between 2 and 5')
@@ -160,36 +155,23 @@ class StackableTrapezoid:
     shapes = []
 
     # Calculate offset for nesting based on the stackable percentage
-    vertical_offset = height * stackable_pct * 0.9  # 0.9 to ensure proper fit
+    vertical_offset = self.height * self.notch_height * 0.9  # 0.9 to ensure proper fit
 
     for i in range(count):
-      # All trapezoids are the same size in this stacking design
-      trap_dict = self.calculate_trapezoid(
-        angle=angle, notch_height=stackable_pct, width=width, height=height, invert=False
-      )
+      # Get the base shape
+      base_vectors = self.build_shape()
 
-      # Get the shape path
-      shape_path = trap_dict['shape']
-
-      # If this isn't the first trapezoid, we need to offset it vertically
+      # If this isn't the first trapezoid, offset it vertically
       if i > 0:
         offset = i * vertical_offset
-        # Create a new list with modified paths
-        modified_paths = []
-        for line in shape_path:
-          if '<move' in line or '<line' in line:
-            # Simple string replacement for y values
-            # This is a basic approach - in production you'd use proper XML parsing
-            import re
-
-            y_match = re.search(r'y="([^"]+)"', line)
-            if y_match:
-              y_val = float(y_match.group(1))
-              new_y = y_val - offset  # Negative because SVG y-axis goes down
-              line = re.sub(r'y="[^"]+"', f'y="{new_y}"', line)
-          modified_paths.append(line)
-        shapes.append(modified_paths)
+        # Create offset vectors
+        offset_vectors = []
+        for vector in base_vectors:
+          # Create new vector with y offset
+          offset_vector = Vector(vector.x, vector.y - offset, name=f'{vector.name}_stack{i}')
+          offset_vectors.append(offset_vector)
+        shapes.append(offset_vectors)
       else:
-        shapes.append(shape_path)
+        shapes.append(list(base_vectors))
 
-    return {'shapes': shapes}
+    return shapes

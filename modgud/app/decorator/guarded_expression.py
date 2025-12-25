@@ -8,15 +8,17 @@ This is the primary decorator for the modgud library, unifying the functionality
 of guard_clause and implicit_return into a single, composable decorator.
 """
 
-import functools
-import inspect
 import warnings
 from typing import Any, Callable
 
-from ...domain.exceptions import GuardClauseError, UnsupportedConstructError
-from ...domain.types import FailureBehavior, GuardFunction
-from ...infrastructure.guard_runtime import GuardRuntime
-from .implicit_return_decorator import implicit_return
+from modgud.domain import (
+  FailureBehavior,
+  GuardClauseError,
+  GuardFunction,
+  UnsupportedConstructError,
+)
+from modgud.domain.ports import GuardWrapperPort, ImplicitReturnTransformerPort
+from modgud.infrastructure.service_locator import get_service_locator
 
 
 class guarded_expression:
@@ -83,6 +85,11 @@ class guarded_expression:
     self.on_error = on_error
     self.log = log
 
+    # Get services from service locator
+    locator = get_service_locator()
+    self._guard_wrapper = locator.resolve(GuardWrapperPort)
+    self._implicit_transformer = locator.resolve(ImplicitReturnTransformerPort)
+
     # Issue deprecation warning if implicit_return parameter is used
     if implicit_return is not True:  # Only warn if explicitly set to False
       warnings.warn(
@@ -101,37 +108,19 @@ class guarded_expression:
     if self.implicit_return_enabled:
       try:
         # Try to apply implicit return transformation
-        transformed = implicit_return(func)
-        return self._wrap_with_guards(transformed)
-      except UnsupportedConstructError:
+        transformed = self._implicit_transformer.transform_function(func)
+        wrapped = self._guard_wrapper.wrap_function(
+          transformed, self.guards, self.on_error, self.log
+        )
+        # Mark as implicit return for compatibility
+        wrapped.__implicit_return__ = True  # type: ignore[attr-defined]
+        return wrapped
+      except (UnsupportedConstructError, ValueError, OSError):
         # Function may have already been transformed or source is unavailable
         # In either case, just wrap with guards
-        return self._wrap_with_guards(func)
+        wrapped = self._guard_wrapper.wrap_function(func, self.guards, self.on_error, self.log)
+        # Still mark as implicit return enabled even if transformation failed
+        wrapped.__implicit_return__ = True  # type: ignore[attr-defined]
+        return wrapped
     else:
-      return self._wrap_with_guards(func)
-
-  def _wrap_with_guards(self, func: Callable[..., Any]) -> Callable[..., Any]:
-    """Wrap the function with guard checking logic."""
-
-    @functools.wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-      # Check guards if any are defined
-      if self.guards:
-        error_msg = GuardRuntime.check_guards(self.guards, args, kwargs)
-        if error_msg is not None:
-          # Handle failure
-          result, exception_to_raise = GuardRuntime.handle_failure(
-            error_msg, self.on_error, func.__name__, args, kwargs, self.log
-          )
-          # Exception path prioritized for clean error propagation
-          if exception_to_raise:
-            raise exception_to_raise
-          return result
-
-      # All guards passed - execute the function
-      return func(*args, **kwargs)
-
-    # Preserve signature for IDE autocomplete and runtime introspection
-    wrapper.__signature__ = inspect.signature(func)  # type: ignore[attr-defined]
-    wrapper.__annotations__ = getattr(func, '__annotations__', {})
-    return wrapper
+      return self._guard_wrapper.wrap_function(func, self.guards, self.on_error, self.log)

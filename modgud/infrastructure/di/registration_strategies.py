@@ -7,9 +7,8 @@ patterns of service registration following the single class per file principle.
 
 from typing import List, Type, TypeVar
 
-from modgud.infrastructure.di.service_container import ServiceContainer
-
 from .interface_discovery import InterfaceDiscovery
+from .service_container import ServiceContainer
 
 T = TypeVar('T')
 

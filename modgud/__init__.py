@@ -56,7 +56,7 @@ from .app.decorator.guarded_expression import guarded_expression
 from .app.decorator.implicit_return_decorator import implicit_return
 from .app.decorator.inject_decorator import Inject
 from .app.decorator.pipeable import pipeable
-from .domain.exceptions import (
+from .domain import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
@@ -66,7 +66,7 @@ from .domain.exceptions import (
 from .infrastructure.chainable_expression import ChainableExpression
 from .infrastructure.chained_expression_factory import ChainedExpressionFactory
 from .infrastructure.common_guards import CommonGuards
-from .infrastructure.err_result import Err
+from .infrastructure.err_result import ErrResult
 from .infrastructure.guard_registry import GuardRegistry
 from .infrastructure.maybe_factory import MaybeFactory
 from .infrastructure.nothing_maybe import Nothing
@@ -115,7 +115,7 @@ __all__ = [
   'Nothing',
   'Result',
   'Ok',
-  'Err',
+  'ErrResult',
   'ChainableExpression',
   'chain',
   # Classes

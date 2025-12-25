@@ -9,7 +9,7 @@ import threading
 from collections import defaultdict
 from typing import Any, Callable, Dict, Type, TypeVar, Union
 
-from ...domain.exceptions import ServiceNotFoundError
+from modgud.domain import ServiceNotFoundError
 
 T = TypeVar('T')
 

@@ -39,7 +39,7 @@ class TestLerperConstruction:
 
   def test_invalid_start_type(self) -> None:
     """Test Lerper construction with invalid start type."""
-    with pytest.raises(TypeError, match='start must be int, float, or VectorProtocol'):
+    with pytest.raises(TypeError, match='start must be int, float, or VectorPort'):
       Lerper(start='invalid')  # type: ignore
 
   def test_mismatched_types(self) -> None:
@@ -572,7 +572,7 @@ class TestVectorPercentageValidation:
 
     # Vector lerper with invalid pct type should fail
     vector_lerper = Lerper(start=Vector(0, 0), stop=Vector(10, 10))
-    with pytest.raises(TypeError, match='pct must be numeric or VectorProtocol'):
+    with pytest.raises(TypeError, match='pct must be numeric or VectorPort'):
       vector_lerper.lerp('invalid')  # type: ignore
 
   def test_boundary_values_accepted(self) -> None:
@@ -760,7 +760,7 @@ class TestLerperScaling:
     lerper = Lerper(start=Vector.ZERO, stop=Vector(1, 1))
 
     # Invalid scale factor type for vector
-    with pytest.raises(TypeError, match='scale_factor must be numeric or VectorProtocol'):
+    with pytest.raises(TypeError, match='scale_factor must be numeric or VectorPort'):
       lerper.scale(Vector(1, 2), 'invalid')  # type: ignore
 
     # Invalid value type

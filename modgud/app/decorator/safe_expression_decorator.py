@@ -8,9 +8,9 @@ in Result types, following the single class per file principle.
 import functools
 from typing import Any, Callable, TypeVar
 
-from ...domain.ports.result_port import ResultPort as Result
-from ...infrastructure.err_result import Err
-from ...infrastructure.ok_result import Ok
+from modgud.domain.ports.result_port import ResultPort as Result
+from modgud.infrastructure.err_result import ErrResult
+from modgud.infrastructure.ok_result import Ok
 
 T = TypeVar('T')
 R = TypeVar('R')
@@ -60,12 +60,12 @@ class SafeExpressionDecorator:
         # Convert None to Err if requested
         if self.convert_none and value is None:
           error = ValueError(f'Function {func.__name__} returned None')
-          result = Err(error)
+          result = ErrResult(error)
         else:
           result = Ok(value)
 
       except self.catch_exceptions as e:
-        result = Err(e)
+        result = ErrResult(e)
 
       return result
 

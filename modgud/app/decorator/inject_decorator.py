@@ -9,8 +9,9 @@ import functools
 import inspect
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, get_type_hints
 
-from ...domain.exceptions import DependencyInjectionError, ServiceNotFoundError
-from ...infrastructure.di import EnergyInverter
+from modgud.domain import DependencyInjectionError
+from modgud.domain.ports import DependencyResolverPort, DIContainerPort
+from modgud.infrastructure.service_locator import get_service_locator
 
 T = TypeVar('T')
 F = TypeVar('F', bound=Callable[..., Any])
@@ -46,6 +47,11 @@ class Inject:
     self.interfaces = interfaces
     self.service_names = service_names or {}
     self.auto_inject = False
+
+    # Get services from service locator
+    locator = get_service_locator()
+    self._container = locator.resolve(DIContainerPort)
+    self._resolver = locator.resolve(DependencyResolverPort)
 
   @classmethod
   def auto(cls, service_names: Optional[Dict[str, str]] = None) -> 'Inject':
@@ -84,7 +90,12 @@ class Inject:
     else:
       injection_map = self._build_explicit_injection_map(sig)
 
-    # Create the wrapper function
+    # Use the resolver to create injection wrapper
+    if not injection_map:
+      # No injection needed, return original function
+      return func  # type: ignore[return-value]
+
+    # Create custom wrapper that uses our injection map
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
       # Bind arguments to get parameter names
@@ -93,15 +104,14 @@ class Inject:
 
       # Inject dependencies for missing parameters
       injected_kwargs = {}
-      di = EnergyInverter.instance()
 
       for param_name, interface_type in injection_map.items():
         if param_name not in bound_args.arguments:
           service_name = self.service_names.get(param_name, 'default')
           try:
-            injected_service = di.resolve(interface_type, service_name)
+            injected_service = self._container.resolve(interface_type, service_name)
             injected_kwargs[param_name] = injected_service
-          except ServiceNotFoundError as e:
+          except KeyError as e:
             raise DependencyInjectionError(
               f"Cannot inject dependency for parameter '{param_name}' of type {interface_type.__name__}: {e}"
             ) from e
@@ -189,14 +199,22 @@ class Inject:
         True if the type should be injected
 
     """
-    # Skip built-in types and common non-injectable types
-    if param_type in (str, int, float, bool, list, dict, tuple, set):
-      return False
+    # Delegate to detector service if available
+    try:
+      from modgud.domain.ports import InjectableDetectorPort
 
-    # Skip Optional types unless they wrap an injectable type
-    if hasattr(param_type, '__origin__'):
-      if param_type.__origin__ is type(None):  # Optional[T]
+      detector = get_service_locator().resolve(InjectableDetectorPort)
+      return detector.is_injectable(param_type)
+    except Exception:
+      # Fallback to basic checks
+      # Skip built-in types and common non-injectable types
+      if param_type in (str, int, float, bool, list, dict, tuple, set):
         return False
+
+      # Skip Optional types unless they wrap an injectable type
+      if hasattr(param_type, '__origin__'):
+        if param_type.__origin__ is type(None):  # Optional[T]
+          return False
 
     # Check if it looks like a Protocol or ABC
     if hasattr(param_type, '_is_protocol') or hasattr(param_type, '__abstractmethods__'):

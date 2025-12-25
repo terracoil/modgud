@@ -6,10 +6,10 @@ import operator
 from dataclasses import dataclass
 from typing import Any, Callable, ClassVar, Iterable
 
-from .vector_protocol import VectorProtocol
+from ...domain.ports.vector_port import VectorPort
 
 # Type aliases for flexible vector input handling
-VectorSingularType = dict[str, Any] | VectorProtocol | tuple[float]  # Single vector representation
+VectorSingularType = dict[str, Any] | VectorPort | tuple[float]  # Single vector representation
 VectorInputType = list[VectorSingularType] | VectorSingularType  # Single or multiple vectors
 
 # Sentinel object to distinguish between None and not provided
@@ -17,7 +17,7 @@ _NOT_PROVIDED = object()
 
 
 @dataclass(frozen=True)
-class Vector(VectorProtocol):
+class Vector(VectorPort):
   """
   4D Vector implementation supporting 2D/3D graphics and quaternion operations.
 
@@ -42,11 +42,11 @@ class Vector(VectorProtocol):
   ATTRS: ClassVar[tuple[str, ...]] = ('x', 'y', 'z', 'w')
 
   # Class-level constants defined after class (Python limitation)
-  ZERO: ClassVar[VectorProtocol]
-  IDENTITY: ClassVar[VectorProtocol]
+  ZERO: ClassVar[VectorPort]
+  IDENTITY: ClassVar[VectorPort]
 
   def __post_init__(self) -> None:
-    """Convert numeric inputs to float. See VectorProtocol for coordinate details."""
+    """Convert numeric inputs to float. See VectorPort for coordinate details."""
     # Frozen dataclass requires special attribute setting
     object.__setattr__(self, 'x', float(self.x))
     object.__setattr__(self, 'y', float(self.y))
@@ -54,24 +54,24 @@ class Vector(VectorProtocol):
     object.__setattr__(self, 'w', float(self.w))
 
   def as_tuple(self) -> tuple[float, float, float, float]:
-    """Convert to tuple. See VectorProtocol.as_tuple for details."""
+    """Convert to tuple. See VectorPort.as_tuple for details."""
     return self.x, self.y, self.z, self.w
 
   def magnitude(self) -> float:
-    """Calculate magnitude. See VectorProtocol.magnitude for details."""
+    """Calculate magnitude. See VectorPort.magnitude for details."""
     return (self.x**2 + self.y**2 + self.z**2 + self.w**2) ** 0.5
 
   def format(self, dim: int = 2, precision: int = 4, name: bool = True) -> str:
-    """Format for display. See VectorProtocol.format for details."""
+    """Format for display. See VectorPort.format for details."""
     # Extract and format only requested dimensions
     f_vals: list[str] = [str(round(getattr(self, a), precision)) for a in self.ATTRS[:dim]]
     nm = f'{self.name}:' if name and self.name else ''
     return f'{nm}[{", ".join(f_vals)}]'
 
   @classmethod
-  def from_input(cls, t: VectorInputType) -> list[VectorProtocol]:
-    """Parse various inputs to vectors. See VectorProtocol.from_input for details."""
-    results: list[VectorProtocol] = []
+  def from_input(cls, t: VectorInputType) -> list[VectorPort]:
+    """Parse various inputs to vectors. See VectorPort.from_input for details."""
+    results: list[VectorPort] = []
 
     if isinstance(t, dict):
       vector_from_dict = cls.from_dict(t)
@@ -82,7 +82,7 @@ class Vector(VectorProtocol):
     elif isinstance(t, list):
       # Recursively process list elements
       for item in t:
-        if isinstance(item, (dict, VectorProtocol, tuple)):
+        if isinstance(item, (dict, VectorPort, tuple)):
           results.extend(cls.from_input(item))
     elif isinstance(t, tuple):
       results.append(cls.from_tuple(t))
@@ -92,8 +92,8 @@ class Vector(VectorProtocol):
     return results
 
   @classmethod
-  def from_dict(cls, args: dict[str, Any]) -> VectorProtocol | None:
-    """Create from dict. See VectorProtocol.from_dict for details."""
+  def from_dict(cls, args: dict[str, Any]) -> VectorPort | None:
+    """Create from dict. See VectorPort.from_dict for details."""
     result = None
     if args and 'x' in args and 'y' in args:
       # Required coordinates
@@ -107,16 +107,16 @@ class Vector(VectorProtocol):
     return result
 
   @classmethod
-  def from_args(cls, args: dict[str, Any]) -> VectorProtocol | None:
+  def from_args(cls, args: dict[str, Any]) -> VectorPort | None:
     """Legacy method - delegates to from_dict."""
     return cls.from_dict(args)
 
   @classmethod
-  def from_tuple(cls, t: tuple[float, ...]) -> VectorProtocol:
-    """Create from tuple. See VectorProtocol.from_tuple for details."""
-    result: VectorProtocol
+  def from_tuple(cls, t: tuple[float, ...]) -> VectorPort:
+    """Create from tuple. See VectorPort.from_tuple for details."""
+    result: VectorPort
 
-    if isinstance(t, VectorProtocol):
+    if isinstance(t, VectorPort):
       # Already a vector, return as-is
       result = t
     elif isinstance(t, Iterable):
@@ -136,19 +136,19 @@ class Vector(VectorProtocol):
     return result
 
   @classmethod
-  def zero(cls, name: str | None = None) -> VectorProtocol:
-    """Create zero vector. See VectorProtocol.zero for details."""
+  def zero(cls, name: str | None = None) -> VectorPort:
+    """Create zero vector. See VectorPort.zero for details."""
     result = cls(0, 0, name=name) if name else cls.ZERO
     return result
 
   @classmethod
-  def identity(cls, name: str | None = None) -> VectorProtocol:
-    """Create identity vector. See VectorProtocol.identity for details."""
+  def identity(cls, name: str | None = None) -> VectorPort:
+    """Create identity vector. See VectorPort.identity for details."""
     # (1,1,0,0) preserves x,y in multiplication; consider (1,1,1,1) for full 4D
     result = cls(1, 1, name=name) if name else cls.IDENTITY
     return result
 
-  def _transform(self, other: VectorProtocol, op: Callable) -> VectorProtocol:
+  def _transform(self, other: VectorPort, op: Callable) -> VectorPort:
     """Transform using given other Vector and operation. Preserves other.name per convention."""
     return Vector(
       x=op(self.x, other.x),
@@ -158,37 +158,37 @@ class Vector(VectorProtocol):
       name=other.name,
     )
 
-  def __add__(self, other: VectorProtocol) -> VectorProtocol:
-    """Add vectors. See VectorProtocol.__add__ for details."""
+  def __add__(self, other: VectorPort) -> VectorPort:
+    """Add vectors. See VectorPort.__add__ for details."""
     return self._transform(other, operator.add)
 
-  def __mul__(self, other: VectorProtocol) -> VectorProtocol:
-    """Multiply component-wise. See VectorProtocol.__mul__ for details."""
+  def __mul__(self, other: VectorPort) -> VectorPort:
+    """Multiply component-wise. See VectorPort.__mul__ for details."""
     return self._transform(other, operator.mul)
 
-  def __sub__(self, other: VectorProtocol) -> VectorProtocol:
-    """Subtract vectors. See VectorProtocol.__sub__ for details."""
+  def __sub__(self, other: VectorPort) -> VectorPort:
+    """Subtract vectors. See VectorPort.__sub__ for details."""
     return self._transform(other, operator.sub)
 
-  def __truediv__(self, other: VectorProtocol) -> VectorProtocol:
-    """Divide component-wise. See VectorProtocol.__truediv__ for details."""
+  def __truediv__(self, other: VectorPort) -> VectorPort:
+    """Divide component-wise. See VectorPort.__truediv__ for details."""
     return self._transform(other, operator.truediv)
 
   def __repr__(self) -> str:
-    """Developer representation. See VectorProtocol.__repr__ for details."""
+    """Developer representation. See VectorPort.__repr__ for details."""
     name_part = f', name={self.name!r}' if self.name else ", name=''"
     return f'Vector(x={self.x}, y={self.y}, z={self.z}, w={self.w}{name_part})'
 
   def __str__(self) -> str:
-    """User-friendly format. See VectorProtocol.__str__ for details."""
+    """User-friendly format. See VectorPort.__str__ for details."""
     return self.format(dim=2, precision=2, name=True)
 
   def __eq__(self, other: object) -> bool:
-    """Compare by components. See VectorProtocol.__eq__ for details."""
-    from ...util.math_util import MathUtil
+    """Compare by components. See VectorPort.__eq__ for details."""
+    from modgud.util.math_util import MathUtil
 
     result = False
-    if isinstance(other, VectorProtocol):
+    if isinstance(other, VectorPort):
       # Compare all components using epsilon-based equality, ignoring name
       result = (
         MathUtil.is_equal(self.x, other.x)
@@ -205,8 +205,8 @@ class Vector(VectorProtocol):
     z: float | None = None,
     w: float | None = None,
     name: str | object = _NOT_PROVIDED,
-  ) -> VectorProtocol:
-    """Create copy with optional overrides. See VectorProtocol.clone for details."""
+  ) -> VectorPort:
+    """Create copy with optional overrides. See VectorPort.clone for details."""
     result = Vector(
       x if x is not None else self.x,
       y if y is not None else self.y,
@@ -216,8 +216,8 @@ class Vector(VectorProtocol):
     )
     return result
 
-  def inverse(self) -> VectorProtocol:
-    """Create additive inverse. See VectorProtocol.inverse for details."""
+  def inverse(self) -> VectorPort:
+    """Create additive inverse. See VectorPort.inverse for details."""
     result = Vector(
       x=-self.x,
       y=-self.y,

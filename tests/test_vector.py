@@ -1,7 +1,7 @@
 """Comprehensive tests for Vector implementation."""
 
 import pytest
-from modgud.api.geometry import Vector, VectorProtocol
+from modgud.api.geometry import Vector, VectorPort
 
 
 class TestVectorConstruction:
@@ -51,7 +51,7 @@ class TestVectorProperties:
   """Test Vector property access and protocol compliance."""
 
   def test_protocol_compliance(self) -> None:
-    """Test that Vector satisfies VectorProtocol protocol."""
+    """Test that Vector satisfies VectorPort protocol."""
     vector = Vector(1.0, 2.0, 3.0, 4.0)
 
     # Protocol requires these properties to exist and return float
@@ -618,12 +618,12 @@ class TestVectorClone:
     assert cloned.w == 4.5
 
   def test_clone_returns_vector_protocol(self) -> None:
-    """Test clone returns object satisfying VectorProtocol."""
+    """Test clone returns object satisfying VectorPort."""
     original = Vector(1.0, 2.0, 3.0, 4.0)
     cloned = original.clone(x=10.0)
 
     # Should satisfy protocol
-    assert isinstance(cloned, VectorProtocol)
+    assert isinstance(cloned, VectorPort)
     assert hasattr(cloned, 'x')
     assert hasattr(cloned, 'y')
     assert hasattr(cloned, 'z')
@@ -755,12 +755,12 @@ class TestVectorInverse:
     assert inverted.w == 0.0
 
   def test_inverse_returns_vector_protocol(self) -> None:
-    """Test inverse returns object satisfying VectorProtocol."""
+    """Test inverse returns object satisfying VectorPort."""
     original = Vector(1.0, 2.0)
     inverted = original.inverse()
 
     # Should satisfy protocol
-    assert isinstance(inverted, VectorProtocol)
+    assert isinstance(inverted, VectorPort)
     assert hasattr(inverted, 'x')
     assert hasattr(inverted, 'y')
     assert hasattr(inverted, 'z')
@@ -791,14 +791,14 @@ class TestVectorInverse:
 
 
 class TestProtocolSatisfaction:
-  """Test that Vector satisfies VectorProtocol protocol."""
+  """Test that Vector satisfies VectorPort protocol."""
 
   def test_satisfies_protocol(self) -> None:
-    """Test that Vector instances can be used where VectorProtocol is expected."""
+    """Test that Vector instances can be used where VectorPort is expected."""
     vector = Vector(1.0, 2.0, 3.0, 4.0)
 
     # This should not raise any type checking errors
-    def use_float_vector_port(fvp: VectorProtocol) -> tuple[float, float, float, float]:
+    def use_float_vector_port(fvp: VectorPort) -> tuple[float, float, float, float]:
       return (fvp.x, fvp.y, fvp.z, fvp.w)
 
     result = use_float_vector_port(vector)

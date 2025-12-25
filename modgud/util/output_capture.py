@@ -1,4 +1,5 @@
-"""Output capture utilities for command execution.
+"""
+Output capture utilities for command execution.
 
 This module re-exports output capture classes from their individual files
 following the single class per file principle.

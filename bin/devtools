@@ -19,7 +19,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any, Dict, List, Optional, Union
 
-from modgud.api.geometry import Joinery, Vector, VectorPath, VectorProtocol
+from modgud.api.geometry import Joinery, Vector, VectorPath, VectorPort
 from modgud.util import MathUtil
 
 # Add the project root to the Python path

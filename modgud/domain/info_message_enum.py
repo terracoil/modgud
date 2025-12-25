@@ -6,10 +6,12 @@ principles. The domain layer is passive and contains no business logic
 - only message template definitions.
 """
 
-__all__ = ['InfoMessages']
+from enum import StrEnum
+
+__all__ = ['InfoMessageEnum']
 
 
-class InfoMessages:
+class InfoMessageEnum(StrEnum):
   """Common informational message templates."""
 
   # Version control messages

@@ -9,9 +9,9 @@ return semantics.
 from __future__ import annotations
 
 import ast
-# Using native Python types for 3.13+ compatibility
 
-from ..domain.exceptions import (
+# Using native Python types for 3.13+ compatibility
+from ..domain import (
   ExplicitReturnDisallowedError,
   MissingImplicitReturnError,
   UnsupportedConstructError,

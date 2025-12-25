@@ -1,4 +1,5 @@
-"""Text-based spinner with status display for command execution.
+"""
+Text-based spinner with status display for command execution.
 
 This module re-exports spinner classes from their individual files
 following the single class per file principle.

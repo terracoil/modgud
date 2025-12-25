@@ -13,8 +13,11 @@ only data structures and interface definitions.
 """
 
 # Core types
-# Domain enums (from enums package) 
+# Domain enums (from enums package)
 from .enums import FailureStrategy, GuardStrategy, ServiceLifetime
+
+# Message templates
+from .error_messages import ErrorMessages
 
 # Domain exceptions
 from .exceptions import (
@@ -26,19 +29,17 @@ from .exceptions import (
   ServiceNotFoundError,
   UnsupportedConstructError,
 )
-
-# Message templates
-from .messages import ErrorMessages, InfoMessages
+from .info_message_enum import InfoMessageEnum
 
 # Domain protocols (ports) - import both new and legacy aliases
 from .protocols import (
   # New port classes
   MaybePort,
-  PipeablePort,
-  ResultPort,
   # Legacy aliases
   MaybeProtocol,
+  PipeablePort,
   PipeableProtocol,
+  ResultPort,
   ResultProtocol,
 )
 from .types import FailureBehavior, FailureTypes, GuardFunction
@@ -70,5 +71,5 @@ __all__ = [
   'ServiceLifetime',
   # Messages
   'ErrorMessages',
-  'InfoMessages',
+  'InfoMessageEnum',
 ]

@@ -5,6 +5,12 @@ This sub-package contains all decorator implementations for modgud's
 expression-oriented features.
 """
 
+# Import bootstrap to ensure services are configured
+from ..bootstrap import configure_dependencies
+
+# Configure dependencies before importing decorators
+configure_dependencies()
+
 from .chained_expression_decorator import ChainedExpressionDecorator
 from .guarded_expression import guarded_expression
 from .implicit_return_decorator import implicit_return

@@ -9,11 +9,12 @@ import math
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from ...util.math_util import MathUtil
-from .vector import Vector
-from .vector_protocol import VectorProtocol
+from modgud.util.math_util import MathUtil
 
-LerpValueType = int | float | VectorProtocol
+from ...domain.ports.vector_port import VectorPort
+from .vector import Vector
+
+LerpValueType = int | float | VectorPort
 
 
 class LerpStrategy(Enum):
@@ -32,7 +33,7 @@ class Lerper[T: LerpValueType]:
   """
   Generic interpolation between two values.
 
-  Supports numeric types (int, float) and VectorProtocol objects with
+  Supports numeric types (int, float) and VectorPort objects with
   various interpolation strategies for different animation curves.
   """
 
@@ -42,8 +43,8 @@ class Lerper[T: LerpValueType]:
 
   def __post_init__(self) -> None:
     """Validate lerper configuration after initialization."""
-    if not isinstance(self.start, (int, float, VectorProtocol)):
-      raise TypeError(f'start must be int, float, or VectorProtocol, got {type(self.start)}')
+    if not isinstance(self.start, (int, float, VectorPort)):
+      raise TypeError(f'start must be int, float, or VectorPort, got {type(self.start)}')
 
     if self.stop is not None:
       if type(self.start) is not type(self.stop):
@@ -89,7 +90,7 @@ class Lerper[T: LerpValueType]:
 
     return MathUtil.clamp(result, 0.0, 1.0)
 
-  def lerp(self, pct: float | VectorProtocol, clamp: bool = True) -> T:
+  def lerp(self, pct: float | VectorPort, clamp: bool = True) -> T:
     """
     Interpolate between start and stop values with optional extrapolation.
 
@@ -97,7 +98,7 @@ class Lerper[T: LerpValueType]:
     (using VectorProtocol) for granular control over each vector component.
 
     :param pct: Interpolation percentage or component-wise percentages (VectorProtocol)
-    :type pct: float | VectorProtocol
+    :type pct: float | VectorPort
     :param clamp: If True, clamp pct to [0,1] range. If False, allow extrapolation beyond range
     :type clamp: bool
     :returns: Interpolated value
@@ -132,21 +133,21 @@ class Lerper[T: LerpValueType]:
         raise TypeError('pct must be numeric when interpolating between numeric values')
       if clamp:
         self._check_zero_to_one(pct, 'pct')
-    else:  # start is VectorProtocol
+    else:  # start is VectorPort
       if pct_is_numeric:
         if clamp:
           self._check_zero_to_one(pct, 'pct')
-      elif isinstance(pct, VectorProtocol):
+      elif isinstance(pct, VectorPort):
         if clamp:
           # Validate each component is in [0, 1] range only if clamping
           for component in ['x', 'y', 'z', 'w']:
             comp_val = getattr(pct, component)
             self._check_zero_to_one(comp_val, f'pct.{component}')
       else:
-        raise TypeError('pct must be numeric or VectorProtocol when interpolating between vectors')
+        raise TypeError('pct must be numeric or VectorPort when interpolating between vectors')
 
     # Apply strategy transformation
-    transformed_pct: float | VectorProtocol
+    transformed_pct: float | VectorPort
     if pct_is_numeric:
       transformed_pct = self._apply_strategy(float(pct))
     else:
@@ -171,15 +172,13 @@ class Lerper[T: LerpValueType]:
       interpolated = self._lerp_numeric(float(self.start), float(self.stop), float(transformed_pct))
       result = type(self.start)(interpolated) if isinstance(self.start, int) else interpolated  # type: ignore
     else:
-      # Both start and stop must be VectorProtocol (validated in __post_init__)
-      assert isinstance(self.stop, VectorProtocol), (
-        'stop should be VectorProtocol when start is VectorProtocol'
-      )
+      # Both start and stop must be VectorPort (validated in __post_init__)
+      assert isinstance(self.stop, VectorPort), 'stop should be VectorPort when start is VectorPort'
       result = self._lerp_vector(self.start, self.stop, transformed_pct)  # type: ignore
 
     return result
 
-  def scale(self, value: T, scale_factor: float | VectorProtocol, offset: T | None = None) -> T:
+  def scale(self, value: T, scale_factor: float | VectorPort, offset: T | None = None) -> T:
     """
     Apply scaling and optional offset transformation to a value.
 
@@ -189,7 +188,7 @@ class Lerper[T: LerpValueType]:
     :param value: Value to transform
     :type value: T
     :param scale_factor: Scaling factor (uniform or component-wise)
-    :type scale_factor: float | VectorProtocol
+    :type scale_factor: float | VectorPort
     :param offset: Optional offset to add after scaling
     :type offset: T | None
     :returns: Transformed value
@@ -223,7 +222,7 @@ class Lerper[T: LerpValueType]:
       result = scaled + float(offset) if offset is not None else scaled
       return type(value)(result) if isinstance(value, int) else result  # type: ignore
 
-    elif isinstance(value, VectorProtocol):
+    elif isinstance(value, VectorPort):
       # Vector scaling - support both uniform and component-wise
       if isinstance(scale_factor, (int, float)):
         # Uniform scaling
@@ -232,14 +231,14 @@ class Lerper[T: LerpValueType]:
         scaled_y = value.y * scale_float
         scaled_z = value.z * scale_float
         scaled_w = value.w * scale_float
-      elif isinstance(scale_factor, VectorProtocol):
+      elif isinstance(scale_factor, VectorPort):
         # Component-wise scaling
         scaled_x = value.x * scale_factor.x
         scaled_y = value.y * scale_factor.y
         scaled_z = value.z * scale_factor.z
         scaled_w = value.w * scale_factor.w
       else:
-        raise TypeError('scale_factor must be numeric or VectorProtocol when scaling vectors')
+        raise TypeError('scale_factor must be numeric or VectorPort when scaling vectors')
 
       # Apply offset if provided
       final_x = scaled_x + (offset.x if offset else 0)
@@ -255,7 +254,7 @@ class Lerper[T: LerpValueType]:
   @classmethod
   def from_transform(
     cls,
-    scale: float | VectorProtocol,
+    scale: float | VectorPort,
     offset: T | None = None,
     strategy: LerpStrategy = LerpStrategy.LINEAR,
   ) -> 'Lerper[T]':
@@ -267,7 +266,7 @@ class Lerper[T: LerpValueType]:
     transformation-only mode.
 
     :param scale: Scaling factor (uniform or component-wise)
-    :type scale: float | VectorProtocol
+    :type scale: float | VectorPort
     :param offset: Optional offset base value
     :type offset: T | None
     :param strategy: Interpolation strategy (mostly for consistency, limited use in transform mode)
@@ -287,7 +286,7 @@ class Lerper[T: LerpValueType]:
     """
     # Use offset as start, with stop=None to indicate transform-only mode
     start_value = (
-      offset if offset is not None else (Vector.ZERO if isinstance(scale, VectorProtocol) else 0)
+      offset if offset is not None else (Vector.ZERO if isinstance(scale, VectorPort) else 0)
     )  # type: ignore
     return cls(start=start_value, stop=None, strategy=strategy)  # type: ignore
 
@@ -310,9 +309,9 @@ class Lerper[T: LerpValueType]:
       # Reverse-lerp simple numeric:
       pct = self._rlerp_numeric(pos, self.start, self.stop)
     elif (
-      isinstance(self.start, VectorProtocol)
-      and isinstance(self.stop, VectorProtocol)
-      and isinstance(pos, VectorProtocol)
+      isinstance(self.start, VectorPort)
+      and isinstance(self.stop, VectorPort)
+      and isinstance(pos, VectorPort)
     ):
       # Reverse-lerp Vector:
       if self.start == self.stop:
@@ -374,15 +373,13 @@ class Lerper[T: LerpValueType]:
     return self._apply_inverse_strategy(linear_pct)
 
   @classmethod
-  def _lerp_vector(
-    cls, start: VectorProtocol, stop: VectorProtocol, pct: float | VectorProtocol
-  ) -> VectorProtocol:
+  def _lerp_vector(cls, start: VectorPort, stop: VectorPort, pct: float | VectorPort) -> VectorPort:
     """
     Interpolate between vector values with scalar or vector percentage.
 
     :param start: Starting vector
     :param stop: Ending vector
-    :param pct: Interpolation percentage (float) or component-wise percentages (VectorProtocol)
+    :param pct: Interpolation percentage (float) or component-wise percentages (VectorPort)
     :returns: Interpolated vector
     """
     if isinstance(pct, (int, float)):

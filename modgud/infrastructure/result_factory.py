@@ -8,7 +8,7 @@ and performing Result operations, following the single class per file principle.
 from typing import Callable, TypeVar
 
 from ..domain.ports.result_port import ResultPort as Result
-from .err_result import Err
+from .err_result import ErrResult
 from .ok_result import Ok
 
 T = TypeVar('T')
@@ -49,7 +49,7 @@ class ResultFactory:
         Err result containing the error
 
     """
-    return Err(error)
+    return ErrResult(error)
 
   @staticmethod
   def from_exception(func: Callable[[], T]) -> Result[T, Exception]:
@@ -68,7 +68,7 @@ class ResultFactory:
       value = func()
       result = Ok(value)
     except Exception as e:
-      result = Err(e)
+      result = ErrResult(e)
     return result
 
   @staticmethod
@@ -88,5 +88,5 @@ class ResultFactory:
     if value is not None:
       result = Ok(value)
     else:
-      result = Err(error_message)
+      result = ErrResult(error_message)
     return result

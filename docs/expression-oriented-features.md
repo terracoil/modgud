@@ -23,7 +23,7 @@
 - **`CommonGuards` class**: ✅ Pre-built validators (not_none, positive, in_range, type_check, matches_pattern, not_empty)  
 - **`@safe_expression` decorator**: ✅ Automatic Result wrapping for exception handling
 - **`@chained_expression` decorator**: ✅ Fluent interfaces with method chaining
-- **`Maybe`/`Result` types**: ✅ Full monadic operations with `Some`/`Nothing`, `Ok`/`Err`
+- **`Maybe`/`Result` types**: ✅ Full monadic operations with `Some`/`Nothing`, `Ok`/`ErrResult`
 - **`@Inject` decorator**: ✅ Automatic dependency injection
 - **`@implicit_return` decorator**: ✅ Standalone implicit return transformation
 - **`@pipeable` decorator**: ✅ Functional pipeline composition with `|` operator
@@ -48,7 +48,7 @@ def process(x):
 # Safe error handling with Result types
 @safe_expression
 def safe_divide(a, b):
-    return a / b  # Wrapped in Ok(result) or Err(exception)
+    return a / b  # Wrapped in Ok(result) or ErrResult(exception)
 
 # Method chaining with fluent interfaces
 result = chain(42).map(lambda x: x * 2).filter(lambda x: x > 50).unwrap()
@@ -173,28 +173,33 @@ Foundation of type-safe error handling without exceptions. **Maybe monad** repre
 
 ```python
 # ✅ IMPLEMENTED - Current modgud Maybe/Option and Result types
-from modgud import Maybe, Result, Some, Nothing, Ok, Err
+from modgud import Maybe, Result, Some, Nothing, Ok, ErrResult
 
 # Maybe types - handle optional values safely
 user = Maybe.from_value(fetch_user_by_id(123))  # Some(user) or Nothing()
 email = Maybe.some("user@example.com")
 empty = Maybe.nothing()
 
+
 # Result types - railway-oriented programming  
 @safe_expression
 def safe_divide(a, b):
-    return a / b  # Automatically wrapped in Ok(result) or Err(exception)
+  return a / b  # Automatically wrapped in Ok(result) or ErrResult(exception)
+
 
 # Direct Result creation
 success = Result.ok("Success!")
 failure = Result.err("Something went wrong")
 
+
 # Pattern matching integration (Python 3.10+)
 @guarded_expression
 def handle_result(result):
-    match result:
-        case Ok(value): f"Success: {value}"
-        case Err(error): f"Error: {error}"
+  match result:
+    case Ok(value):
+      f"Success: {value}"
+    case ErrResult(error):
+      f"Error: {error}"
 ```
 
 ### ✅ **Composable Monadic Operations** (IMPLEMENTED!)
@@ -220,7 +225,7 @@ def process_data(input_data):
 
 # Chaining with and_then for monadic composition
 def safe_divide(a, b):
-    return Ok(a).and_then(lambda x: Ok(x / b) if b != 0 else Err("Division by zero"))
+    return Ok(a).and_then(lambda x: Ok(x / b) if b != 0 else ErrResult("Division by zero"))
 ```
 
 ### ❌ **Do-Notation / Computation Expressions**
@@ -729,25 +734,27 @@ Wrap exception-prone code in expressions returning Result types for functional e
 
 ```python
 # ❌ NOT IMPLEMENTED - Proposed try expressions
-from modgud import try_expr, Ok, Err
+from modgud import try_expr, Ok, ErrResult
+
 
 @guarded_expression
 def safe_parse_int(value):
-    try_expr(lambda: int(value)) \
-        .map(lambda x: x * 2) \
-        .fold(
-            on_ok=lambda result: f"Success: {result}",
-            on_error=lambda error: f"Parse error: {error}"
-        )
+  try_expr(lambda: int(value))
+    .map(lambda x: x * 2)
+    .fold(
+    on_ok=lambda result: f"Success: {result}",
+    on_error=lambda error: f"Parse error: {error}"
+  )
+
 
 # Chaining multiple try operations
 @guarded_expression
 def safe_divide_and_format(a_str, b_str):
-    try_expr(lambda: int(a_str)) \
-        .bind(lambda a: try_expr(lambda: int(b_str)).map(lambda b: (a, b))) \
-        .bind(lambda pair: try_expr(lambda: pair[0] / pair[1]) if pair[1] != 0 else Err("Division by zero")) \
-        .map(lambda result: f"Result: {result:.2f}") \
-        .unwrap_or("Calculation failed")
+  try_expr(lambda: int(a_str))
+    .bind(lambda a: try_expr(lambda: int(b_str)).map(lambda b: (a, b)))
+    .bind(lambda pair: try_expr(lambda: pair[0] / pair[1]) if pair[1] != 0 else ErrResult("Division by zero"))
+    .map(lambda result: f"Result: {result:.2f}")
+    .unwrap_or("Calculation failed")
 ```
 
 ## Immutability and Persistent Data Structures
@@ -911,7 +918,7 @@ def risky_calculation(x, y):
 
 @safe_expression(returns=Result)
 def parse_data(text):
-    return json.loads(text)  # Returns Result.Ok or Result.Err
+    return json.loads(text)  # Returns Result.Ok or Result.ErrResult
 ```
 **Implementation**: Wrap function bodies in try/except, converting exceptions to monadic types (Result/Option) or default values. Integrate with modgud's implicit return to ensure clean error propagation.
 
@@ -1061,7 +1068,7 @@ The combination of guard clauses, implicit returns, and AST transformation makes
 | **Implicit Returns** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | AST transformation for expression-oriented functions |
 | **Pipeline Composition** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@pipeable` decorator with `\|` operator |
 | **Chainable Expressions** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@chained_expression`, `chain()`, fluent interfaces |
-| **Monadic Operations** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `Maybe`/`Result` types, `Some`/`Nothing`, `Ok`/`Err` |
+| **Monadic Operations** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `Maybe`/`Result` types, `Some`/`Nothing`, `Ok`/`ErrResult` |
 | **Safe Error Handling** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@safe_expression` decorator with Result wrapping |
 | **Dependency Injection** | ✅ **IMPLEMENTED** | MEDIUM | 3.13+ | `@Inject` decorator for automatic resolution |
 | **Pattern Matching** | ❌ **NOT IMPLEMENTED** | HIGH | 3.6+ / 3.10+ | Enhanced destructuring and pattern matching |

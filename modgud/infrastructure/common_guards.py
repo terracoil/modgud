@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 from urllib.parse import urlparse
 
-from ..domain.messages import ErrorMessages
+from ..domain.error_messages import ErrorMessages
 from ..domain.types import GuardFunction
 
 

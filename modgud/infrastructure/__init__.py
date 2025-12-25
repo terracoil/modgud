@@ -5,15 +5,14 @@ This package provides the core building blocks that support the expression-orien
 functionality but aren't part of the primary user-facing API.
 """
 
-from modgud.infrastructure.di.energy_inverter import EnergyInverter
-from modgud.infrastructure.di.interface_discovery import InterfaceDiscovery
-from modgud.infrastructure.di.registration_strategies import RegistrationStrategies
-from modgud.infrastructure.di.service_container import ServiceContainer
-
 from .chainable_expression import ChainableExpression
 from .chained_expression_factory import ChainedExpressionFactory
 from .common_guards import CommonGuards
-from .err_result import Err
+from .di.energy_inverter import EnergyInverter
+from .di.interface_discovery import InterfaceDiscovery
+from .di.registration_strategies import RegistrationStrategies
+from .di.service_container import ServiceContainer
+from .err_result import ErrResult
 from .guard_registry import GuardRegistry
 from .guard_runtime import GuardRuntime
 from .implicit_return import ImplicitReturnTransformer
@@ -31,7 +30,7 @@ __all__ = [
   'ChainedExpressionFactory',
   'CommonGuards',
   'EnergyInverter',
-  'Err',
+  'ErrResult',
   'GuardRegistry',
   'GuardRuntime',
   'ImplicitReturnTransformer',

@@ -8,9 +8,9 @@ import textwrap
 from enum import IntEnum, StrEnum, auto
 from typing import Callable, Generator, Iterable, Sequence
 
+from ...domain.ports.vector_port import VectorPort
 from .lerper import Lerper
 from .vector import Vector
-from .vector_protocol import VectorProtocol
 
 
 class VectorPath:
@@ -49,7 +49,7 @@ class VectorPath:
   VECTORS_FMT: str = '{idx:03d}: {name:<15}: {rel_vec} -> {abs_vec}'
   VECTOR_RMT: str = '{name:<20}{vec}'
 
-  SegmentType = VectorProtocol | Sequence[VectorProtocol]
+  SegmentType = VectorPort | Sequence[VectorPort]
 
   def __init__(
     self,
@@ -81,16 +81,16 @@ class VectorPath:
     self.name: str = name
 
   @property
-  def origin(self) -> VectorProtocol:
+  def origin(self) -> VectorPort:
     return self.rel_segments[0] if self.rel_segments else Vector.ZERO
 
   @origin.setter
-  def origin(self, value: VectorProtocol) -> None:
+  def origin(self, value: VectorPort) -> None:
     self.rel_segments.pop(0)
     self.push_segment(value, 0)
 
   @property
-  def relative_segments(self) -> list[VectorProtocol]:
+  def relative_segments(self) -> list[VectorPort]:
     """
     Get complete segment list starting with origin.
 
@@ -99,37 +99,33 @@ class VectorPath:
     """
     return self.rel_segments
 
-  def gen_absolute_segments(self) -> Generator[VectorProtocol]:
+  def gen_absolute_segments(self) -> Generator[VectorPort]:
     """
     Generate absolute coordinate positions from relative segments.
 
     Accumulates displacement vectors to produce actual coordinate positions.
     Essential for rendering paths in graphics systems that need absolute positioning.
     """
-    prev: VectorProtocol = Vector.ZERO
+    prev: VectorPort = Vector.ZERO
     for seg in self.rel_segments:
       # Accumulate displacement to get absolute position
       prev = prev + seg
       yield prev
 
-  def gen_relative_segments(
-    self, abs_segments: Iterable[VectorProtocol]
-  ) -> Generator[VectorProtocol]:
+  def gen_relative_segments(self, abs_segments: Iterable[VectorPort]) -> Generator[VectorPort]:
     """
     Convert absolute positions back to relative displacement vectors.
 
     Used when transforming a path - convert to absolute, transform, then back to relative.
     Maintains the relative segment representation for consistent path operations.
     """
-    prev: VectorProtocol = Vector.ZERO
+    prev: VectorPort = Vector.ZERO
     for seg in abs_segments:
       # Subtract previous position to get displacement
       yield prev.inverse() + seg
       prev = seg
 
-  def transform_all(
-    self, scale: VectorProtocol, offset: VectorProtocol = Vector.ZERO
-  ) -> VectorPath:
+  def transform_all(self, scale: VectorPort, offset: VectorPort = Vector.ZERO) -> VectorPath:
     """
     Apply scaling transformation to entire path using enhanced Lerper functionality.
 
@@ -170,7 +166,7 @@ class VectorPath:
       else:
         self.rel_segments.insert(index, segments)
 
-  def clone(self, name: str | None = None, origin: VectorProtocol | None = None) -> VectorPath:
+  def clone(self, name: str | None = None, origin: VectorPort | None = None) -> VectorPath:
     """
     Create independent copy with optional modifications.
 
@@ -204,7 +200,7 @@ class VectorPath:
     """
     f: Callable = self._format_float
 
-    def format_quad(v: VectorProtocol, cp: VectorProtocol) -> str:
+    def format_quad(v: VectorPort, cp: VectorPort) -> str:
       print(f'Creating quad from {v} with {cp}')
       cmd: str = self.QUAD_CMD.format(x2=f(v.x), y2=f(v.y), x1=f(cp.x), y1=f(cp.y))
       print(f'Created cmd: {cmd}')
@@ -217,7 +213,7 @@ class VectorPath:
     )
 
     # Convert each absolute position to SVG command
-    segments: list[VectorProtocol] = list(self.gen_absolute_segments())
+    segments: list[VectorPort] = list(self.gen_absolute_segments())
 
     for i in range(1, len(segments) - 1, 2):
       print('Segments ', i, len(segments))
@@ -256,7 +252,7 @@ class VectorPath:
     f: Callable = self._format_float
 
     # Convert each absolute position to SVG command
-    segments: Iterable[VectorProtocol] = (
+    segments: Iterable[VectorPort] = (
       self.gen_absolute_segments() if absolute else self.relative_segments
     )
 
@@ -271,17 +267,17 @@ class VectorPath:
       yield textwrap.indent(self.CLOSE_STR, self.TAB)
     yield self.PATH_FTR_STR
 
-  def _transform(self, other: VectorProtocol, op: Callable) -> VectorPath:
-    """Transform using given a VectorProtocol and operation. Preserves other.name per convention."""
+  def _transform(self, other: VectorPort, op: Callable) -> VectorPath:
+    """Transform using given a VectorPort and operation. Preserves other.name per convention."""
     vp = VectorPath(rel_segments=op(self.origin, other), name=self.name)
     vp.push_segment([op(v, other) for v in self.rel_segments])
     return vp
 
-  def __add__(self, other: VectorProtocol) -> VectorPath:
+  def __add__(self, other: VectorPort) -> VectorPath:
     """Add vector to all vectors in path."""
     return self._transform(other, operator.add)
 
-  def __div__(self, other: VectorProtocol) -> VectorPath:
+  def __div__(self, other: VectorPort) -> VectorPath:
     """Multiply all vectors in path by given vector."""
     return self._transform(other, operator.mul)
 
@@ -299,11 +295,11 @@ class VectorPath:
     else:
       raise StopIteration
 
-  def __sub__(self, other: VectorProtocol) -> VectorPath:
+  def __sub__(self, other: VectorPort) -> VectorPath:
     """Add vector to all vectors in path."""
     return self._transform(other, operator.truediv)
 
-  def __mul__(self, other: VectorProtocol) -> VectorPath:
+  def __mul__(self, other: VectorPort) -> VectorPath:
     """Multiply all vectors in path by given vector."""
     return self._transform(other, operator.mul)
 
@@ -316,7 +312,7 @@ class VectorPath:
     """
     return len(self.rel_segments)
 
-  def __getitem__(self, key: int | slice) -> VectorProtocol | list[VectorProtocol]:
+  def __getitem__(self, key: int | slice) -> VectorPort | list[VectorPort]:
     """
     Access path points by index.
 
@@ -324,23 +320,23 @@ class VectorPath:
     the nth relative segment (rel_segments[n-1]).
 
     :param key: Zero-based index into path points
-    :return: VectorProtocol at the specified index
+    :return: VectorPort at the specified index
     :raises IndexError: If index is out of bounds
     """
     total_length = len(self.rel_segments)
 
     if isinstance(key, slice):
-      result: list[VectorProtocol] = self.rel_segments[key]
+      result: list[VectorPort] = self.rel_segments[key]
     elif isinstance(key, int):
       if key < 0 or key >= total_length:
         raise IndexError(f'Path index {key} out of range [0, {total_length - 1}]')
-      result: VectorProtocol = self.rel_segments[key]
+      result: VectorPort = self.rel_segments[key]
     else:
       raise TypeError(f'Invalid key type for VectorPath[key] -> key: {type(key)}={key}')
 
     return result
 
-  def __setitem__(self, key: int, value: VectorProtocol) -> None:
+  def __setitem__(self, key: int, value: VectorPort) -> None:
     """
     Set path point at specified index.
 
@@ -348,17 +344,17 @@ class VectorPath:
     the origin point, subsequent indices set relative segments.
 
     :param key: Zero-based index into path points
-    :param value: VectorProtocol to assign at the specified index
+    :param value: VectorPort to assign at the specified index
     :raises IndexError: If index is out of bounds
-    :raises TypeError: If value is not a VectorProtocol
+    :raises TypeError: If value is not a VectorPort
     """
     total_length = len(self.rel_segments)
     if key < 0 or key >= total_length:
       raise IndexError(f'Path index {key} out of range [0, {total_length - 1}]')
 
-    # Type check to ensure value is a VectorProtocol
+    # Type check to ensure value is a VectorPort
     if not hasattr(value, 'x') or not hasattr(value, 'y'):
-      raise TypeError(f'Value must be a VectorProtocol, got {type(value)}')
+      raise TypeError(f'Value must be a VectorPort, got {type(value)}')
 
     self.rel_segments[key] = value
 

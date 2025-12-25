@@ -43,7 +43,7 @@ class TestTornPaperCLI:
 
     assert result.returncode == 0
     assert 'Torn Paper Box' in result.stdout
-    assert '<path name="tornPaper">' in result.stdout
+    assert '<path>' in result.stdout
     assert '<move x=' in result.stdout
     assert '<line x=' in result.stdout
 
@@ -68,9 +68,9 @@ class TestTornPaperCLI:
         cwd=Path(__file__).parent.parent,
       )
 
-      assert result.returncode == 0, f"Failed for torn-sides={sides}"
+      assert result.returncode == 0, f'Failed for torn-sides={sides}'
       assert f'Torn Paper Box (sides={sides}' in result.stdout
-      assert '<path name="tornPaper">' in result.stdout
+      assert '<path>' in result.stdout
 
   def test_torn_box_with_custom_parameters(self):
     """Test torn-box with custom parameters."""
@@ -98,7 +98,7 @@ class TestTornPaperCLI:
 
     assert result.returncode == 0
     assert 'amplitude=8.0, seed=123' in result.stdout
-    assert '<path name="tornPaper">' in result.stdout
+    assert '<path>' in result.stdout
 
   def test_torn_box_invalid_parameters(self):
     """Test torn-box with invalid parameters."""
@@ -161,12 +161,8 @@ class TestTornPaperCLI:
     ]
 
     # Run the command twice
-    result1 = subprocess.run(
-      cmd, capture_output=True, text=True, cwd=Path(__file__).parent.parent
-    )
-    result2 = subprocess.run(
-      cmd, capture_output=True, text=True, cwd=Path(__file__).parent.parent
-    )
+    result1 = subprocess.run(cmd, capture_output=True, text=True, cwd=Path(__file__).parent.parent)
+    result2 = subprocess.run(cmd, capture_output=True, text=True, cwd=Path(__file__).parent.parent)
 
     assert result1.returncode == 0
     assert result2.returncode == 0

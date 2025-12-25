@@ -143,6 +143,6 @@ class MathUtil:
     return v >= (value - cls.EPSILON)
 
   @classmethod
-  def pct(cls, n: float | int, precision=2) -> str:
-    """Convert snake_case to camelCase."""
-    return Math.round(n * 100, precision)
+  def pct(cls, n: float | int, precision: int = 2) -> str:
+    """Convert number to percentage string with specified precision."""
+    return str(round(n * 100, precision))

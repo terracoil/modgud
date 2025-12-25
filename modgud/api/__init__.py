@@ -16,7 +16,7 @@ Primary modules:
 """
 
 # Re-export from geometry
-from .geometry import Joinery, Lerper, LerpStrategy, Vector, VectorPath, VectorProtocol
+from .geometry import Joinery, Lerper, LerpStrategy, Vector, VectorPath, VectorPort
 
 # Re-export from tools
 from .tools import Ranger, TextUtil
@@ -28,7 +28,7 @@ __all__ = [
   'LerpStrategy',
   'Vector',
   'VectorPath',
-  'VectorProtocol',
+  'VectorPort',
   # Tools exports
   'Ranger',
   'TextUtil',

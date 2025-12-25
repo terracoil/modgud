@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
+
+if TYPE_CHECKING:
+  pass
 
 
 @dataclass(frozen=True)
 class SimplexNoise:
   """
-  Simplex Noise generator with fractal Brownian motion (fBm) capabilities.
+  Simplex Noise implementation of the NoisePort.
 
-  Based on Ken Perlin's improved noise algorithm, this implementation provides
-  smooth gradient noise suitable for procedural generation and texture creation.
+  Implements Ken Perlin's simplex noise algorithm with fBm support.
+  See NoisePort for detailed method documentation.
 
   :param seed: Random seed for reproducible noise patterns
   :param scale: Global scale multiplier for noise coordinates
@@ -44,22 +47,23 @@ class SimplexNoise:
   G2: ClassVar[float] = 0.21132486541  # (3 - sqrt(3)) / 6
 
   # Permutation table for gradient selection
+  # fmt: off
   PERM: ClassVar[np.ndarray] = np.array(
     [151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142, 8, 99, 37, 240,
-      21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33, 88,
-      237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83,
-      111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63, 161, 1, 216,
-      80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186,
-      3, 64, 52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58,
-      17, 182, 189, 28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9,
-      129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228, 251, 34, 242, 193,
-      238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157,
-      184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128,
-      195, 78, 66, 215, 61, 156, 180, ], dtype=np.int32, )
+     21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117, 35, 11, 32, 57, 177, 33, 88,
+     237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83,
+     111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41, 55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63, 161, 1, 216,
+     80, 73, 209, 76, 132, 187, 208, 89, 18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186,
+     3, 64, 52, 217, 226, 250, 124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17,
+     182, 189, 28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9, 129,
+     22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228, 251, 34, 242, 193, 238,
+     210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107, 49, 192, 214, 31, 181, 199, 106, 157, 184,
+     84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195,
+     78, 66, 215, 61, 156, 180, ], dtype=np.int32, )
 
   # Gradient vectors for 2D
-  GRAD2: ClassVar[np.ndarray] = np.array([[1, 1], [-1, 1], [1, -1], [-1, -1], [1, 0], [-1, 0], [0, 1], [0, -1]],
-    dtype=np.float32)
+  GRAD2: ClassVar[np.ndarray] = np.array([[1, 1], [-1, 1], [1, -1], [-1, -1], [1, 0], [-1, 0], [0, 1], [0, -1]], dtype=np.float32)
+  # fmt: on
 
   def __post_init__(self) -> None:
     """Initialize permutation table with seed."""
@@ -89,13 +93,7 @@ class SimplexNoise:
     return grad[0] * x + grad[1] * y
 
   def noise2d(self, x: float, y: float) -> float:
-    """
-    Generate 2D simplex noise value at given coordinates.
-
-    :param x: X coordinate
-    :param y: Y coordinate
-    :returns: Noise value between -1.0 and 1.0
-    """
+    """Generate 2D simplex noise. See NoisePort.noise2d for details."""
     # Apply global transformations
     x = (x + self.offset_x) * self.scale
     y = (y + self.offset_y) * self.scale
@@ -158,13 +156,7 @@ class SimplexNoise:
     return float(70.0 * (n0 + n1 + n2) * self.amplitude)
 
   def fbm2d(self, x: float, y: float) -> float:
-    """
-    Generate fractal Brownian motion (fBm) noise by summing multiple octaves.
-
-    :param x: X coordinate
-    :param y: Y coordinate
-    :returns: fBm noise value
-    """
+    """Generate fBm noise using multiple octaves. See NoisePort.fbm2d for details."""
     if self.octaves <= 1:
       return self.noise2d(x, y)
 
@@ -175,9 +167,16 @@ class SimplexNoise:
 
     for _ in range(self.octaves):
       # Create new instance with adjusted parameters for this octave
-      octave_noise = SimplexNoise(seed=self.seed, scale=self.scale * frequency, offset_x=self.offset_x,
-        offset_y=self.offset_y, octaves=1, persistence=self.persistence, lacunarity=self.lacunarity,
-        amplitude=amplitude, )
+      octave_noise = SimplexNoise(
+        seed=self.seed,
+        scale=self.scale * frequency,
+        offset_x=self.offset_x,
+        offset_y=self.offset_y,
+        octaves=1,
+        persistence=self.persistence,
+        lacunarity=self.lacunarity,
+        amplitude=amplitude,
+      )
 
       total += octave_noise.noise2d(x, y)
       max_value += amplitude
@@ -190,13 +189,7 @@ class SimplexNoise:
     return total / max_value if max_value > 0 else 0.0
 
   def noise_array2d(self, x_coords: np.ndarray, y_coords: np.ndarray) -> np.ndarray:
-    """
-    Generate 2D noise values for arrays of coordinates.
-
-    :param x_coords: Array of X coordinates
-    :param y_coords: Array of Y coordinates
-    :returns: Array of noise values
-    """
+    """Generate noise for coordinate arrays. See NoisePort.noise_array2d for details."""
     # Ensure inputs are numpy arrays
     x_coords = np.asarray(x_coords, dtype=np.float32)
     y_coords = np.asarray(y_coords, dtype=np.float32)
@@ -211,19 +204,13 @@ class SimplexNoise:
     flat_y = y_coords.flat
     flat_result = result.flat
 
-    for i, (x_val, y_val) in enumerate(zip(flat_x, flat_y)):
+    for i, (x_val, y_val) in enumerate(zip(flat_x, flat_y, strict=True)):
       flat_result[i] = self.noise2d(float(x_val), float(y_val))
 
     return result
 
   def fbm_array2d(self, x_coords: np.ndarray, y_coords: np.ndarray) -> np.ndarray:
-    """
-    Generate 2D fractal Brownian motion values for arrays of coordinates.
-
-    :param x_coords: Array of X coordinates
-    :param y_coords: Array of Y coordinates
-    :returns: Array of fBm noise values
-    """
+    """Generate fBm for coordinate arrays. See NoisePort.fbm_array2d for details."""
     # Ensure inputs are numpy arrays
     x_coords = np.asarray(x_coords, dtype=np.float32)
     y_coords = np.asarray(y_coords, dtype=np.float32)
@@ -238,23 +225,20 @@ class SimplexNoise:
     flat_y = y_coords.flat
     flat_result = result.flat
 
-    for i, (x_val, y_val) in enumerate(zip(flat_x, flat_y)):
+    for i, (x_val, y_val) in enumerate(zip(flat_x, flat_y, strict=True)):
       flat_result[i] = self.fbm2d(float(x_val), float(y_val))
 
     return result
 
-  def generate_noise_map(self, width: int, height: int, x_offset: float = 0.0, y_offset: float = 0.0,
-      use_fbm: bool = True, ) -> np.ndarray:
-    """
-    Generate a 2D noise map of specified dimensions.
-
-    :param width: Width of the noise map
-    :param height: Height of the noise map
-    :param x_offset: Additional X offset for sampling
-    :param y_offset: Additional Y offset for sampling
-    :param use_fbm: Whether to use fractal Brownian motion
-    :returns: 2D numpy array of noise values
-    """
+  def generate_noise_map(
+    self,
+    width: int,
+    height: int,
+    x_offset: float = 0.0,
+    y_offset: float = 0.0,
+    use_fbm: bool = True,
+  ) -> np.ndarray:
+    """Generate 2D noise map. See NoisePort.generate_noise_map for details."""
     # Create coordinate grids
     x_coords = np.linspace(x_offset, x_offset + width / self.scale, width)
     y_coords = np.linspace(y_offset, y_offset + height / self.scale, height)
@@ -266,23 +250,90 @@ class SimplexNoise:
     return self.noise_array2d(x_grid, y_grid)
 
   def with_seed(self, seed: int) -> SimplexNoise:
-    """Create new SimplexNoise instance with different seed."""
-    return SimplexNoise(seed=seed, scale=self.scale, offset_x=self.offset_x, offset_y=self.offset_y,
-      octaves=self.octaves, persistence=self.persistence, lacunarity=self.lacunarity, amplitude=self.amplitude, )
+    """
+    Create new SimplexNoise instance with different seed.
 
-  def with_octaves(self, octaves: int, persistence: float | None = None,
-      lacunarity: float | None = None) -> SimplexNoise:
-    """Create new SimplexNoise instance with different fractal parameters."""
-    return SimplexNoise(seed=self.seed, scale=self.scale, offset_x=self.offset_x, offset_y=self.offset_y,
-      octaves=octaves, persistence=persistence if persistence is not None else self.persistence,
-      lacunarity=lacunarity if lacunarity is not None else self.lacunarity, amplitude=self.amplitude, )
+    SimplexNoise-specific builder method for creating variations.
+    Preserves all other parameters while changing the seed.
+
+    :param seed: New random seed for noise generation
+    :returns: New SimplexNoise instance with updated seed
+    """
+    return SimplexNoise(
+      seed=seed,
+      scale=self.scale,
+      offset_x=self.offset_x,
+      offset_y=self.offset_y,
+      octaves=self.octaves,
+      persistence=self.persistence,
+      lacunarity=self.lacunarity,
+      amplitude=self.amplitude,
+    )
+
+  def with_octaves(
+    self, octaves: int, persistence: float | None = None, lacunarity: float | None = None
+  ) -> SimplexNoise:
+    """
+    Create new SimplexNoise instance with different fractal parameters.
+
+    SimplexNoise-specific builder method for adjusting fBm characteristics.
+    Allows fine-tuning the fractal noise behavior.
+
+    :param octaves: Number of noise layers to combine
+    :param persistence: Amplitude decay between octaves (default: keep current)
+    :param lacunarity: Frequency multiplier between octaves (default: keep current)
+    :returns: New SimplexNoise instance with updated fractal parameters
+    """
+    return SimplexNoise(
+      seed=self.seed,
+      scale=self.scale,
+      offset_x=self.offset_x,
+      offset_y=self.offset_y,
+      octaves=octaves,
+      persistence=persistence if persistence is not None else self.persistence,
+      lacunarity=lacunarity if lacunarity is not None else self.lacunarity,
+      amplitude=self.amplitude,
+    )
 
   def with_scale(self, scale: float) -> SimplexNoise:
-    """Create new SimplexNoise instance with different scale."""
-    return SimplexNoise(seed=self.seed, scale=scale, offset_x=self.offset_x, offset_y=self.offset_y,
-      octaves=self.octaves, persistence=self.persistence, lacunarity=self.lacunarity, amplitude=self.amplitude, )
+    """
+    Create new SimplexNoise instance with different scale.
+
+    SimplexNoise-specific builder method for adjusting noise frequency.
+    Larger scales produce smoother, lower-frequency noise.
+
+    :param scale: New scale factor for noise coordinates
+    :returns: New SimplexNoise instance with updated scale
+    """
+    return SimplexNoise(
+      seed=self.seed,
+      scale=scale,
+      offset_x=self.offset_x,
+      offset_y=self.offset_y,
+      octaves=self.octaves,
+      persistence=self.persistence,
+      lacunarity=self.lacunarity,
+      amplitude=self.amplitude,
+    )
 
   def with_offset(self, offset_x: float, offset_y: float) -> SimplexNoise:
-    """Create new SimplexNoise instance with different offset."""
-    return SimplexNoise(seed=self.seed, scale=self.scale, offset_x=offset_x, offset_y=offset_y, octaves=self.octaves,
-      persistence=self.persistence, lacunarity=self.lacunarity, amplitude=self.amplitude, )
+    """
+    Create new SimplexNoise instance with different offset.
+
+    SimplexNoise-specific builder method for sampling different regions
+    of the infinite noise field.
+
+    :param offset_x: New X-axis offset in noise space
+    :param offset_y: New Y-axis offset in noise space
+    :returns: New SimplexNoise instance with updated offsets
+    """
+    return SimplexNoise(
+      seed=self.seed,
+      scale=self.scale,
+      offset_x=offset_x,
+      offset_y=offset_y,
+      octaves=self.octaves,
+      persistence=self.persistence,
+      lacunarity=self.lacunarity,
+      amplitude=self.amplitude,
+    )

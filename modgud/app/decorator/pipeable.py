@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Callable, TypeVar
 
-from ...domain.ports import PipeableFactoryPort, PipeablePort
-from ...infrastructure.pipeable_factory import PipeableFactory
+from modgud.domain.ports import PipeableFactoryPort, PipeablePort
+from modgud.infrastructure.pipeable_factory import PipeableFactory
 
 T = TypeVar('T')
 
@@ -71,6 +71,6 @@ def create_pipeable(func: Callable[..., Any]) -> PipeablePort:
 
 
 # Export the Pipeable class for tests that need direct access
-from ...infrastructure.pipeable_wrapper import Pipeable
+from modgud.infrastructure.pipeable_wrapper import Pipeable
 
 __all__ = ['pipeable', 'create_pipeable', 'Pipeable']

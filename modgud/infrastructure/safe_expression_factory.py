@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from ..domain.ports import SafeDecoratorFactoryPort
 from ..domain.ports.result_port import ResultPort
-from .err_result import Err
+from .err_result import ErrResult
 from .ok_result import Ok
 
 
@@ -45,10 +45,10 @@ class SafeExpressionFactory(SafeDecoratorFactoryPort):
         try:
           result = func(*args, **kwargs)
           if convert_none and result is None:
-            return Err('Function returned None')
+            return ErrResult('Function returned None')
           return Ok(result)
         except catch_exceptions as e:
-          return Err(e)
+          return ErrResult(e)
 
       # Preserve function metadata
       wrapper.__name__ = func.__name__
@@ -71,4 +71,4 @@ class SafeExpressionFactory(SafeDecoratorFactoryPort):
         ResultPort: Ok or Err instance
 
     """
-    return Ok(value) if is_success else Err(value)
+    return Ok(value) if is_success else ErrResult(value)

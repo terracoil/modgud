@@ -17,7 +17,7 @@ from modgud import (
 
 
 # 2. Pipeable with implicit_return
-# Note: @pipeable should be the outermost decorator for proper functionality
+# Note: @pipeable should be outermost, @implicit_return innermost
 @pipeable
 @implicit_return
 def add_implicit(x, y):
@@ -67,10 +67,10 @@ def calculate_discount(amount, discount_rate=0.1):
     amount * (1 - discount_rate)
 
 
-# Different ordering - @pipeable should still be outermost
+# Correct ordering - @implicit_return must be innermost for source access
 @pipeable
-@implicit_return
 @guarded_expression(positive('x'))
+@implicit_return
 def process_value(x):
   """Process with different decorator order."""
   result = x * 2 + 10
@@ -79,8 +79,8 @@ def process_value(x):
 
 # Module-level test fixtures for implicit return
 @pipeable
-@implicit_return
 @guarded_expression(positive('base'))
+@implicit_return
 def compound_interest(base, rate=0.05, years=1):
   """Calculate compound interest."""
   total = base

@@ -16,7 +16,7 @@ from typing import Any, ClassVar, Protocol, runtime_checkable
 
 
 @runtime_checkable
-class VectorProtocol(Protocol):
+class VectorPort(Protocol):
   """
   Interface for 4D mathematical vectors supporting geometric transformations.
 
@@ -43,8 +43,8 @@ class VectorProtocol(Protocol):
   w: float
   name: str
 
-  ZERO: ClassVar[VectorProtocol]
-  IDENTITY: ClassVar[VectorProtocol]
+  ZERO: ClassVar[VectorPort]
+  IDENTITY: ClassVar[VectorPort]
   ATTRS: ClassVar[tuple[str, ...]]
 
   def as_tuple(self) -> tuple[float, float, float, float]:
@@ -77,7 +77,7 @@ class VectorProtocol(Protocol):
     """Calculate vector magnitude using Pythagorean theorem."""
 
   @classmethod
-  def from_input(cls, t: Any) -> list[VectorProtocol]:
+  def from_input(cls, t: Any) -> list[VectorPort]:
     """
     Parse various input formats into a list of vectors.
 
@@ -86,7 +86,7 @@ class VectorProtocol(Protocol):
     data from files, user input, or external APIs with varying formats.
 
     Supported formats:
-    - Single vector: dict, tuple, or VectorProtocol instance
+    - Single vector: dict, tuple, or VectorPort instance
     - Multiple vectors: list containing any of the above
     - Nested structures are recursively processed
 
@@ -96,7 +96,7 @@ class VectorProtocol(Protocol):
     """
 
   @classmethod
-  def from_dict(cls, args: dict[str, Any]) -> VectorProtocol | None:
+  def from_dict(cls, args: dict[str, Any]) -> VectorPort | None:
     """
     Create vector from dictionary with named components.
 
@@ -113,7 +113,7 @@ class VectorProtocol(Protocol):
     """
 
   @classmethod
-  def from_tuple(cls, t: tuple[float, ...]) -> VectorProtocol:
+  def from_tuple(cls, t: tuple[float, ...]) -> VectorPort:
     """
     Create vector from coordinate tuple.
 
@@ -127,7 +127,7 @@ class VectorProtocol(Protocol):
     """
 
   @classmethod
-  def zero(cls, name: str | None = None) -> VectorProtocol:
+  def zero(cls, name: str | None = None) -> VectorPort:
     """
     Create zero vector representing the origin point.
 
@@ -140,7 +140,7 @@ class VectorProtocol(Protocol):
     """
 
   @classmethod
-  def identity(cls, name: str | None = None) -> VectorProtocol:
+  def identity(cls, name: str | None = None) -> VectorPort:
     """
     Create multiplicative identity vector.
 
@@ -153,7 +153,7 @@ class VectorProtocol(Protocol):
     :returns: Vector(1, 1, 0, 0) instance
     """
 
-  def __add__(self, other: VectorProtocol) -> VectorProtocol:
+  def __add__(self, other: VectorPort) -> VectorPort:
     """
     Add vectors component-wise for translation operations.
 
@@ -165,7 +165,7 @@ class VectorProtocol(Protocol):
     :returns: New vector representing the sum
     """
 
-  def __sub__(self, other: VectorProtocol) -> VectorProtocol:
+  def __sub__(self, other: VectorPort) -> VectorPort:
     """
     Subtract vectors component-wise for displacement calculations.
 
@@ -177,7 +177,7 @@ class VectorProtocol(Protocol):
     :returns: New vector representing the difference
     """
 
-  def __mul__(self, other: VectorProtocol) -> VectorProtocol:
+  def __mul__(self, other: VectorPort) -> VectorPort:
     """
     Multiply vectors component-wise for scaling operations.
 
@@ -189,7 +189,7 @@ class VectorProtocol(Protocol):
     :returns: New vector with scaled components
     """
 
-  def __truediv__(self, other: VectorProtocol) -> VectorProtocol:
+  def __truediv__(self, other: VectorPort) -> VectorPort:
     """
     Divide vectors component-wise for inverse scaling operations.
 
@@ -242,7 +242,7 @@ class VectorProtocol(Protocol):
     z: float | None = None,
     w: float | None = None,
     name: str = '',
-  ) -> VectorProtocol:
+  ) -> VectorPort:
     """
     Create a copy of this vector with optional component overrides.
 
@@ -258,7 +258,7 @@ class VectorProtocol(Protocol):
     :returns: New vector instance with specified modifications
     """
 
-  def inverse(self) -> VectorProtocol:
+  def inverse(self) -> VectorPort:
     """
     Create the additive inverse (negation) of this vector.
 

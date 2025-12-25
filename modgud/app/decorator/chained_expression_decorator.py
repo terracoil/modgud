@@ -8,10 +8,11 @@ in ChainableExpression instances, following the single class per file principle.
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+import inspect
+from typing import Any, Callable, TypeVar
 
-if TYPE_CHECKING:
-  from ...infrastructure.tool.chainable_expression import ChainableExpression
+# if TYPE_CHECKING:
+from modgud.infrastructure import ChainableExpression
 
 T = TypeVar('T')
 
@@ -29,7 +30,7 @@ class ChainedExpressionDecorator:
     """
     self.auto_unwrap = auto_unwrap
 
-  def __call__(self, func: Callable[..., T]) -> Callable[..., 'ChainableExpression[T]']:
+  def __call__(self, func: Callable[..., T]) -> Callable[..., ChainableExpression[T]]:
     """
     Decorate a function to return ChainableExpression.
 
@@ -42,14 +43,14 @@ class ChainedExpressionDecorator:
     """
 
     @functools.wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> 'ChainableExpression[T]':
+    def wrapper(*args: Any, **kwargs: Any) -> ChainableExpression[T]:
       """Execute function and wrap result in ChainableExpression."""
       processed_args = args
       processed_kwargs = kwargs
 
       # Auto-unwrap ChainableExpression arguments if requested
       if self.auto_unwrap:
-        from ...infrastructure.tool.chainable_expression import ChainableExpression
+        from modgud.infrastructure import ChainableExpression
 
         unwrapped_args = []
         for arg in args:
@@ -68,14 +69,14 @@ class ChainedExpressionDecorator:
         processed_kwargs = unwrapped_kwargs
 
       result = func(*processed_args, **processed_kwargs)
-      from ...infrastructure.tool.chainable_expression import ChainableExpression
+      from modgud.infrastructure import ChainableExpression
 
       return ChainableExpression(result)
 
     # Preserve function metadata
     wrapper.__name__ = func.__name__
     wrapper.__doc__ = func.__doc__
-    wrapper.__annotations__ = func.__annotations__
+    wrapper.__annotations__ = inspect.signature(func).__annotations__
 
     # Mark as chained expression
     wrapper.__chained_expression__ = True

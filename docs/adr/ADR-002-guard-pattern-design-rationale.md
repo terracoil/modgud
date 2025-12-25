@@ -57,7 +57,7 @@ def positive(x):
 Return `Result[None, Error]` or similar monadic type.
 ```python
 def positive(x):
-  return Ok(None) if x > 0 else Err("Must be positive")
+  return Ok(None) if x > 0 else ErrResult("Must be positive")
 ```
 - **Rejected**: Adds dependency, verbose for simple validations
 

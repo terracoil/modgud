@@ -8,9 +8,10 @@ import math
 import sys
 import tomllib
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Sequence
 
-from modgud.api.geometry import Joinery, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorProtocol
+from modgud.api.geometry import Joinery, Line, SimplexNoise, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorPort
+from modgud.infrastructure.drawio_manager import DrawIOManager
 from modgud.util import MathUtil
 
 # Add the project root to the Python path
@@ -36,6 +37,7 @@ class ShapeTools:
 
     self.project_src: str = self.get_project_src()
     self.project_name: str = self.get_project_name()
+    self.drawio_manager = DrawIOManager()
 
   @classmethod
   def get_project_src(cls) -> str:
@@ -57,6 +59,54 @@ class ShapeTools:
     with open("pyproject.toml", "rb") as f:
       proj_map = tomllib.load(f)
       return proj_map["project"]["name"]
+      
+  def _handle_drawio_output(
+    self, 
+    vectors: Sequence[VectorPort], 
+    shape_type: str, 
+    params: dict[str, Any], 
+    drawio: bool = False,
+    drawio_output: str | None = None
+  ) -> None:
+    """
+    Handle draw.io file generation if requested.
+    
+    :param vectors: Shape vectors to convert
+    :param shape_type: Type of shape for filename
+    :param params: Shape parameters for filename
+    :param drawio: Whether to generate draw.io file
+    :param drawio_output: Optional output directory
+    """
+    if not drawio:
+      return
+      
+    # Generate filename
+    filename = self.drawio_manager.generate_filename(shape_type, params)
+    
+    # Determine output path
+    if drawio_output:
+      output_dir = Path(drawio_output)
+      output_dir.mkdir(parents=True, exist_ok=True)
+      filepath = output_dir / f"{filename}.drawio"
+    else:
+      filepath = Path(f"{filename}.drawio")
+      
+    # Create metadata
+    metadata = {
+      'name': shape_type.replace('_', ' ').title(),
+      'shape_type': shape_type,
+      'parameters': params
+    }
+    
+    # Create draw.io file
+    created_path = self.drawio_manager.create_drawio_file(vectors, filepath, metadata)
+    
+    # Print success message
+    print(f"\n{self.colors['green']}✓ Created draw.io file:{self.colors['nc']} {created_path}")
+    if self.verbose:
+      print(f"  Shape: {shape_type}")
+      print(f"  Parameters: {params}")
+      print(f"  Vectors: {len(vectors)} points")
 
   class Joinery:
     """Joinery operations for calculating joint coordinates."""
@@ -65,21 +115,28 @@ class ShapeTools:
       self.parent: 'ShapeTools' = parent
 
     def dovetail(self, teeth_slope_pct: float = 0.1, teeth_cnt: int = 2, tooth_depth_pct: float = 0.35,
-                 corner_pct=0.1) -> dict[str, Any]:
+                 corner_pct: float = 0.1, drawio: bool = False, drawio_output: str | None = None) -> dict[str, Any]:
       """
       Calculate the coordinates of dovetail joint points.
 
       Uses the Joinery class for all calculations.
+      
+      :param teeth_slope_pct: Slope percentage for teeth
+      :param teeth_cnt: Number of teeth
+      :param tooth_depth_pct: Depth percentage for teeth
+      :param corner_pct: Corner percentage
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
       """
       # Create joinery instance and calculate dovetail
-      joinery = Joinery()
-
-      shapeResult = joinery.calculate_dovetail(
+      joinery = Joinery(
         slope_pct=teeth_slope_pct,
         teeth_cnt=teeth_cnt,
         tooth_depth_pct=tooth_depth_pct,
         corner_pct=corner_pct
       )
+
+      shapeResult = joinery.build_all_shapes()  # Use backward compatibility method
 
       # Print formatted output
       svg_left = shapeResult['left']
@@ -96,6 +153,17 @@ class ShapeTools:
         rgt: str = svg_right[i] if i < len(svg_right) else ''
         tth: str = svg_teeth[i] if i < len(svg_teeth) else ''
         print(f"{lft:<40}{rgt:<40}{tth:<40}")
+        
+      # Handle draw.io output if requested
+      if drawio:
+        # Get the adapter shape vectors (left/adapter shape)
+        adapter_vectors = joinery.build_adapter_shape()
+        params = {
+          'slopepct': teeth_slope_pct,
+          'teethcnt': teeth_cnt,
+          'depthpct': tooth_depth_pct
+        }
+        self.parent._handle_drawio_output(adapter_vectors, 'dovetail', params, drawio, drawio_output)
 
       return shapeResult
 
@@ -104,11 +172,20 @@ class ShapeTools:
         """Initialize with parent ShapeTools instance."""
         self.parent: 'ShapeTools' = parent
 
-    def stackable_trapezoid(self, angle: float = 70, notch_height: float = 0.2, width: float = 100, height: float = 100, invert: bool = False) -> dict[str, Any]:
-      """Generate a stackable trapezoid using the proper geometry module."""
-      trapezoid = StackableTrapezoid()
-
-      trap_path:dict[str, list[str]] = trapezoid.calculate_trapezoid(
+    def stackable_trapezoid(self, angle: float = 70, notch_height: float = 0.2, width: float = 100, height: float = 100, 
+                            invert: bool = False, drawio: bool = False, drawio_output: str | None = None) -> dict[str, Any]:
+      """
+      Generate a stackable trapezoid using the proper geometry module.
+      
+      :param angle: Trapezoid angle in degrees
+      :param notch_height: Height of stacking notch as percentage
+      :param width: Width of trapezoid
+      :param height: Height of trapezoid
+      :param invert: Whether to invert the trapezoid
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      trapezoid = StackableTrapezoid(
         angle=angle,
         notch_height=notch_height,
         width=width,
@@ -116,25 +193,59 @@ class ShapeTools:
         invert=invert
       )
 
+      # Convert to legacy format using migrate_shape_result
+      from modgud.api.geometry.svg_converter import migrate_shape_result
+      trap_vectors = trapezoid.build_shape()
+      trap_path:dict[str, list[str]] = migrate_shape_result(trap_vectors, 'shape')
+
       # Print formatted output
       svg_shape = trap_path['shape']
       print(f"\nStackable Trapezoid (angle={angle}°, stackable_pct={notch_height}):")
       for line in svg_shape:
         print(line)
+        
+      # Handle draw.io output if requested
+      if drawio:
+        params = {
+          'angle': angle,
+          'notch': notch_height,
+          'invert': invert
+        }
+        self.parent._handle_drawio_output(trap_vectors, 'stackable_trapezoid', params, drawio, drawio_output)
 
       return trap_path
 
-    def stackable_trapezoid_demo(self, count: int = 3, angle: float = 70, stackable_pct: float = 0.2, width: float = 100, height: float = 100) -> dict[str, Any]:
-      """Generate a demo of nested stackable trapezoids."""
-      trapezoid = StackableTrapezoid()
-
-      result = trapezoid.calculate_nesting_demo(
-        count=count,
+    def stackable_trapezoid_demo(self, count: int = 3, angle: float = 70, stackable_pct: float = 0.2, width: float = 100, 
+                                 height: float = 100, drawio: bool = False, drawio_output: str | None = None) -> dict[str, Any]:
+      """
+      Generate a demo of nested stackable trapezoids.
+      
+      :param count: Number of nested trapezoids
+      :param angle: Trapezoid angle in degrees
+      :param stackable_pct: Stacking percentage
+      :param width: Base width
+      :param height: Base height
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      trapezoid = StackableTrapezoid(
         angle=angle,
-        stackable_pct=stackable_pct,
+        notch_height=stackable_pct,  # stackable_pct maps to notch_height
         width=width,
         height=height
       )
+
+      # Get list of vector sequences from new method
+      vector_sequences = trapezoid.calculate_nesting_positions(count=count)
+      
+      # Convert to legacy format with SVG strings
+      from modgud.api.geometry.svg_converter import SVGConverter
+      shapes_svg = []
+      for i, vector_seq in enumerate(vector_sequences):
+        svg_lines = SVGConverter.vectors_to_svg(vector_seq, close=True, name=f'shape_{i}')
+        shapes_svg.append(svg_lines)
+      
+      result = {'shapes': shapes_svg}
 
       # Print formatted output
       shapes = result['shapes']
@@ -143,6 +254,17 @@ class ShapeTools:
         print(f"\n--- Shape {i+1} ---")
         for line in shape:
           print(line)
+          
+      # Handle draw.io output if requested
+      if drawio:
+        # Use the first (largest) shape for draw.io
+        if vector_sequences:
+          params = {
+            'count': count,
+            'angle': angle,
+            'stackpct': stackable_pct
+          }
+          self.parent._handle_drawio_output(vector_sequences[0], 'trapezoid_demo', params, drawio, drawio_output)
 
       return result
 
@@ -156,26 +278,144 @@ class ShapeTools:
       noise_scale: float = 0.1,
       octaves: int = 3,
       seed: int = 42,
+      smoothing_factor: float = 0.1,
+      drawio: bool = False,
+      drawio_output: str | None = None
     ) -> dict[str, Any]:
-      """Generate a torn paper box with specified torn edges."""
-      torn_paper = TornPaper(seed=seed)
-
-      result = torn_paper.calculate_torn_paper(
+      """
+      Generate a torn paper box with specified torn edges.
+      
+      :param width: Box width
+      :param height: Box height
+      :param torn_sides: Which sides to make torn (N/S/E/W combinations)
+      :param segments: Number of segments in torn edges
+      :param amplitude: Amplitude of noise
+      :param noise_scale: Scale of noise
+      :param octaves: Number of noise octaves
+      :param seed: Random seed
+      :param smoothing_factor: Smoothing factor
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      # Create noise instance
+      noise = SimplexNoise(
+        seed=seed,
+        scale=noise_scale,
+        octaves=octaves,
+        persistence=0.5,
+        lacunarity=2.0,
+        amplitude=1.0
+      )
+      
+      torn_paper = TornPaper(
+        noise=noise,
         torn_sides=torn_sides,
         segments=segments,
         amplitude=amplitude,
         width=width,
         height=height,
-        noise_scale=noise_scale,
-        octaves=octaves,
+        smoothing_factor=smoothing_factor,
       )
+
+      # Convert to legacy format using migrate_shape_result
+      from modgud.api.geometry.svg_converter import migrate_shape_result
+      tp_vectors = torn_paper.build_shape()
+      result = migrate_shape_result(tp_vectors, 'shape')
 
       # Print formatted output
       svg_shape = result['shape']
       print(f"\nTorn Paper Box (sides={torn_sides}, amplitude={amplitude}, seed={seed}):")
       for line in svg_shape:
         print(line)
+        
+      # Handle draw.io output if requested  
+      if drawio:
+        params = {
+          'sides': torn_sides,
+          'amp': amplitude,
+          'seed': seed
+        }
+        self.parent._handle_drawio_output(tp_vectors, 'torn_box', params, drawio, drawio_output)
 
+      return result
+
+    def noisy_line(
+      self,
+      start_x: float = 0,
+      start_y: float = 0,
+      end_x: float = 100,
+      end_y: float = 50,
+      segments: int = 50,
+      amplitude: float = 5.0,
+      noise_scale: float = 0.1,
+      octaves: int = 3,
+      seed: int = 42,
+      smoothing_factor: float = 0.1,
+      drawio: bool = False,
+      drawio_output: str | None = None
+    ) -> dict[str, Any]:
+      """
+      Generate a noisy line with specified parameters.
+      
+      :param start_x: Starting X coordinate
+      :param start_y: Starting Y coordinate
+      :param end_x: Ending X coordinate
+      :param end_y: Ending Y coordinate
+      :param segments: Number of line segments
+      :param amplitude: Noise amplitude
+      :param noise_scale: Noise scale
+      :param octaves: Number of octaves
+      :param seed: Random seed
+      :param smoothing_factor: Smoothing factor
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      # Create start and end vectors
+      start = Vector(start_x, start_y, name='start')
+      end = Vector(end_x, end_y, name='end')
+      
+      # Create noise instance
+      noise = SimplexNoise(
+        seed=seed,
+        scale=noise_scale,
+        octaves=octaves,
+        persistence=0.5,
+        lacunarity=2.0,
+        amplitude=amplitude
+      )
+      
+      # Create line with noise
+      line = Line(
+        start=start,
+        stop=end,
+        noise=noise,
+        noise_segments=segments,
+        smoothing_factor=smoothing_factor
+      )
+      
+      # Build the shape and convert to VectorPath for SVG output
+      line_points = line.build_shape()
+      
+      # Create VectorPath from points
+      path = VectorPath(name='noisyLine', abs_segments=line_points, close=False)
+      svg_output = list(path.svg_path())
+      
+      result = {'shape': svg_output}
+      
+      # Print formatted output
+      print(f"\nNoisy Line (start=({start_x}, {start_y}), end=({end_x}, {end_y}), amplitude={amplitude}, seed={seed}):")
+      for line_svg in svg_output:
+        print(line_svg)
+        
+      # Handle draw.io output if requested
+      if drawio:
+        params = {
+          'amp': amplitude,
+          'seg': segments,
+          'seed': seed
+        }
+        self.parent._handle_drawio_output(line_points, 'noisy_line', params, drawio, drawio_output)
+      
       return result
 
 if __name__ == '__main__':
