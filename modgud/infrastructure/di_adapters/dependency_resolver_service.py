@@ -4,7 +4,7 @@ import functools
 import inspect
 from typing import Any, Callable, Dict
 
-from ...domain.ports.di_port import (
+from ...domain.ports import (
   DIContainerPort,
   InjectableDetectorPort,
 )

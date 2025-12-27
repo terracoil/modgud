@@ -9,27 +9,29 @@ This module re-exports port definitions from their individual files
 following the single class per file principle.
 """
 
-from .decorator_factory_port import (
+from .decorator_factory import (
   ChainableDecoratorFactoryPort,
   SafeDecoratorFactoryPort,
 )
-from .di_port import (
+from .di import (
   DependencyResolverPort,
   DIContainerPort,
   InjectableDetectorPort,
   InjectionMapBuilderPort,
 )
-from .guard_port import GuardRuntimePort, GuardValidatorPort, GuardWrapperPort
+from .guard import GuardRuntimePort, GuardValidatorPort, GuardWrapperPort
 from .maybe_port import MaybePort
-from .pipeable_port import PipeableFactoryPort, PipeablePort
+from .noise_port import NoisePort
+from .pipeable import PipeableFactoryPort, PipeablePort
 from .result_port import ResultPort
 from .shape_port import ShapePort
-from .transform_port import (
+from .transform import (
   ASTTransformationPort,
   ImplicitReturnTransformerPort,
   SourceExtractorPort,
   TransformationResultPort,
 )
+from .vector_port import VectorPort
 
 __all__ = [
   'ASTTransformationPort',
@@ -43,6 +45,7 @@ __all__ = [
   'InjectableDetectorPort',
   'InjectionMapBuilderPort',
   'MaybePort',
+  'NoisePort',
   'PipeablePort',
   'PipeableFactoryPort',
   'ResultPort',
@@ -50,4 +53,5 @@ __all__ = [
   'ShapePort',
   'SourceExtractorPort',
   'TransformationResultPort',
+  'VectorPort',
 ]

@@ -172,12 +172,12 @@ class ShapeTools:
         """Initialize with parent ShapeTools instance."""
         self.parent: 'ShapeTools' = parent
 
-    def stackable_trapezoid(self, angle: float = 70, notch_height: float = 0.2, width: float = 100, height: float = 100, 
+    def stackable_trapezoid(self, h2: float = 0.272, notch_height: float = 0.2, width: float = 100, height: float = 100, 
                             invert: bool = False, drawio: bool = False, drawio_output: str | None = None) -> dict[str, Any]:
       """
       Generate a stackable trapezoid using the proper geometry module.
       
-      :param angle: Trapezoid angle in degrees
+      :param h2: Ratio of top edge to bottom edge width (0.2 to 0.85)
       :param notch_height: Height of stacking notch as percentage
       :param width: Width of trapezoid
       :param height: Height of trapezoid
@@ -186,7 +186,7 @@ class ShapeTools:
       :param drawio_output: Optional output directory for draw.io file
       """
       trapezoid = StackableTrapezoid(
-        angle=angle,
+        h2=h2,
         notch_height=notch_height,
         width=width,
         height=height,
@@ -194,20 +194,20 @@ class ShapeTools:
       )
 
       # Convert to legacy format using migrate_shape_result
-      from modgud.api.geometry.svg_converter import migrate_shape_result
+      from modgud.api.geometry.svg import migrate_shape_result
       trap_vectors = trapezoid.build_shape()
       trap_path:dict[str, list[str]] = migrate_shape_result(trap_vectors, 'shape')
 
       # Print formatted output
       svg_shape = trap_path['shape']
-      print(f"\nStackable Trapezoid (angle={angle}°, stackable_pct={notch_height}):")
+      print(f"\nStackable Trapezoid (h2={h2:.3f}, stackable_pct={notch_height}):")
       for line in svg_shape:
         print(line)
         
       # Handle draw.io output if requested
       if drawio:
         params = {
-          'angle': angle,
+          'h2': h2,
           'notch': notch_height,
           'invert': invert
         }
@@ -215,58 +215,6 @@ class ShapeTools:
 
       return trap_path
 
-    def stackable_trapezoid_demo(self, count: int = 3, angle: float = 70, stackable_pct: float = 0.2, width: float = 100, 
-                                 height: float = 100, drawio: bool = False, drawio_output: str | None = None) -> dict[str, Any]:
-      """
-      Generate a demo of nested stackable trapezoids.
-      
-      :param count: Number of nested trapezoids
-      :param angle: Trapezoid angle in degrees
-      :param stackable_pct: Stacking percentage
-      :param width: Base width
-      :param height: Base height
-      :param drawio: Generate draw.io file
-      :param drawio_output: Optional output directory for draw.io file
-      """
-      trapezoid = StackableTrapezoid(
-        angle=angle,
-        notch_height=stackable_pct,  # stackable_pct maps to notch_height
-        width=width,
-        height=height
-      )
-
-      # Get list of vector sequences from new method
-      vector_sequences = trapezoid.calculate_nesting_positions(count=count)
-      
-      # Convert to legacy format with SVG strings
-      from modgud.api.geometry.svg_converter import SVGConverter
-      shapes_svg = []
-      for i, vector_seq in enumerate(vector_sequences):
-        svg_lines = SVGConverter.vectors_to_svg(vector_seq, close=True, name=f'shape_{i}')
-        shapes_svg.append(svg_lines)
-      
-      result = {'shapes': shapes_svg}
-
-      # Print formatted output
-      shapes = result['shapes']
-      print(f"\nStackable Trapezoid Demo ({count} shapes, angle={angle}°):")
-      for i, shape in enumerate(shapes):
-        print(f"\n--- Shape {i+1} ---")
-        for line in shape:
-          print(line)
-          
-      # Handle draw.io output if requested
-      if drawio:
-        # Use the first (largest) shape for draw.io
-        if vector_sequences:
-          params = {
-            'count': count,
-            'angle': angle,
-            'stackpct': stackable_pct
-          }
-          self.parent._handle_drawio_output(vector_sequences[0], 'trapezoid_demo', params, drawio, drawio_output)
-
-      return result
 
     def torn_box(
       self,
@@ -318,7 +266,7 @@ class ShapeTools:
       )
 
       # Convert to legacy format using migrate_shape_result
-      from modgud.api.geometry.svg_converter import migrate_shape_result
+      from modgud.api.geometry.svg import migrate_shape_result
       tp_vectors = torn_paper.build_shape()
       result = migrate_shape_result(tp_vectors, 'shape')
 

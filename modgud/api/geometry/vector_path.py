@@ -9,7 +9,7 @@ from enum import IntEnum, StrEnum, auto
 from typing import Callable, Generator, Iterable, Sequence
 
 from ...domain.ports.vector_port import VectorPort
-from .lerper import Lerper
+from .interpolation.lerper import Lerper
 from .vector import Vector
 
 

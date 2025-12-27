@@ -15,7 +15,6 @@ from .di.service_container import ServiceContainer
 from .err_result import ErrResult
 from .guard_registry import GuardRegistry
 from .guard_runtime import GuardRuntime
-from .implicit_return import ImplicitReturnTransformer
 from .maybe_factory import MaybeFactory
 from .nothing_maybe import Nothing
 from .ok_result import Ok
@@ -24,6 +23,7 @@ from .pipeable_wrapper import Pipeable
 from .result_factory import ResultFactory
 from .safe_expression_factory import SafeExpressionFactory
 from .some_maybe import Some
+from .transform import ImplicitReturnTransformer
 
 __all__ = [
   'ChainableExpression',

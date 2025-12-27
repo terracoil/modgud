@@ -30,8 +30,9 @@ class TestStackableTrapezoid:
     assert any('<close/>' in line for line in svg_lines)
 
   def test_custom_parameters(self):
-    """Test trapezoid with custom angle and stackable percentage."""
-    st = StackableTrapezoid(angle=75, notch_height=0.3, width=80, height=60)
+    """Test trapezoid with custom h2 and stackable percentage."""
+    # h2=0.5 is roughly equivalent to angle=75
+    st = StackableTrapezoid(h2=0.5, notch_height=0.3, width=80, height=60)
     result = st.build_shape()
 
     # Verify new return structure
@@ -68,12 +69,12 @@ class TestStackableTrapezoid:
 
   def test_parameter_validation(self):
     """Test that invalid parameters raise appropriate errors."""
-    # Test angle validation - errors occur at construction time
-    with pytest.raises(ValueError, match='angle should be between 70° and 85°'):
-      StackableTrapezoid(angle=60)
+    # Test h2 validation - errors occur at construction time
+    with pytest.raises(ValueError, match='h2 should be between 0.2 and 0.85'):
+      StackableTrapezoid(h2=0.1)
 
-    with pytest.raises(ValueError, match='angle should be between 70° and 85°'):
-      StackableTrapezoid(angle=90)
+    with pytest.raises(ValueError, match='h2 should be between 0.2 and 0.85'):
+      StackableTrapezoid(h2=0.9)
 
     # Test notch_height validation
     with pytest.raises(ValueError, match='notch_height should be between 10% and 40%'):
@@ -82,20 +83,20 @@ class TestStackableTrapezoid:
     with pytest.raises(ValueError, match='notch_height should be between 10% and 40%'):
       StackableTrapezoid(notch_height=0.6)
 
-  def test_valid_angle_range(self):
-    """Test trapezoid with valid angle range."""
-    # Test minimum valid angle
-    st_min = StackableTrapezoid(angle=70)
+  def test_valid_h2_range(self):
+    """Test trapezoid with valid h2 range."""
+    # Test minimum valid h2 (wide top)
+    st_min = StackableTrapezoid(h2=0.2)
     result_min = st_min.build_shape()
     ShapeTestUtils.assert_valid_vector_sequence(result_min)
 
-    # Test maximum valid angle
-    st_max = StackableTrapezoid(angle=85)
+    # Test maximum valid h2 (narrow top)
+    st_max = StackableTrapezoid(h2=0.85)
     result_max = st_max.build_shape()
     ShapeTestUtils.assert_valid_vector_sequence(result_max)
 
-    # Test middle range angle
-    st_mid = StackableTrapezoid(angle=77)
+    # Test middle range h2
+    st_mid = StackableTrapezoid(h2=0.5)
     result_mid = st_mid.build_shape()
     ShapeTestUtils.assert_valid_vector_sequence(result_mid)
 
@@ -130,7 +131,7 @@ class TestStackableTrapezoid:
 
   def test_stackability(self):
     """Test that generated trapezoids have proper notch dimensions for stacking."""
-    st = StackableTrapezoid(angle=75, notch_height=0.2)
+    st = StackableTrapezoid(h2=0.5, notch_height=0.2)
     result = st.build_shape()
 
     # Verify vector sequence structure
@@ -151,10 +152,10 @@ class TestStackableTrapezoid:
 
   def test_dataclass_immutability(self):
     """Test that StackableTrapezoid is immutable (frozen=True)."""
-    st = StackableTrapezoid(angle=75, notch_height=0.25, width=120, height=80)
+    st = StackableTrapezoid(h2=0.5, notch_height=0.25, width=120, height=80)
 
     # Test that we can't modify attributes
-    ShapeTestUtils.assert_dataclass_immutability(st, 'angle', 80)
+    ShapeTestUtils.assert_dataclass_immutability(st, 'h2', 0.6)
     ShapeTestUtils.assert_dataclass_immutability(st, 'notch_height', 0.3)
     ShapeTestUtils.assert_dataclass_immutability(st, 'width', 150)
     ShapeTestUtils.assert_dataclass_immutability(st, 'invert', True)
@@ -162,7 +163,7 @@ class TestStackableTrapezoid:
   def test_constructor_parameters(self):
     """Test that all parameters work in constructor."""
     st = StackableTrapezoid(
-      angle=80,
+      h2=0.6,
       notch_height=0.35,
       width=150,
       height=120,
@@ -170,7 +171,7 @@ class TestStackableTrapezoid:
     )
 
     # Verify parameters are set correctly
-    assert st.angle == 80
+    assert st.h2 == 0.6
     assert st.notch_height == 0.35
     assert st.width == 150
     assert st.height == 120
@@ -182,12 +183,12 @@ class TestStackableTrapezoid:
 
   def test_validation_in_constructor(self):
     """Test that validation happens in constructor (__post_init__)."""
-    # Invalid angle should fail at construction
-    with pytest.raises(ValueError, match='angle should be between 70° and 85°'):
-      StackableTrapezoid(angle=65)
+    # Invalid h2 should fail at construction
+    with pytest.raises(ValueError, match='h2 should be between 0.2 and 0.85'):
+      StackableTrapezoid(h2=0.15)
 
-    with pytest.raises(ValueError, match='angle should be between 70° and 85°'):
-      StackableTrapezoid(angle=90)
+    with pytest.raises(ValueError, match='h2 should be between 0.2 and 0.85'):
+      StackableTrapezoid(h2=0.95)
 
     # Invalid notch_height should fail at construction
     with pytest.raises(ValueError, match='notch_height should be between 10% and 40%'):
@@ -198,7 +199,7 @@ class TestStackableTrapezoid:
 
   def test_return_type_is_vector_sequence(self):
     """Test that build_shape returns Sequence[VectorPort], not SVG dict."""
-    st = StackableTrapezoid(angle=75)
+    st = StackableTrapezoid(h2=0.5)
 
     result = st.build_shape()
 
@@ -211,7 +212,7 @@ class TestStackableTrapezoid:
 
   def test_backward_compatibility_conversion(self):
     """Test that results can be converted to legacy format."""
-    st = StackableTrapezoid(angle=72, notch_height=0.15, width=80, height=60)
+    st = StackableTrapezoid(h2=0.4, notch_height=0.15, width=80, height=60)
 
     vectors = st.build_shape()
     legacy_dict = ShapeTestUtils.assert_backward_compatibility(vectors)
@@ -229,17 +230,17 @@ class TestStackableTrapezoid:
 
   def test_different_parameters_produce_different_results(self):
     """Test that different parameters produce different shapes."""
-    st1 = StackableTrapezoid(angle=72, notch_height=0.2)
-    st2 = StackableTrapezoid(angle=78, notch_height=0.2)
-    st3 = StackableTrapezoid(angle=72, notch_height=0.3)
-    st4 = StackableTrapezoid(angle=72, notch_height=0.2, invert=True)
+    st1 = StackableTrapezoid(h2=0.4, notch_height=0.2)
+    st2 = StackableTrapezoid(h2=0.65, notch_height=0.2)
+    st3 = StackableTrapezoid(h2=0.4, notch_height=0.3)
+    st4 = StackableTrapezoid(h2=0.4, notch_height=0.2, invert=True)
 
     result1 = st1.build_shape()
     result2 = st2.build_shape()
     result3 = st3.build_shape()
     result4 = st4.build_shape()
 
-    # Different angles should produce different results
+    # Different h2 values should produce different results
     assert result1 != result2
 
     # Different notch heights should produce different results
@@ -251,18 +252,18 @@ class TestStackableTrapezoid:
   def test_extreme_valid_parameters(self):
     """Test with extreme but valid parameter values."""
     # Minimum valid parameters
-    st_min = StackableTrapezoid(angle=70, notch_height=0.1, width=10, height=10)
+    st_min = StackableTrapezoid(h2=0.272, notch_height=0.1, width=10, height=10)
     result_min = st_min.build_shape()
     ShapeTestUtils.assert_valid_vector_sequence(result_min)
 
     # Maximum valid parameters
-    st_max = StackableTrapezoid(angle=85, notch_height=0.4, width=1000, height=1000)
+    st_max = StackableTrapezoid(h2=0.826, notch_height=0.4, width=1000, height=1000)
     result_max = st_max.build_shape()
     ShapeTestUtils.assert_valid_vector_sequence(result_max)
 
   def test_nesting_positions_offset_calculation(self):
     """Test that nesting positions have proper vertical offsets."""
-    st = StackableTrapezoid(angle=75, notch_height=0.25, height=100)
+    st = StackableTrapezoid(h2=0.5, notch_height=0.25, height=100)
     positions = st.calculate_nesting_positions(count=3)
 
     # Should have 3 shapes

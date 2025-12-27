@@ -1,16 +1,8 @@
-"""
-Pipeable port for the modgud domain layer.
-
-This module defines the port (interface) for pipeable objects that support
-functional-style pipeline operations using the | operator with partial application.
-"""
+"""Port definition for objects that support pipeline operations via | operator."""
 
 from __future__ import annotations
 
-from typing import Any, Callable, Protocol, TypeVar, Union, runtime_checkable
-
-T = TypeVar('T')
-R = TypeVar('R')
+from typing import Any, Protocol, Union, runtime_checkable
 
 
 @runtime_checkable
@@ -70,35 +62,4 @@ class PipeablePort(Protocol):
 
   def __repr__(self) -> str:
     """Return a string representation of the Pipeable."""
-    ...
-
-
-@runtime_checkable
-class PipeableFactoryPort(Protocol):
-  """Interface for factories that create pipeable objects."""
-
-  def create_pipeable(self, func: Callable[..., Any]) -> PipeablePort:
-    """
-    Create a pipeable wrapper around a function.
-
-    Args:
-        func: The function to make pipeable
-
-    Returns:
-        PipeablePort: Pipeable wrapper around the function
-
-    """
-    ...
-
-  def pipeable_decorator(self, func: Callable[..., T]) -> PipeablePort:
-    """
-    Decorator that makes functions pipeable via | operator.
-
-    Args:
-        func: The function to make pipeable
-
-    Returns:
-        A Pipeable wrapper around the function
-
-    """
     ...

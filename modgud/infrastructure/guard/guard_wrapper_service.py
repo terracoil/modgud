@@ -3,7 +3,7 @@
 import functools
 from typing import Any, Callable, Tuple
 
-from ...domain.ports.guard_port import GuardRuntimePort
+from ...domain.ports.guard import GuardRuntimePort
 from ...domain.types import FailureBehavior, GuardFunction
 
 

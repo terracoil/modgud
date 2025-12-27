@@ -89,20 +89,20 @@ class TestDecoratorComposition:
     with pytest.raises(GuardClauseError, match='y cannot be None'):
       standalone_guards(5, None)
 
-  def test_deprecation_warning(self):
-    """Test that deprecation warning is issued for implicit_return parameter."""
+  def test_no_deprecation_warning(self):
+    """Test that no deprecation warning is issued for implicit_return parameter (feature undeprecated)."""
     with warnings.catch_warnings(record=True) as w:
       warnings.simplefilter('always')
 
       @guarded_expression(positive('x'), implicit_return=False)
-      def deprecated_usage(x):
+      def explicit_return_usage(x):
         return x * 2
 
-      # Check that a deprecation warning was issued
-      assert len(w) == 1
-      assert issubclass(w[0].category, DeprecationWarning)
-      assert "implicit_return' parameter on @guarded_expression is deprecated" in str(w[0].message)
-      assert 'Use the @implicit_return decorator separately' in str(w[0].message)
+      # Check that no deprecation warning was issued (feature is now supported)
+      assert len(w) == 0
+
+      # Verify functionality still works
+      assert explicit_return_usage(5) == 10
 
   def test_no_warning_for_default(self):
     """Test that no warning is issued when using default implicit_return=True."""

@@ -8,7 +8,6 @@ This is the primary decorator for the modgud library, unifying the functionality
 of guard_clause and implicit_return into a single, composable decorator.
 """
 
-import warnings
 from typing import Any, Callable
 
 from modgud.domain import (
@@ -33,14 +32,13 @@ class guarded_expression:
   Args:
       *guards: Guard functions returning True or error message string
       implicit_return: Enable implicit return transformation (default: True)
-          DEPRECATED: Use @implicit_return decorator separately for composition
       on_error: Failure behavior (default: GuardClauseError) - can be:
           - Value (str, int, None, etc.): Returned on guard failure
           - Callable: Invoked with (error_msg, *args, **kwargs), return value used
           - Exception class: Instantiated with error message and raised
       log: If True, log guard failures at INFO level (default: False)
 
-  Usage (recommended - with separate decorators):
+  Usage (with separate decorators):
       from modgud import implicit_return, guarded_expression
 
       @implicit_return
@@ -51,10 +49,10 @@ class guarded_expression:
           result = 100 / x
           result  # No explicit return needed
 
-  Usage (deprecated - with implicit_return parameter):
+  Usage (with implicit_return parameter):
       @guarded_expression(
           lambda x: x > 0 or "Must be positive",
-          implicit_return=True,  # DEPRECATED
+          implicit_return=True,
           on_error=GuardClauseError
       )
       def safe_divide(x):
@@ -75,7 +73,7 @@ class guarded_expression:
 
     Args:
         *guards: Variable number of guard functions
-        implicit_return: Enable implicit return transformation (DEPRECATED - use @implicit_return decorator instead)
+        implicit_return: Enable implicit return transformation (default: True)
         on_error: Behavior on guard failure
         log: Enable logging of guard failures
 
@@ -90,17 +88,7 @@ class guarded_expression:
     self._guard_wrapper = locator.resolve(GuardWrapperPort)
     self._implicit_transformer = locator.resolve(ImplicitReturnTransformerPort)
 
-    # Issue deprecation warning if implicit_return parameter is used
-    if implicit_return is not True:  # Only warn if explicitly set to False
-      warnings.warn(
-        "The 'implicit_return' parameter on @guarded_expression is deprecated and will be removed in v2.0.0. "
-        'Use the @implicit_return decorator separately for explicit composition:\n'
-        '  @implicit_return\n'
-        '  @guarded_expression(guards...)\n'
-        '  def my_function(): ...',
-        DeprecationWarning,
-        stacklevel=2,
-      )
+    # Removed deprecation warning - implicit_return parameter is now a supported feature
 
   def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
     """Apply guard wrapping and optional implicit return transformation."""

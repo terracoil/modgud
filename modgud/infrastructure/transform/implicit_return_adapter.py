@@ -3,7 +3,7 @@
 import inspect
 from typing import Callable, TypeVar
 
-from ..implicit_return import ImplicitReturnTransformer
+from .implicit_return_transformer import ImplicitReturnTransformer
 
 T = TypeVar('T')
 

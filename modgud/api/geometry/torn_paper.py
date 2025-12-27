@@ -5,15 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
-from ...domain.ports.noise_port import NoisePort
-from ...domain.ports.vector_port import VectorPort
+from modgud.domain.ports import NoisePort, ShapePort, VectorPort
+
 from .line import Line
 from .vector import Vector
 from .vector_path import VectorPath
 
 
 @dataclass(frozen=True)
-class TornPaper:
+class TornPaper(ShapePort):
   """Generate rectangles with procedurally torn edges using NoisePort for natural appearance."""
 
   noise: NoisePort

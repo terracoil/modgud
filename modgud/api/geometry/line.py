@@ -5,13 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
-from ...domain.ports.noise_port import NoisePort
-from ...domain.ports.vector_port import VectorPort
+from modgud.domain.ports import NoisePort, ShapePort, VectorPort
+
 from .vector import Vector
 
 
 @dataclass(frozen=True)
-class Line:
+class Line(ShapePort):
   """Line geometry class with support for noise application and optional smoothing."""
 
   start: VectorPort

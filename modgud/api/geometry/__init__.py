@@ -12,23 +12,27 @@ This module provides geometry-related functionality including:
 
 from ...domain.ports.noise_port import NoisePort
 from ...domain.ports.vector_port import VectorPort
+from .geo_util import GeoUtil
+from .interpolation import Lerper, LerpStrategy
 from .joinery import Joinery
-from .lerper import Lerper, LerpStrategy
 from .line import Line
+from .quadrilateral import Quadrilateral
 from .simplex_noise import SimplexNoise
 from .stackable_trapezoid import StackableTrapezoid
-from .svg_converter import JoineryResult, SVGConverter, migrate_shape_result
+from .svg import JoineryResult, SVGConverter, migrate_shape_result
 from .torn_paper import TornPaper
 from .vector import Vector
 from .vector_path import VectorPath
 
 __all__ = [
+  'GeoUtil',
   'JoineryResult',
   'Joinery',
   'Lerper',
   'LerpStrategy',
   'Line',
   'NoisePort',
+  'Quadrilateral',
   'SVGConverter',
   'SimplexNoise',
   'StackableTrapezoid',

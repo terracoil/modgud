@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from typing import Sequence
 
+from ...domain.ports import ShapePort
 from ...domain.ports.vector_port import VectorPort
 from .vector import Vector
 from .vector_path import VectorPath
 
 
 @dataclass(frozen=True)
-class StackableTrapezoid:
+class StackableTrapezoid(ShapePort):
   """Generate stackable trapezoid shapes with bottom notch for nesting."""
 
-  angle: float = 70
+  h2: float = 0.272  # Ratio of top edge to bottom edge (default equivalent to 70° angle)
   notch_height: float = 0.2
   width: float = 100
   height: float = 100
@@ -36,23 +36,18 @@ class StackableTrapezoid:
 
     :returns: Sequence of VectorPort objects representing the trapezoid outline
     """
-    # Convert to radians and calculate slope
-    rad_angle = math.radians(self.angle)
+    # h2 directly represents the top width ratio
+    top_width = self.h2
 
-    # For a trapezoid with sides at 'angle' degrees from vertical:
-    # The horizontal offset per unit height is 1/tan(angle) = cot(angle)
-    # This is because we want horizontal_offset / height = cot(angle)
-    slope_offset = 1.0 / math.tan(rad_angle)
+    # Calculate slope offset from h2
+    # top_width = 1.0 - 2 * slope_offset
+    # Therefore: slope_offset = (1.0 - top_width) / 2
+    slope_offset = (1.0 - self.h2) / 2
 
     # In normalized coordinates (0-1), the trapezoid has:
     # - Bottom width: 1.0 (from x=0 to x=1)
-    # - Top width: 1.0 - 2*slope_offset (centered)
+    # - Top width: h2 (centered)
     # - Height: 1.0
-    top_width = 1.0 - 2 * slope_offset
-
-    # Ensure top width is reasonable
-    if top_width < 0.2:
-      raise ValueError(f'Angle {self.angle}° is too steep - reduces top width to {top_width:.2f}')
 
     # Notch dimensions - must fit the TOP of another identical trapezoid
     notch_depth = self.notch_height  # How far up the notch cuts
@@ -74,7 +69,7 @@ class StackableTrapezoid:
     # Bottom: (0,1) to (1,1) with centered notch
     # Top: (slope_offset, 0) to (1-slope_offset, 0)
 
-    path_name = f'trapezoid_{self.angle:.0f}°_{self.notch_height:.1f}'
+    path_name = f'trapezoid_h2_{self.h2:.3f}_{self.notch_height:.1f}'
 
     if not self.invert:
       # Build trapezoid path - start at the actual top-left corner, go clockwise
@@ -131,9 +126,10 @@ class StackableTrapezoid:
 
   def _validate_parameters(self) -> None:
     """Validate all input parameters."""
-    # Validate angle
-    if self.angle < 70 or self.angle > 85:
-      raise ValueError('angle should be between 70° and 85°')
+    # Validate h2 (top width ratio)
+    # Original angle range 70° to 85° corresponds to h2 range ~0.272 to ~0.826
+    if self.h2 < 0.2 or self.h2 > 0.85:
+      raise ValueError('h2 should be between 0.2 and 0.85 (20% to 85% of bottom width)')
 
     # Validate notch_height
     if self.notch_height < 0.1 or self.notch_height > 0.4:

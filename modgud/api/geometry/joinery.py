@@ -7,7 +7,7 @@ from typing import Sequence
 
 from modgud.util.math_util import MathUtil
 
-from ...domain.ports.vector_port import VectorPort
+from modgud.domain.ports.vector_port import VectorPort
 from .vector import Vector
 from .vector_path import VectorPath
 
@@ -78,7 +78,7 @@ class Joinery:
     port_vectors = self.build_port_shape()
 
     # Convert to legacy SVG format using the SVG converter
-    from .svg_converter import SVGConverter
+    from .svg import SVGConverter
 
     result = {
       'teeth': SVGConverter.vectors_to_svg(teeth_vectors, close=True, name='teeth'),

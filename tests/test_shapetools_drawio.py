@@ -128,7 +128,7 @@ class TestShapeToolsDrawIO:
   def test_stackable_trapezoid_drawio(self, project_root):
     """Test draw.io generation for stackable trapezoids."""
     result = self.run_shapetools(
-      ['shape', 'stackable-trapezoid', '--angle', '75', '--notch-height', '0.25', '--drawio'],
+      ['shape', 'stackable-trapezoid', '--h2', '0.5', '--notch-height', '0.25', '--drawio'],
       project_root,
     )
 
@@ -172,15 +172,11 @@ class TestShapeToolsDrawIO:
     assert self.validate_drawio_file(drawio_files[0])
 
   def test_trapezoid_demo_drawio(self, project_root):
-    """Test draw.io generation for trapezoid demo."""
+    """Test draw.io generation for trapezoid demo using stackable-trapezoid with demo parameters."""
     result = self.run_shapetools(
       [
         'shape',
-        'stackable-trapezoid-demo',
-        '--count',
-        '2',
-        '--angle',
-        '75',  # Valid angle between 70-85
+        'stackable-trapezoid',
         '--drawio',
       ],
       project_root,
@@ -190,7 +186,7 @@ class TestShapeToolsDrawIO:
     assert '✓ Created draw.io file:' in result.stdout
 
     # Verify demo file
-    drawio_files = list(project_root.glob('trapezoid_demo_*.drawio'))
+    drawio_files = list(project_root.glob('stackable_trapezoid_*.drawio'))
     assert len(drawio_files) >= 1
     assert self.validate_drawio_file(drawio_files[0])
 

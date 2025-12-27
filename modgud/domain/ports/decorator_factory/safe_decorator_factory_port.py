@@ -1,43 +1,10 @@
-"""
-Decorator factory ports for the modgud domain layer.
-
-This module defines the ports (interfaces) that decorator factories must implement,
-allowing the app layer to depend on abstractions rather than concrete implementations.
-"""
+"""Port definition for factories that create safe expression decorators."""
 
 from __future__ import annotations
 
 from typing import Any, Callable, Protocol, runtime_checkable
 
-from .result_port import ResultPort
-
-
-@runtime_checkable
-class ChainableDecoratorFactoryPort(Protocol):
-  """Interface for factories that create chainable expression decorators."""
-
-  def create_decorator(self) -> Callable[[Callable], Callable]:
-    """
-    Create a decorator that makes functions return chainable expressions.
-
-    Returns:
-        Callable: A decorator function
-
-    """
-    ...
-
-  def create_expression(self, value: Any) -> Any:
-    """
-    Wrap a value for chaining.
-
-    Args:
-        value: The value to wrap
-
-    Returns:
-        Wrapped value with chaining capabilities
-
-    """
-    ...
+from ..result_port import ResultPort
 
 
 @runtime_checkable

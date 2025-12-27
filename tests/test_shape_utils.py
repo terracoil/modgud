@@ -3,7 +3,7 @@
 from typing import Sequence
 
 from modgud.api.geometry import SimplexNoise, Vector
-from modgud.api.geometry.svg_converter import SVGConverter, migrate_shape_result
+from modgud.api.geometry.svg import SVGConverter, migrate_shape_result
 from modgud.domain.ports.vector_port import VectorPort
 
 

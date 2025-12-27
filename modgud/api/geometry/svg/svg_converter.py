@@ -1,12 +1,12 @@
-"""SVG Conversion Utilities for ShapePort migration."""
+"""Convert vector sequences to SVG paths for backward compatibility."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Sequence
 
-from ...domain.ports.vector_port import VectorPort
-from .vector_path import VectorPath
+from ....domain.ports.vector_port import VectorPort
+from ..vector_path import VectorPath
 
 
 @dataclass(frozen=True)
@@ -67,37 +67,3 @@ class SVGConverter:
       'right': SVGConverter.vectors_to_svg(right, close=True, name='right'),
       'teeth': SVGConverter.vectors_to_svg(teeth, close=True, name='teeth'),
     }
-
-
-@dataclass(frozen=True)
-class JoineryResult:
-  """Result container for Joinery multi-component output."""
-
-  left: Sequence[VectorPort]
-  right: Sequence[VectorPort]
-  teeth: Sequence[VectorPort]
-
-  def to_dict(self) -> dict[str, list[str]]:
-    """Convert to legacy dictionary format."""
-    return SVGConverter.joinery_dict(self.left, self.right, self.teeth)
-
-  def combined(self) -> Sequence[VectorPort]:
-    """Return all components as a single vector sequence."""
-    combined_vectors: list[VectorPort] = []
-    combined_vectors.extend(self.left)
-    combined_vectors.extend(self.right)
-    combined_vectors.extend(self.teeth)
-    return combined_vectors
-
-
-def migrate_shape_result(
-  vectors: Sequence[VectorPort], legacy_key: str = 'shape'
-) -> dict[str, list[str]]:
-  """
-  Helper to maintain backward compatibility during migration.
-
-  :param vectors: Vector sequence from new ShapePort.build_shape()
-  :param legacy_key: Key to use in legacy dictionary format
-  :return: Legacy dictionary format for existing code
-  """
-  return SVGConverter.shape_dict(vectors, key=legacy_key)
