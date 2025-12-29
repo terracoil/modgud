@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
+from modgud.domain.ports.vector_port import VectorPort
 from modgud.util.math_util import MathUtil
 
-from modgud.domain.ports.vector_port import VectorPort
 from .vector import Vector
 from .vector_path import VectorPath
 

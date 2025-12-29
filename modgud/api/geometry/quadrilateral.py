@@ -4,18 +4,33 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
+from modgud.domain.enums import PlacementEnum, QuadShapeEnum
 from modgud.domain.ports import ShapePort, VectorPort
+
 from .geo_util import GeoUtil
+
+if TYPE_CHECKING:
+  from modgud.domain.ports.noise_port import NoisePort
 
 
 @dataclass(frozen=True)
 class Quadrilateral(ShapePort):
   """Configurable quadrilateral shape generator implementing ShapePort protocol."""
 
-  shape_type: str = 'rectangle'
+  quad_shape: QuadShapeEnum = QuadShapeEnum.RECTANGLE
   params: dict[str, float] = field(default_factory=dict)
+  # Torn edge parameters
+  noise: Optional['NoisePort'] = None
+  noise_segments: int = 100
+  noise_amplitude: float = 5.0
+  notch_sides: list[PlacementEnum] = field(default_factory=lambda: [PlacementEnum.NONE])
+  notch_depth: float = 0.0
+  notch_offset: float = 0.0
+  notch_size: float = 0.1
+  smoothing_factor: float = 0.1
+  torn_sides: list[PlacementEnum] = field(default_factory=lambda: [PlacementEnum.NONE])
 
   def __post_init__(self) -> None:
     """Validate parameters after initialization."""
@@ -23,12 +38,27 @@ class Quadrilateral(ShapePort):
 
   def build_shape(self) -> Sequence[VectorPort]:
     """Build configured shape - satisfies ShapePort protocol."""
-    shape_method = getattr(self, self.shape_type, None)
-    if not shape_method:
-      raise ValueError(f'Unknown shape type: {self.shape_type}')
+    # First build the base shape using convention: enum name lowercased
+    # Special case: RECTANGLE maps to 'rect' method
+    if self.quad_shape == QuadShapeEnum.RECTANGLE:
+      method_name = 'rect'
+    else:
+      method_name = self.quad_shape.lower()
 
-    result = shape_method(**self.params)
-    return result
+    shape_method = getattr(self, method_name, None)
+    if not shape_method:
+      raise ValueError(f'Unknown shape type: {self.quad_shape}')
+
+    base_vertices = shape_method(**self.params)
+
+    # Apply torn edges if specified (check if not just NONE)
+    if (
+      self.torn_sides and any(side != PlacementEnum.NONE for side in self.torn_sides) and self.noise
+    ):
+      result = self._apply_torn_edges(base_vertices)
+      return result
+
+    return base_vertices
 
   def _validate_params(self) -> None:
     """Validate shape parameters based on shape type."""
@@ -36,6 +66,86 @@ class Quadrilateral(ShapePort):
     for name, value in self.params.items():
       if isinstance(value, (int, float)) and value <= 0:
         raise ValueError(f'Parameter {name} must be positive, got {value}')
+
+    # Validate torn sides if specified
+    if self.torn_sides and any(side != PlacementEnum.NONE for side in self.torn_sides):
+      self._validate_torn_sides_enum(self.torn_sides)
+      if not self.noise:
+        raise ValueError('noise parameter required when torn_sides is specified')
+
+    # Validate noise parameters
+    if self.noise_segments < 10 or self.noise_segments > 1000:
+      raise ValueError('noise_segments must be between 10 and 1000')
+
+    if self.noise_amplitude < 0.1 or self.noise_amplitude > 50.0:
+      raise ValueError('noise_amplitude must be between 0.1 and 50.0')
+
+    if not (0.0 <= self.smoothing_factor <= 1.0):
+      raise ValueError('smoothing_factor must be between 0.0 and 1.0')
+
+  def _validate_torn_sides_enum(self, torn_sides: list[PlacementEnum]) -> None:
+    """
+    Validate torn_sides list contains only valid placement values.
+
+    :param torn_sides: List of PlacementEnum values
+    :raises ValueError: If torn_sides contains invalid values
+    """
+    valid_sides = {
+      PlacementEnum.NORTH,
+      PlacementEnum.SOUTH,
+      PlacementEnum.EAST,
+      PlacementEnum.WEST,
+      PlacementEnum.NONE,
+    }
+    for side in torn_sides:
+      if side not in valid_sides:
+        raise ValueError(
+          f'Invalid torn side: {side}. Must be one of: NORTH, SOUTH, EAST, WEST, or NONE'
+        )
+
+  def _apply_torn_edges(self, vertices: list[VectorPort]) -> list[VectorPort]:
+    """Apply torn edges to the quadrilateral shape."""
+    if len(vertices) != 4:
+      raise ValueError('Torn edges only supported for quadrilaterals (4 vertices)')
+
+    # Convert torn_sides list to set for efficient lookup
+    torn_sides_set = set(self.torn_sides)
+
+    # Define edges in clockwise order to match TornPaper convention
+    # Quadrilateral vertices are typically: bottom-left, bottom-right, top-right, top-left
+    edges = [
+      (PlacementEnum.NORTH, vertices[3], vertices[2], 'top'),  # North: top-left to top-right
+      (PlacementEnum.EAST, vertices[1], vertices[2], 'right'),  # East: bottom-right to top-right
+      (
+        PlacementEnum.SOUTH,
+        vertices[0],
+        vertices[1],
+        'bottom',
+      ),  # South: bottom-left to bottom-right
+      (PlacementEnum.WEST, vertices[0], vertices[3], 'left'),  # West: bottom-left to top-left
+    ]
+
+    # Collect all points for the final shape
+    all_points = []
+
+    for side_enum, start_point, end_point, _edge_name in edges:
+      if side_enum in torn_sides_set:
+        # Create torn edge with adjusted amplitude
+        # Convert enum to string for GeoUtil compatibility
+        side_str = side_enum.name[0]  # Get first letter (N, S, E, W)
+        adjusted_amplitude = GeoUtil.get_fitting_amplitude(self.noise_amplitude, side_str)
+        scaled_noise = GeoUtil.create_scaled_noise(self.noise, adjusted_amplitude)
+
+        # Create torn edge points (excluding start to avoid duplication)
+        edge_points = GeoUtil.create_torn_edge(
+          start_point, end_point, scaled_noise, self.noise_segments, self.smoothing_factor
+        )
+        all_points.extend(edge_points[1:])  # Skip first point to avoid duplication
+      else:
+        # Straight edge - just add the end point
+        all_points.append(end_point)
+
+    return all_points
 
   # ==================== Private Helper Methods ====================
 

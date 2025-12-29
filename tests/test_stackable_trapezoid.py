@@ -76,11 +76,11 @@ class TestStackableTrapezoid:
     with pytest.raises(ValueError, match='h2 should be between 0.2 and 0.85'):
       StackableTrapezoid(h2=0.9)
 
-    # Test notch_height validation
-    with pytest.raises(ValueError, match='notch_height should be between 10% and 40%'):
+    # Test notch_depth validation
+    with pytest.raises(ValueError, match='notch_depth should be between 10% and 40%'):
       StackableTrapezoid(notch_height=0.05)
 
-    with pytest.raises(ValueError, match='notch_height should be between 10% and 40%'):
+    with pytest.raises(ValueError, match='notch_depth should be between 10% and 40%'):
       StackableTrapezoid(notch_height=0.6)
 
   def test_valid_h2_range(self):
@@ -156,7 +156,7 @@ class TestStackableTrapezoid:
 
     # Test that we can't modify attributes
     ShapeTestUtils.assert_dataclass_immutability(st, 'h2', 0.6)
-    ShapeTestUtils.assert_dataclass_immutability(st, 'notch_height', 0.3)
+    ShapeTestUtils.assert_dataclass_immutability(st, 'notch_depth', 0.3)
     ShapeTestUtils.assert_dataclass_immutability(st, 'width', 150)
     ShapeTestUtils.assert_dataclass_immutability(st, 'invert', True)
 
@@ -190,11 +190,11 @@ class TestStackableTrapezoid:
     with pytest.raises(ValueError, match='h2 should be between 0.2 and 0.85'):
       StackableTrapezoid(h2=0.95)
 
-    # Invalid notch_height should fail at construction
-    with pytest.raises(ValueError, match='notch_height should be between 10% and 40%'):
+    # Invalid notch_depth should fail at construction
+    with pytest.raises(ValueError, match='notch_depth should be between 10% and 40%'):
       StackableTrapezoid(notch_height=0.05)
 
-    with pytest.raises(ValueError, match='notch_height should be between 10% and 40%'):
+    with pytest.raises(ValueError, match='notch_depth should be between 10% and 40%'):
       StackableTrapezoid(notch_height=0.5)
 
   def test_return_type_is_vector_sequence(self):

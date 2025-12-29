@@ -131,9 +131,9 @@ class StackableTrapezoid(ShapePort):
     if self.h2 < 0.2 or self.h2 > 0.85:
       raise ValueError('h2 should be between 0.2 and 0.85 (20% to 85% of bottom width)')
 
-    # Validate notch_height
+    # Validate notch_depth
     if self.notch_height < 0.1 or self.notch_height > 0.4:
-      raise ValueError('notch_height should be between 10% and 40%')
+      raise ValueError('notch_depth should be between 10% and 40%')
 
   def calculate_nesting_positions(self, count: int = 3) -> list[Sequence[VectorPort]]:
     """

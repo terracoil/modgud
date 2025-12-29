@@ -2,6 +2,7 @@
 
 import pytest
 from modgud.api.geometry import Quadrilateral, Vector
+from modgud.domain.enums import QuadShapeEnum
 from modgud.domain.ports import ShapePort
 
 
@@ -10,7 +11,7 @@ class TestQuadrilateral:
 
   def test_quadrilateral_implements_shape_port(self):
     """Test that Quadrilateral implements ShapePort protocol."""
-    quad = Quadrilateral(shape_type='rectangle', params={'w': 2.0, 'h': 3.0})
+    quad = Quadrilateral(quad_shape=QuadShapeEnum.RECTANGLE, params={'w': 2.0, 'h': 3.0})
 
     # Test structural protocol compliance
     assert hasattr(quad, 'build_shape')
@@ -21,12 +22,12 @@ class TestQuadrilateral:
     """Test default Quadrilateral construction."""
     quad = Quadrilateral()
 
-    assert quad.shape_type == 'rectangle'
+    assert quad.quad_shape == QuadShapeEnum.RECTANGLE
     assert quad.params == {}
 
   def test_quadrilateral_build_shape_rectangle(self):
     """Test building a rectangle shape."""
-    quad = Quadrilateral(shape_type='rect', params={'w': 0.8, 'h': 0.6})
+    quad = Quadrilateral(quad_shape=QuadShapeEnum.RECTANGLE, params={'w': 0.8, 'h': 0.6})
     vectors = quad.build_shape()
 
     assert len(vectors) == 4
@@ -38,7 +39,7 @@ class TestQuadrilateral:
 
   def test_quadrilateral_build_shape_square(self):
     """Test building a square shape."""
-    quad = Quadrilateral(shape_type='square', params={'side': 0.7})
+    quad = Quadrilateral(quad_shape=QuadShapeEnum.SQUARE, params={'side': 0.7})
     vectors = quad.build_shape()
 
     assert len(vectors) == 4
@@ -50,7 +51,9 @@ class TestQuadrilateral:
 
   def test_quadrilateral_build_shape_parallelogram(self):
     """Test building a parallelogram shape."""
-    quad = Quadrilateral(shape_type='parallelogram', params={'w': 0.8, 'h': 0.6, 'angle': 60.0})
+    quad = Quadrilateral(
+      quad_shape=QuadShapeEnum.PARALLELOGRAM, params={'w': 0.8, 'h': 0.6, 'angle': 60.0}
+    )
     vectors = quad.build_shape()
 
     assert len(vectors) == 4
@@ -65,29 +68,32 @@ class TestQuadrilateral:
     assert abs(bottom_vec.y - top_vec.y) < 1e-6
 
   def test_quadrilateral_invalid_shape_type(self):
-    """Test error handling for unknown shape type."""
-    quad = Quadrilateral(shape_type='hexagon', params={'side': 0.5})
+    """Test error handling for invalid parameters with shape type."""
+    # Since we're using enums now, we can't pass invalid shape types
+    # Instead, test with invalid parameters for a shape
+    quad = Quadrilateral(quad_shape=QuadShapeEnum.PARALLELOGRAM, params={'w': 0.8, 'h': 0.6})
+    # No angle or side specified for parallelogram
 
-    with pytest.raises(ValueError, match='Unknown shape type: hexagon'):
+    with pytest.raises(ValueError, match='Specify exactly one of: angle or side'):
       quad.build_shape()
 
   def test_quadrilateral_parameter_validation_positive(self):
     """Test parameter validation requires positive values."""
     with pytest.raises(ValueError, match='Parameter side must be positive'):
-      Quadrilateral(shape_type='square', params={'side': -1.0})
+      Quadrilateral(quad_shape=QuadShapeEnum.SQUARE, params={'side': -1.0})
 
   def test_quadrilateral_parameter_validation_zero(self):
     """Test parameter validation rejects zero values."""
     with pytest.raises(ValueError, match='Parameter w must be positive'):
-      Quadrilateral(shape_type='rect', params={'w': 0.0, 'h': 0.5})
+      Quadrilateral(quad_shape=QuadShapeEnum.RECTANGLE, params={'w': 0.0, 'h': 0.5})
 
   def test_quadrilateral_immutability(self):
     """Test that Quadrilateral instances are immutable (frozen dataclass)."""
-    quad = Quadrilateral(shape_type='square', params={'side': 0.5})
+    quad = Quadrilateral(quad_shape=QuadShapeEnum.SQUARE, params={'side': 0.5})
 
-    # Should not be able to modify shape_type via normal assignment
+    # Should not be able to modify quad_shape via normal assignment
     with pytest.raises(Exception):  # FrozenInstanceError or AttributeError
-      quad.shape_type = 'rectangle'
+      quad.quad_shape = QuadShapeEnum.RECTANGLE
 
     # Test frozen behavior - try to modify an attribute that should be frozen
     # Note: The actual frozen behavior varies by Python implementation
@@ -98,7 +104,7 @@ class TestQuadrilateral:
 
     # Verify that attempting direct modification fails
     try:
-      quad.shape_type = 'rectangle'
+      quad.quad_shape = QuadShapeEnum.RECTANGLE
       # If we get here, the assignment succeeded, which it shouldn't for frozen dataclass
       assert False, 'Expected assignment to fail on frozen dataclass'
     except (dataclasses.FrozenInstanceError, AttributeError):
@@ -128,8 +134,8 @@ class TestQuadrilateral:
   def test_quadrilateral_dry_principle_square_uses_rectangle(self):
     """Test DRY principle: square should be rectangle with equal sides."""
     # Create square and rectangle with same dimensions
-    square_quad = Quadrilateral(shape_type='square', params={'side': 0.6})
-    rect_quad = Quadrilateral(shape_type='rect', params={'w': 0.6, 'h': 0.6})
+    square_quad = Quadrilateral(quad_shape=QuadShapeEnum.SQUARE, params={'side': 0.6})
+    rect_quad = Quadrilateral(quad_shape=QuadShapeEnum.RECTANGLE, params={'w': 0.6, 'h': 0.6})
 
     square_vectors = square_quad.build_shape()
     rect_vectors = rect_quad.build_shape()

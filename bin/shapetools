@@ -7,10 +7,12 @@ import json
 import math
 import sys
 import tomllib
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Dict, Sequence
 
-from modgud.api.geometry import Joinery, Line, SimplexNoise, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorPort
+from modgud.api.geometry import Joinery, Line, Quadrilateral, SimplexNoise, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorPort
+from modgud.domain.enums import PlacementEnum, QuadShapeEnum
 from modgud.infrastructure.drawio_manager import DrawIOManager
 from modgud.util import MathUtil
 
@@ -18,6 +20,12 @@ from modgud.util import MathUtil
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from freyja import FreyjaCLI
+
+
+class FooBarEnum(StrEnum):
+  bar = auto()
+  baz = auto()
+  foo = auto()
 
 
 class ShapeTools:
@@ -59,18 +67,18 @@ class ShapeTools:
     with open("pyproject.toml", "rb") as f:
       proj_map = tomllib.load(f)
       return proj_map["project"]["name"]
-      
+
   def _handle_drawio_output(
-    self, 
-    vectors: Sequence[VectorPort], 
-    shape_type: str, 
-    params: dict[str, Any], 
+    self,
+    vectors: Sequence[VectorPort],
+    shape_type: str,
+    params: dict[str, Any],
     drawio: bool = False,
     drawio_output: str | None = None
   ) -> None:
     """
     Handle draw.io file generation if requested.
-    
+
     :param vectors: Shape vectors to convert
     :param shape_type: Type of shape for filename
     :param params: Shape parameters for filename
@@ -79,10 +87,10 @@ class ShapeTools:
     """
     if not drawio:
       return
-      
+
     # Generate filename
     filename = self.drawio_manager.generate_filename(shape_type, params)
-    
+
     # Determine output path
     if drawio_output:
       output_dir = Path(drawio_output)
@@ -90,17 +98,17 @@ class ShapeTools:
       filepath = output_dir / f"{filename}.drawio"
     else:
       filepath = Path(f"{filename}.drawio")
-      
+
     # Create metadata
     metadata = {
       'name': shape_type.replace('_', ' ').title(),
       'shape_type': shape_type,
       'parameters': params
     }
-    
+
     # Create draw.io file
     created_path = self.drawio_manager.create_drawio_file(vectors, filepath, metadata)
-    
+
     # Print success message
     print(f"\n{self.colors['green']}✓ Created draw.io file:{self.colors['nc']} {created_path}")
     if self.verbose:
@@ -114,13 +122,14 @@ class ShapeTools:
       """Initialize with parent ShapeTools instance."""
       self.parent: 'ShapeTools' = parent
 
+
     def dovetail(self, teeth_slope_pct: float = 0.1, teeth_cnt: int = 2, tooth_depth_pct: float = 0.35,
                  corner_pct: float = 0.1, drawio: bool = False, drawio_output: str | None = None) -> dict[str, Any]:
       """
       Calculate the coordinates of dovetail joint points.
 
       Uses the Joinery class for all calculations.
-      
+
       :param teeth_slope_pct: Slope percentage for teeth
       :param teeth_cnt: Number of teeth
       :param tooth_depth_pct: Depth percentage for teeth
@@ -153,7 +162,7 @@ class ShapeTools:
         rgt: str = svg_right[i] if i < len(svg_right) else ''
         tth: str = svg_teeth[i] if i < len(svg_teeth) else ''
         print(f"{lft:<40}{rgt:<40}{tth:<40}")
-        
+
       # Handle draw.io output if requested
       if drawio:
         # Get the adapter shape vectors (left/adapter shape)
@@ -172,11 +181,11 @@ class ShapeTools:
         """Initialize with parent ShapeTools instance."""
         self.parent: 'ShapeTools' = parent
 
-    def stackable_trapezoid(self, h2: float = 0.272, notch_height: float = 0.2, width: float = 100, height: float = 100, 
+    def stackable_trapezoid(self, h2: float = 0.272, notch_height: float = 0.2, width: float = 100, height: float = 100,
                             invert: bool = False, drawio: bool = False, drawio_output: str | None = None) -> dict[str, Any]:
       """
       Generate a stackable trapezoid using the proper geometry module.
-      
+
       :param h2: Ratio of top edge to bottom edge width (0.2 to 0.85)
       :param notch_height: Height of stacking notch as percentage
       :param width: Width of trapezoid
@@ -203,7 +212,7 @@ class ShapeTools:
       print(f"\nStackable Trapezoid (h2={h2:.3f}, stackable_pct={notch_height}):")
       for line in svg_shape:
         print(line)
-        
+
       # Handle draw.io output if requested
       if drawio:
         params = {
@@ -215,6 +224,161 @@ class ShapeTools:
 
       return trap_path
 
+    def quadrilateral(
+      self,
+      quad_shape: QuadShapeEnum = QuadShapeEnum.RECTANGLE,
+      width: float = 100,
+      height: float = 100,
+      torn_sides: str = '',
+      segments: int = 100,
+      amplitude: float = 5.0,
+      noise_scale: float = 0.1,
+      octaves: int = 3,
+      seed: int = 42,
+      smoothing_factor: float = 0.1,
+      angle: float | None = None,
+      side: float | None = None,
+      w1: float | None = None,
+      w2: float | None = None,
+      h1: float | None = None,
+      h2: float | None = None,
+      side_left: float | None = None,
+      drawio: bool = False,
+      drawio_output: str | None = None
+    ) -> dict[str, Any]:
+      """
+      Generate a quadrilateral shape with optional torn edges.
+
+      Supports all quadrilateral types: rectangle, square, parallelogram, rhombus,
+      rightangle_trapezoid, general_trapezoid, isosceles_trapezoid, kite.
+
+      :param quad_shape: Type of quadrilateral to generate (QuadShapeEnum enum)
+      :param width: Width parameter (varies by shape type)
+      :param height: Height parameter (varies by shape type)
+      :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
+      :param notch_sides: Comma-separated sides to notch (e.g., "NW,SE" or "N,S")
+      :param segments: Number of segments in torn edges
+      :param amplitude: Amplitude of noise for torn edges
+      :param noise_scale: Scale of noise
+      :param octaves: Number of noise octaves
+      :param seed: Random seed
+      :param smoothing_factor: Smoothing factor
+      :param angle: Angle parameter for parallelogram/rhombus
+      :param side: Side parameter for parallelogram/rhombus
+      :param w1: Bottom width for trapezoids
+      :param w2: Top width for trapezoids
+      :param h1: Top height for kite
+      :param h2: Bottom height for kite
+      :param side_left: Left side length for trapezoids
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      # Parse torn_sides string into PlacementEnum list using enhanced convenience method
+      torn_sides_list = PlacementEnum.parse_sides_string(torn_sides) if torn_sides else [PlacementEnum.NONE]
+
+      # Build parameters dict based on shape type and provided values
+      params = {}
+      if quad_shape in [QuadShapeEnum.RECTANGLE]:
+        params = {'w': width/100, 'h': height/100}  # Normalize to [0,1] range
+      elif quad_shape == QuadShapeEnum.SQUARE:
+        params = {'side': min(width, height)/100}  # Use smaller dimension
+      elif quad_shape == QuadShapeEnum.PARALLELOGRAM:
+        params = {'w': width/100, 'h': height/100}
+        if angle is not None:
+          params['angle'] = angle
+        elif side is not None:
+          params['side'] = side/100
+        else:
+          params['angle'] = 45.0  # Default angle
+      elif quad_shape == QuadShapeEnum.RHOMBUS:
+        params = {'side': min(width, height)/100}
+        if angle is not None:
+          params['angle'] = angle
+        elif h1 is not None:
+          params['h'] = h1/100
+        else:
+          params['angle'] = 60.0  # Default angle
+      elif quad_shape == QuadShapeEnum.RIGHTANGLE_TRAPEZOID:
+        params = {'w1': (w1 or width)/100, 'h': height/100}
+        if w2 is not None:
+          params['w2'] = w2/100
+      elif quad_shape == QuadShapeEnum.GENERAL_TRAPEZOID:
+        params = {'w1': (w1 or width)/100, 'h': height/100}
+        if w2 is not None:
+          params['w2'] = w2/100
+        if side_left is not None:
+          params['side_left'] = side_left/100
+      elif quad_shape == QuadShapeEnum.ISOSCELES_TRAPEZOID:
+        params = {'w1': (w1 or width)/100, 'h': height/100}
+        if w2 is not None:
+          params['w2'] = w2/100
+        if side is not None:
+          params['side'] = side/100
+      elif quad_shape == QuadShapeEnum.KITE:
+        params = {'w': width/100, 'h1': (h1 or height/2)/100}
+        if h2 is not None:
+          params['h2'] = h2/100
+      else:
+        raise ValueError(f"Unsupported quad_shape: {quad_shape}")
+
+      # Create noise instance if torn sides specified (and not just NONE)
+      noise = None
+      if torn_sides_list and any(side != PlacementEnum.NONE for side in torn_sides_list):
+        noise = SimplexNoise(
+          seed=seed,
+          scale=noise_scale,
+          octaves=octaves,
+          persistence=0.5,
+          lacunarity=2.0,
+          amplitude=1.0
+        )
+
+      # Create quadrilateral
+      quad = Quadrilateral(
+        quad_shape=quad_shape,
+        params=params,
+        torn_sides=torn_sides_list,
+        noise=noise,
+        noise_segments=segments,
+        noise_amplitude=amplitude,
+        smoothing_factor=smoothing_factor
+      )
+
+      # Convert to legacy format using migrate_shape_result
+      from modgud.api.geometry.svg import migrate_shape_result
+      quad_vectors = quad.build_shape()
+
+      # Scale back up to original coordinate system
+      scaled_vectors = []
+      for v in quad_vectors:
+        scaled_v = Vector(v.x * 100, v.y * 100, v.z, v.w, name=v.name)
+        scaled_vectors.append(scaled_v)
+
+      result = migrate_shape_result(scaled_vectors, 'shape')
+
+      # Print formatted output
+      svg_shape = result['shape']
+      has_torn_sides = torn_sides_list and any(side != PlacementEnum.NONE for side in torn_sides_list)
+      if has_torn_sides:
+        torn_str = ','.join(side.name for side in torn_sides_list if side != PlacementEnum.NONE)
+        print(f"\nTorn {quad_shape.value.title()} (sides={torn_str}, amplitude={amplitude}, seed={seed}):")
+      else:
+        print(f"\n{quad_shape.value.title()}:")
+      for line in svg_shape:
+        print(line)
+
+      # Handle draw.io output if requested
+      if drawio:
+        torn_str = ','.join(side.name for side in torn_sides_list if side != PlacementEnum.NONE) if has_torn_sides else 'none'
+        draw_params = {
+          'type': quad_shape.value,
+          'torn': torn_str,
+          'amp': amplitude if has_torn_sides else 0,
+          'seed': seed if has_torn_sides else 0
+        }
+        self.parent._handle_drawio_output(scaled_vectors, f'quadrilateral_{quad_shape.value}', draw_params, drawio, drawio_output)
+
+      return result
 
     def torn_box(
       self,
@@ -232,12 +396,12 @@ class ShapeTools:
     ) -> dict[str, Any]:
       """
       Generate a torn paper box with specified torn edges.
-      
-      :param width: Box width
-      :param height: Box height
+
+      :param width: Width of the box
+      :param height: Height of the box
       :param torn_sides: Which sides to make torn (N/S/E/W combinations)
       :param segments: Number of segments in torn edges
-      :param amplitude: Amplitude of noise
+      :param amplitude: Amplitude of noise for torn edges
       :param noise_scale: Scale of noise
       :param octaves: Number of noise octaves
       :param seed: Random seed
@@ -254,7 +418,8 @@ class ShapeTools:
         lacunarity=2.0,
         amplitude=1.0
       )
-      
+
+      # Create torn paper box
       torn_paper = TornPaper(
         noise=noise,
         torn_sides=torn_sides,
@@ -262,28 +427,31 @@ class ShapeTools:
         amplitude=amplitude,
         width=width,
         height=height,
-        smoothing_factor=smoothing_factor,
+        smoothing_factor=smoothing_factor
       )
+
+      # Build the shape
+      torn_vectors = torn_paper.build_shape()
 
       # Convert to legacy format using migrate_shape_result
       from modgud.api.geometry.svg import migrate_shape_result
-      tp_vectors = torn_paper.build_shape()
-      result = migrate_shape_result(tp_vectors, 'shape')
+      result = migrate_shape_result(torn_vectors, 'shape')
 
       # Print formatted output
       svg_shape = result['shape']
       print(f"\nTorn Paper Box (sides={torn_sides}, amplitude={amplitude}, seed={seed}):")
       for line in svg_shape:
         print(line)
-        
-      # Handle draw.io output if requested  
+
+      # Handle draw.io output if requested
       if drawio:
         params = {
           'sides': torn_sides,
           'amp': amplitude,
-          'seed': seed
+          'seed': seed,
+          # 'seg': segments,  # Excluded to ensure 'sides' is in top 3
         }
-        self.parent._handle_drawio_output(tp_vectors, 'torn_box', params, drawio, drawio_output)
+        self.parent._handle_drawio_output(torn_vectors, 'torn_box', params, drawio, drawio_output)
 
       return result
 
@@ -304,7 +472,7 @@ class ShapeTools:
     ) -> dict[str, Any]:
       """
       Generate a noisy line with specified parameters.
-      
+
       :param start_x: Starting X coordinate
       :param start_y: Starting Y coordinate
       :param end_x: Ending X coordinate
@@ -321,7 +489,7 @@ class ShapeTools:
       # Create start and end vectors
       start = Vector(start_x, start_y, name='start')
       end = Vector(end_x, end_y, name='end')
-      
+
       # Create noise instance
       noise = SimplexNoise(
         seed=seed,
@@ -331,7 +499,7 @@ class ShapeTools:
         lacunarity=2.0,
         amplitude=amplitude
       )
-      
+
       # Create line with noise
       line = Line(
         start=start,
@@ -340,21 +508,21 @@ class ShapeTools:
         noise_segments=segments,
         smoothing_factor=smoothing_factor
       )
-      
+
       # Build the shape and convert to VectorPath for SVG output
       line_points = line.build_shape()
-      
+
       # Create VectorPath from points
       path = VectorPath(name='noisyLine', abs_segments=line_points, close=False)
       svg_output = list(path.svg_path())
-      
+
       result = {'shape': svg_output}
-      
+
       # Print formatted output
       print(f"\nNoisy Line (start=({start_x}, {start_y}), end=({end_x}, {end_y}), amplitude={amplitude}, seed={seed}):")
       for line_svg in svg_output:
         print(line_svg)
-        
+
       # Handle draw.io output if requested
       if drawio:
         params = {
@@ -363,7 +531,7 @@ class ShapeTools:
           'seed': seed
         }
         self.parent._handle_drawio_output(line_points, 'noisy_line', params, drawio, drawio_output)
-      
+
       return result
 
 if __name__ == '__main__':
