@@ -10,7 +10,7 @@ class _TailRewriter:
   Rewrite tail positions to assign to implicit result variable.
 
   Rewrites *tail positions* (the final statement of a block that determines the
-  branch's return value) by replacing a final expression with an assignment to a
+  branch's return name) by replacing a final expression with an assignment to a
   hidden result variable. After transforming the top-level body, we append a single
   `return __implicit_result` to the function.
 
@@ -49,15 +49,15 @@ class _TailRewriter:
       return [stmt]
 
     if isinstance(stmt, ast.Try):
-      # Body must produce a value - normal execution path
+      # Body must produce a name - normal execution path
       stmt.body = self.rewrite_block(stmt.body)
-      # Each except must produce a value - error recovery paths need values too
+      # Each except must produce a name - error recovery paths need values too
       for h in stmt.handlers:
         h.body = self.rewrite_block(h.body)
-      # Else (if present) runs on success, replaces body's value
+      # Else (if present) runs on success, replaces body's name
       if stmt.orelse:
         stmt.orelse = self.rewrite_block(stmt.orelse)
-      # Finally runs regardless but can't affect return value - cleanup only
+      # Finally runs regardless but can't affect return name - cleanup only
       return [stmt]
 
     if isinstance(stmt, ast.Match):
@@ -65,7 +65,7 @@ class _TailRewriter:
       for case in stmt.cases:
         if not case.body:
           raise MissingImplicitReturnError(
-            'Empty match case body cannot yield a value.',
+            'Empty match case body cannot yield a name.',
             getattr(stmt, 'lineno', None),
             getattr(stmt, 'col_offset', None),
           )

@@ -90,7 +90,7 @@ class TestEdgeCases:
     # Direct call
     assert no_args() == 42
 
-    # Pipeline into no-args function ignores piped value
+    # Pipeline into no-args function ignores piped name
     result = 5 | no_args
     assert result == 42
 
@@ -301,7 +301,7 @@ class TestComplexEdgeCases:
 
     @pipeable
     def sum_generator(x, gen):
-      """Sum a generator with initial value."""
+      """Sum a generator with initial name."""
       return x + sum(gen)
 
     def make_gen(n):
@@ -328,7 +328,7 @@ class TestComplexEdgeCases:
       @pipeable
       @implicit_return
       def double(self, x):
-        """Double the value."""
+        """Double the name."""
         self.call_log.append(f'double({x})')
         x * 2
 

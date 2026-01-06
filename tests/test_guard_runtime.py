@@ -54,7 +54,7 @@ class TestHandleFailure:
     assert str(exception) == 'Test error'
 
   def test_handle_failure_custom_value(self):
-    """Test handle_failure with custom return value."""
+    """Test handle_failure with custom return name."""
     result, exception = GuardRuntime.handle_failure(
       'Test error', {'error': 'custom'}, 'test_func', (1, 2), {}, False
     )
@@ -83,7 +83,7 @@ class TestHandleFailure:
     assert str(exception) == 'Test error'
 
   def test_handle_failure_none_value(self):
-    """Test handle_failure with None as on_error value."""
+    """Test handle_failure with None as on_error name."""
     result, exception = GuardRuntime.handle_failure(
       'Test error', None, 'test_func', (1, 2), {}, False
     )

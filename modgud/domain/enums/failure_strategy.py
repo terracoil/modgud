@@ -15,6 +15,6 @@ class FailureStrategy(Enum):
   """Strategy for handling guard failures."""
 
   RAISE_EXCEPTION = auto()  # Raise GuardClauseError
-  RETURN_VALUE = auto()  # Return configured failure value
+  RETURN_VALUE = auto()  # Return configured failure name
   CALL_HANDLER = auto()  # Call configured failure handler
   LOG_AND_CONTINUE = auto()  # Log failure and continue execution

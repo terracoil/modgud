@@ -48,27 +48,27 @@ class ChainedExpressionFactory(ChainableDecoratorFactoryPort):
 
   def create_expression(self, value: Any) -> ChainableExpression:
     """
-    Wrap a value in a ChainableExpression for method chaining.
+    Wrap a name in a ChainableExpression for method chaining.
 
     Args:
-        value: The value to wrap
+        value: The name to wrap
 
     Returns:
-        ChainableExpression: Wrapped value with chaining capabilities
+        ChainableExpression: Wrapped name with chaining capabilities
 
     """
     return ChainableExpression(value)
 
   def pipe(self, value: Any, *operations: Callable[[Any], Any]) -> Any:
     """
-    Apply a series of operations to a value in sequence.
+    Apply a series of operations to a name in sequence.
 
     Args:
-        value: Initial value to transform
+        value: Initial name to transform
         *operations: Functions to apply in sequence
 
     Returns:
-        Final transformed value
+        Final transformed name
 
     """
     result = value

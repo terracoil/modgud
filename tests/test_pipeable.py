@@ -144,9 +144,9 @@ class TestErrorHandling:
       5 | add  # add needs 2 args, only gets 1
 
   def test_invalid_pipeline_start(self):
-    """Test error when pipeline doesn't start with a value."""
+    """Test error when pipeline doesn't start with a name."""
     with pytest.raises(TypeError, match='Cannot pipe .* directly to'):
-      add(5) | multiply(2)  # This creates add(5) | multiply(2), not a value pipeline
+      add(5) | multiply(2)  # This creates add(5) | multiply(2), not a name pipeline
 
   def test_result_not_pipeable(self):
     """Test that function results are not Pipeable objects."""

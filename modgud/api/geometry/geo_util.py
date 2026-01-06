@@ -22,12 +22,12 @@ class GeoUtil:
     """
     Validate a dimension is within acceptable range.
 
-    :param value: The value to validate
+    :param value: The name to validate
     :param name: Name of the dimension for error messages
-    :param min_val: Minimum allowed value
-    :param max_val: Maximum allowed value
+    :param min_val: Minimum allowed name
+    :param max_val: Maximum allowed name
     :param exclusive_min: If True, min is exclusive; if False, inclusive
-    :raises ValueError: If value is outside valid range
+    :raises ValueError: If name is outside valid range
     """
     if exclusive_min:
       if not (min_val < value <= max_val):
@@ -179,7 +179,7 @@ class GeoUtil:
     North and South edges must have opposite tear directions for fitting.
     East and West edges must have opposite tear directions for fitting.
 
-    :param base_amplitude: Base amplitude value
+    :param base_amplitude: Base amplitude name
     :param side: Side character (N/S/E/W)
     :returns: Amplitude with proper sign
     """
@@ -233,6 +233,202 @@ class GeoUtil:
         )
 
     return ScaledNoise(base_noise, amplitude)  # type: ignore
+
+  @staticmethod
+  def validate_notch_params(notch_size: float, notch_depth: float, notch_offset: float) -> None:
+    """
+    Validate notch parameters are within acceptable ranges.
+
+    :param notch_size: Size of notch along edge axis (0.0-1.0)
+    :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0)
+    :param notch_offset: Offset from center position (-0.5 to 0.5)
+    :raises ValueError: If any parameter is outside valid range
+    """
+    GeoUtil.validate_dimension(notch_size, 'notch_size', 0.0, 1.0, exclusive_min=False)
+    GeoUtil.validate_dimension(notch_depth, 'notch_depth', 0.0, 1.0, exclusive_min=False)
+    GeoUtil.validate_dimension(notch_offset, 'notch_offset', -0.5, 0.5, exclusive_min=False)
+
+  @staticmethod
+  def calculate_notch_points(
+    start: VectorPort,
+    end: VectorPort,
+    notch_size: float,
+    notch_depth: float,
+    notch_offset: float,
+  ) -> list[VectorPort]:
+    """
+    Calculate points for a rectangular notch on an edge.
+
+    Creates a rectangular indentation in the middle of the edge, with configurable
+    size along the edge and depth perpendicular to it.
+
+    :param start: Edge start point
+    :param end: Edge end point
+    :param notch_size: Size along edge (0.0-1.0, where 1.0 = full edge length)
+    :param notch_depth: Depth perpendicular to edge (0.0-1.0, relative to edge length)
+    :param notch_offset: Offset from center (-0.5 to 0.5, where 0.0 = centered)
+    :returns: List of points forming the notch (empty if notch_size or notch_depth is 0.0)
+    :raises ValueError: If parameters are outside valid ranges
+    """
+    # Validate parameters first
+    GeoUtil.validate_notch_params(notch_size, notch_depth, notch_offset)
+
+    # Return empty list if no notch needed
+    if notch_size == 0.0 or notch_depth == 0.0:
+      return []
+
+    # Calculate edge vector and properties
+    edge_x = end.x - start.x
+    edge_y = end.y - start.y
+    edge_length = math.sqrt(edge_x * edge_x + edge_y * edge_y)
+
+    # Handle zero-length edge
+    if edge_length < 1e-10:
+      return []
+
+    # Normalize edge vector
+    edge_unit_x = edge_x / edge_length
+    edge_unit_y = edge_y / edge_length
+
+    # Calculate perpendicular vector (rotated 90 degrees clockwise for inward notch)
+    perp_unit_x = edge_unit_y
+    perp_unit_y = -edge_unit_x
+
+    # Calculate notch dimensions
+    notch_width = edge_length * notch_size  # Physical width along edge
+    notch_inward_depth = edge_length * notch_depth  # Physical depth perpendicular to edge
+
+    # Calculate center position with offset
+    center_offset = notch_offset * edge_length
+    center_t = 0.5 + (center_offset / edge_length) if edge_length > 0 else 0.5
+
+    # Clamp to prevent overflow beyond edge boundaries
+    half_notch_t = (notch_size / 2.0) if edge_length > 0 else 0.0
+    clamped_center_t = max(half_notch_t, min(1.0 - half_notch_t, center_t))
+
+    # Calculate notch corner positions along the edge
+    left_t = clamped_center_t - half_notch_t
+    right_t = clamped_center_t + half_notch_t
+
+    # Calculate points along the edge
+    left_edge_x = start.x + left_t * edge_x
+    left_edge_y = start.y + left_t * edge_y
+    right_edge_x = start.x + right_t * edge_x
+    right_edge_y = start.y + right_t * edge_y
+
+    # Calculate inner notch points (perpendicular inward from edge)
+    left_inner_x = left_edge_x + perp_unit_x * notch_inward_depth
+    left_inner_y = left_edge_y + perp_unit_y * notch_inward_depth
+    right_inner_x = right_edge_x + perp_unit_x * notch_inward_depth
+    right_inner_y = right_edge_y + perp_unit_y * notch_inward_depth
+
+    from .vector import Vector
+
+    # Return notch points in clockwise order for proper polygon construction
+    result = [
+      Vector(x=left_edge_x, y=left_edge_y),  # Left edge point
+      Vector(x=left_inner_x, y=left_inner_y),  # Left inner point
+      Vector(x=right_inner_x, y=right_inner_y),  # Right inner point
+      Vector(x=right_edge_x, y=right_edge_y),  # Right edge point
+    ]
+    return result
+
+  @staticmethod
+  def calculate_angled_notch_points(
+    start: VectorPort,
+    end: VectorPort,
+    notch_size: float,
+    notch_depth: float,
+    notch_offset: float,
+    edge_angle: float,
+  ) -> list[VectorPort]:
+    """
+    Calculate points for a rectangular notch with angle-aware sides.
+
+    This is the KEY FIX for trapezoid notch alignment. Instead of creating
+    notch sides perpendicular to the edge, this method aligns the notch sides
+    with the provided edge angle for proper geometric alignment.
+
+    Args:
+      start: Edge start point
+      end: Edge end point
+      notch_size: Size along edge (0.0-1.0, where 1.0 = full edge length)
+      notch_depth: Depth perpendicular to edge (0.0-1.0, relative to edge length)
+      notch_offset: Offset from center (-0.5 to 0.5, where 0.0 = centered)
+      edge_angle: Angle of the edge in radians for notch side alignment
+
+    Returns:
+      List of points forming the notch (empty if notch_size or notch_depth is 0.0)
+
+    Raises:
+      ValueError: If parameters are outside valid ranges
+
+    """
+    # Validate parameters first
+    GeoUtil.validate_notch_params(notch_size, notch_depth, notch_offset)
+
+    # Return empty list if no notch needed
+    if notch_size == 0.0 or notch_depth == 0.0:
+      return []
+
+    # Calculate edge vector and properties
+    edge_x = end.x - start.x
+    edge_y = end.y - start.y
+    edge_length = math.sqrt(edge_x * edge_x + edge_y * edge_y)
+
+    # Handle zero-length edge
+    if edge_length < 1e-10:
+      return []
+
+    # Normalize edge vector
+    edge_unit_x = edge_x / edge_length
+    edge_unit_y = edge_y / edge_length
+
+    # Calculate notch side direction based on edge angle
+    # For slanted edges like trapezoids, notch sides should align with the edge angle
+    # Use the edge angle to determine the direction of notch sides
+    notch_side_x = math.cos(edge_angle)
+    notch_side_y = math.sin(edge_angle)
+
+    # Calculate notch dimensions
+    notch_width = edge_length * notch_size  # Physical width along edge
+    notch_inward_depth = edge_length * notch_depth  # Physical depth
+
+    # Calculate center position with offset
+    center_offset = notch_offset * edge_length
+    center_t = 0.5 + (center_offset / edge_length) if edge_length > 0 else 0.5
+
+    # Clamp to prevent overflow beyond edge boundaries
+    half_notch_t = (notch_size / 2.0) if edge_length > 0 else 0.0
+    clamped_center_t = max(half_notch_t, min(1.0 - half_notch_t, center_t))
+
+    # Calculate notch corner positions along the edge
+    left_t = clamped_center_t - half_notch_t
+    right_t = clamped_center_t + half_notch_t
+
+    # Calculate points along the edge
+    left_edge_x = start.x + left_t * edge_x
+    left_edge_y = start.y + left_t * edge_y
+    right_edge_x = start.x + right_t * edge_x
+    right_edge_y = start.y + right_t * edge_y
+
+    # Calculate inner notch points using edge angle direction
+    # Move inward along the angle-aligned direction
+    left_inner_x = left_edge_x + notch_side_x * notch_inward_depth
+    left_inner_y = left_edge_y + notch_side_y * notch_inward_depth
+    right_inner_x = right_edge_x + notch_side_x * notch_inward_depth
+    right_inner_y = right_edge_y + notch_side_y * notch_inward_depth
+
+    from .vector import Vector
+
+    # Return notch points in clockwise order for proper polygon construction
+    result = [
+      Vector(x=left_edge_x, y=left_edge_y),  # Left edge point
+      Vector(x=left_inner_x, y=left_inner_y),  # Left inner point (angle-aligned)
+      Vector(x=right_inner_x, y=right_inner_y),  # Right inner point (angle-aligned)
+      Vector(x=right_edge_x, y=right_edge_y),  # Right edge point
+    ]
+    return result
 
   @staticmethod
   def create_torn_edge(

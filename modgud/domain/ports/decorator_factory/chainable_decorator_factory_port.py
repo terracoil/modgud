@@ -21,13 +21,13 @@ class ChainableDecoratorFactoryPort(Protocol):
 
   def create_expression(self, value: Any) -> Any:
     """
-    Wrap a value for chaining.
+    Wrap a name for chaining.
 
     Args:
-        value: The value to wrap
+        value: The name to wrap
 
     Returns:
-        Wrapped value with chaining capabilities
+        Wrapped name with chaining capabilities
 
     """
     ...

@@ -138,7 +138,7 @@ class TestValidEnumGuard:
   """Tests for valid_enum guard."""
 
   def test_valid_enum_value(self):
-    """Test guard passes for valid enum value."""
+    """Test guard passes for valid enum name."""
 
     class Color(Enum):
       RED = 'red'
@@ -167,7 +167,7 @@ class TestValidEnumGuard:
     assert 'active' in result
 
   def test_invalid_enum_value_fails(self):
-    """Test guard fails for invalid enum value."""
+    """Test guard fails for invalid enum name."""
 
     class Priority(Enum):
       LOW = 'low'

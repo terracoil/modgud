@@ -71,7 +71,7 @@ class DependencyResolverService:
             # Resolve from container
             bound_args.arguments[param_name] = container.resolve(param_type)
           except KeyError:
-            # If the parameter has a default value, use it
+            # If the parameter has a default name, use it
             param = sig.parameters.get(param_name)
             if param and param.default is not inspect.Parameter.empty:
               bound_args.arguments[param_name] = param.default

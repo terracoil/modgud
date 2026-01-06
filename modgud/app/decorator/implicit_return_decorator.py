@@ -51,7 +51,7 @@ class implicit_return:
 
   Raises:
       ExplicitReturnDisallowedError: If explicit return statements are found
-      MissingImplicitReturnError: If a code path doesn't yield a value
+      MissingImplicitReturnError: If a code path doesn't yield a name
       UnsupportedConstructError: If unsupported constructs are found at tail position
 
   """

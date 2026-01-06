@@ -37,17 +37,17 @@ class CommonGuards:
     default: Any = None,
   ) -> Any:
     """
-    Extract parameter value from args or kwargs.
+    Extract parameter name from args or kwargs.
 
     Args:
         param_name: Name of the parameter in kwargs
         position: Position in args (None means first arg)
         args: Positional arguments tuple
         kwargs: Keyword arguments dict
-        default: Default value if not found
+        default: Default name if not found
 
     Returns:
-        Parameter value or default
+        Parameter name or default
 
     """
     result = default
@@ -74,9 +74,9 @@ class CommonGuards:
     Args:
         param_name: Name of the parameter to check
         position: Position for positional args
-        validator: Function that validates the value, returns bool
-        error_template: Error message template with {param_name} and {value} placeholders
-        default: Default value if parameter not found
+        validator: Function that validates the name, returns bool
+        error_template: Error message template with {param_name} and {name} placeholders
+        default: Default name if parameter not found
 
     Returns:
         GuardFunction that validates parameters
@@ -146,8 +146,8 @@ class CommonGuards:
     Guard ensuring parameter is within range [min_val, max_val].
 
     Args:
-        min_val: Minimum value (inclusive)
-        max_val: Maximum value (inclusive)
+        min_val: Minimum name (inclusive)
+        max_val: Maximum name (inclusive)
         param_name: Name of the parameter to check
         position: Position for positional args (default: 0)
 
@@ -252,7 +252,7 @@ class CommonGuards:
     enum_class: type[Enum], param_name: str = 'parameter', position: int = 0
   ) -> GuardFunction:
     """
-    Guard ensuring parameter is a valid enum value.
+    Guard ensuring parameter is a valid enum name.
 
     Args:
         enum_class: The Enum class to validate against
@@ -281,7 +281,7 @@ class CommonGuards:
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default='')
     result: Union[bool, str] = True
 
-    # Check if value is empty (works for strings and collections)
+    # Check if name is empty (works for strings and collections)
     if hasattr(value, '__len__'):
       if len(value) == 0:
         result = f'{param_name} cannot be empty'
@@ -400,7 +400,7 @@ class CommonGuards:
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
   ) -> Union[bool, str]:
-    """Check if parameter is a valid enum value (single return point)."""
+    """Check if parameter is a valid enum name (single return point)."""
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
     result: Union[bool, str] = True
 
@@ -417,7 +417,7 @@ class CommonGuards:
         valid_values = [e.value for e in enum_class]
         result = f'{param_name} must be one of {valid_values}: got {value}'
     else:
-      result = f'{param_name} must be a valid {enum_class.__name__} value'
+      result = f'{param_name} must be a valid {enum_class.__name__} name'
 
     return result
 

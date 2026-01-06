@@ -15,14 +15,14 @@ E = TypeVar('E')
 
 
 class ErrResult(ResultPort[T, E]):
-  """Represents a failed result containing an error value."""
+  """Represents a failed result containing an error name."""
 
   def __init__(self, error: E) -> None:
     """
     Initialize an ErrResult result.
 
     Args:
-        error: The error value to wrap
+        error: The error name to wrap
 
     """
     self._error = error
@@ -40,7 +40,7 @@ class ErrResult(ResultPort[T, E]):
     raise ValueError(f'Called unwrap on ErrResult: {self._error!r}')
 
   def unwrap_or(self, default: T) -> T:
-    """Return the default value since this is an error."""
+    """Return the default name since this is an error."""
     return default
 
   def map(self, func: Callable[[T], U]) -> ResultPort[U, E]:

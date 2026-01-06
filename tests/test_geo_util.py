@@ -11,13 +11,13 @@ class TestGeoUtil:
 
   def test_validate_dimension_valid_exclusive_min(self):
     """Test dimension validation with exclusive minimum (default behavior)."""
-    # Should pass - value within (0, 1]
+    # Should pass - name within (0, 1]
     GeoUtil.validate_dimension(0.5, 'test_value')
     GeoUtil.validate_dimension(1.0, 'test_value')
 
   def test_validate_dimension_valid_inclusive_min(self):
     """Test dimension validation with inclusive minimum."""
-    # Should pass - value within [0, 1]
+    # Should pass - name within [0, 1]
     GeoUtil.validate_dimension(0.0, 'test_value', exclusive_min=False)
     GeoUtil.validate_dimension(0.5, 'test_value', exclusive_min=False)
 
@@ -140,7 +140,7 @@ class TestGeoUtil:
     area_ccw = GeoUtil.polygon_area(vertices_ccw)
     area_cw = GeoUtil.polygon_area(vertices_cw)
 
-    # Both should give same area (absolute value)
+    # Both should give same area (absolute name)
     assert abs(area_ccw - area_cw) < 1e-10
     assert abs(area_ccw - 4.0) < 1e-10
 
@@ -198,3 +198,150 @@ class TestGeoUtil:
     back_to_degrees = GeoUtil.radians_to_degrees(radians)
 
     assert abs(original_degrees - back_to_degrees) < 1e-10
+
+  def test_validate_notch_params_valid(self):
+    """Test notch parameter validation with valid values."""
+    # Test default/typical values
+    GeoUtil.validate_notch_params(0.1, 0.2, 0.0)
+
+    # Test boundary values
+    GeoUtil.validate_notch_params(0.0, 0.0, -0.5)  # minimum values
+    GeoUtil.validate_notch_params(1.0, 1.0, 0.5)  # maximum values
+
+    # Test other valid combinations
+    GeoUtil.validate_notch_params(0.5, 0.3, 0.25)
+
+  def test_validate_notch_params_invalid_size(self):
+    """Test notch parameter validation with invalid size values."""
+    with pytest.raises(ValueError, match='notch_size must be in range \\[0.0, 1.0\\]'):
+      GeoUtil.validate_notch_params(-0.1, 0.2, 0.0)
+
+    with pytest.raises(ValueError, match='notch_size must be in range \\[0.0, 1.0\\]'):
+      GeoUtil.validate_notch_params(1.1, 0.2, 0.0)
+
+  def test_validate_notch_params_invalid_depth(self):
+    """Test notch parameter validation with invalid depth values."""
+    with pytest.raises(ValueError, match='notch_depth must be in range \\[0.0, 1.0\\]'):
+      GeoUtil.validate_notch_params(0.1, -0.1, 0.0)
+
+    with pytest.raises(ValueError, match='notch_depth must be in range \\[0.0, 1.0\\]'):
+      GeoUtil.validate_notch_params(0.1, 1.5, 0.0)
+
+  def test_validate_notch_params_invalid_offset(self):
+    """Test notch parameter validation with invalid offset values."""
+    with pytest.raises(ValueError, match='notch_offset must be in range \\[-0.5, 0.5\\]'):
+      GeoUtil.validate_notch_params(0.1, 0.2, -0.6)
+
+    with pytest.raises(ValueError, match='notch_offset must be in range \\[-0.5, 0.5\\]'):
+      GeoUtil.validate_notch_params(0.1, 0.2, 0.6)
+
+  def test_calculate_notch_points_no_notch(self):
+    """Test notch calculation when no notch is needed (size or depth is 0)."""
+    start = Vector(0.0, 0.0)
+    end = Vector(10.0, 0.0)
+
+    # Zero size should return empty list
+    points = GeoUtil.calculate_notch_points(start, end, 0.0, 0.5, 0.0)
+    assert len(points) == 0
+
+    # Zero depth should return empty list
+    points = GeoUtil.calculate_notch_points(start, end, 0.5, 0.0, 0.0)
+    assert len(points) == 0
+
+  def test_calculate_notch_points_horizontal_edge(self):
+    """Test notch calculation on a horizontal edge."""
+    start = Vector(0.0, 0.0)
+    end = Vector(10.0, 0.0)
+
+    # Small centered notch
+    points = GeoUtil.calculate_notch_points(start, end, 0.2, 0.1, 0.0)
+
+    # Should return 4 points forming a rectangular notch
+    assert len(points) == 4
+
+    # Check that all points are VectorPort objects with x, y attributes
+    for point in points:
+      assert hasattr(point, 'x') and hasattr(point, 'y')
+
+    # Check that notch is centered (points should be symmetric around x=5)
+    center_x = sum(p.x for p in points) / len(points)
+    assert abs(center_x - 5.0) < 1e-6  # Should be centered at x=5
+
+    # Check that notch goes inward (y values should be negative for upward notch into shape)
+    inner_points = points[1:3]  # Middle two points are the inner ones
+    assert all(p.y < 0 for p in inner_points)  # Should go up (inward) from bottom horizontal edge
+
+  def test_calculate_notch_points_vertical_edge(self):
+    """Test notch calculation on a vertical edge."""
+    start = Vector(0.0, 0.0)
+    end = Vector(0.0, 10.0)
+
+    # Small centered notch
+    points = GeoUtil.calculate_notch_points(start, end, 0.2, 0.1, 0.0)
+
+    # Should return 4 points
+    assert len(points) == 4
+
+    # Check that notch is centered vertically
+    center_y = sum(p.y for p in points) / len(points)
+    assert abs(center_y - 5.0) < 1e-6  # Should be centered at y=5
+
+    # Check that notch goes inward (x values should be positive for rightward notch)
+    inner_points = points[1:3]  # Middle two points are the inner ones
+    assert all(p.x > 0 for p in inner_points)  # Should go right from vertical edge
+
+  def test_calculate_notch_points_with_offset(self):
+    """Test notch calculation with non-zero offset."""
+    start = Vector(0.0, 0.0)
+    end = Vector(10.0, 0.0)
+
+    # Notch offset toward the end (positive offset)
+    points = GeoUtil.calculate_notch_points(start, end, 0.2, 0.1, 0.25)
+
+    # Should return 4 points
+    assert len(points) == 4
+
+    # Check that notch is offset from center
+    center_x = sum(p.x for p in points) / len(points)
+    assert center_x > 5.0  # Should be offset toward end (higher x)
+
+  def test_calculate_notch_points_overflow_protection(self):
+    """Test that notch calculation prevents overflow beyond edge boundaries."""
+    start = Vector(0.0, 0.0)
+    end = Vector(10.0, 0.0)
+
+    # Large notch with large offset that would normally overflow
+    points = GeoUtil.calculate_notch_points(start, end, 0.8, 0.1, 0.5)
+
+    # Should still return 4 points without error
+    assert len(points) == 4
+
+    # All x coordinates should be within the edge bounds [0, 10]
+    for point in points:
+      assert 0.0 <= point.x <= 10.0
+
+  def test_calculate_notch_points_zero_length_edge(self):
+    """Test notch calculation on zero-length edge."""
+    start = Vector(5.0, 5.0)
+    end = Vector(5.0, 5.0)  # Same point
+
+    # Should return empty list for zero-length edge
+    points = GeoUtil.calculate_notch_points(start, end, 0.5, 0.2, 0.0)
+    assert len(points) == 0
+
+  def test_calculate_notch_points_invalid_params(self):
+    """Test notch calculation with invalid parameters."""
+    start = Vector(0.0, 0.0)
+    end = Vector(10.0, 0.0)
+
+    # Invalid size parameter
+    with pytest.raises(ValueError):
+      GeoUtil.calculate_notch_points(start, end, 1.5, 0.1, 0.0)
+
+    # Invalid depth parameter
+    with pytest.raises(ValueError):
+      GeoUtil.calculate_notch_points(start, end, 0.5, -0.1, 0.0)
+
+    # Invalid offset parameter
+    with pytest.raises(ValueError):
+      GeoUtil.calculate_notch_points(start, end, 0.5, 0.1, 0.8)

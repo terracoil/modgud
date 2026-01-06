@@ -65,7 +65,7 @@ class Pipeable(PipeablePort):
     it will continue the pipeline.
 
     Args:
-        other: The next function in the pipeline or a value to pipe into
+        other: The next function in the pipeline or a name to pipe into
 
     Returns:
         The result of applying this function, potentially wrapped in the next Pipeable
@@ -73,32 +73,32 @@ class Pipeable(PipeablePort):
     """
     # If other is a Pipeable, we need to apply ourselves first, then pipe to other
     if isinstance(other, Pipeable):
-      # This handles chaining: value | func1 | func2
-      # We can't apply ourselves without a value, so this is an error
+      # This handles chaining: name | func1 | func2
+      # We can't apply ourselves without a name, so this is an error
       raise TypeError(
         f'Cannot pipe {self._func.__name__} directly to {other._func.__name__}. '
-        'Pipeline must start with a value.'
+        'Pipeline must start with a name.'
       )
 
-    # Other is a regular value - this shouldn't happen in normal usage
+    # Other is a regular name - this shouldn't happen in normal usage
     # The __or__ is called on the LEFT operand, not the right
     raise TypeError(
       f'Invalid pipeline operation: {self._func.__name__} | {type(other).__name__}. '
-      'Did you mean to use a value on the left side of the pipe?'
+      'Did you mean to use a name on the left side of the pipe?'
     )
 
   def __ror__(self, other: Any) -> Any:
     """
-    Enable value | func syntax (reverse or).
+    Enable name | func syntax (reverse or).
 
     This is called when the left operand doesn't support __or__ with our type.
-    This is the main entry point for pipeline operations starting with a value.
+    This is the main entry point for pipeline operations starting with a name.
 
     Args:
-        other: The value to pipe into this function
+        other: The name to pipe into this function
 
     Returns:
-        The result of applying the function to the value
+        The result of applying the function to the name
 
     """
     try:
@@ -106,12 +106,12 @@ class Pipeable(PipeablePort):
       sig = inspect.signature(self._func)
       params = list(sig.parameters.values())
 
-      # Handle zero-argument functions - they ignore the piped value
+      # Handle zero-argument functions - they ignore the piped name
       if not params:
         result = self._func(**self._bound_kwargs)
         return result
 
-      # For functions with parameters, the piped value becomes the first argument
+      # For functions with parameters, the piped name becomes the first argument
       # But we need to handle conflicts with bound kwargs
       regular_params = [
         param
@@ -126,22 +126,22 @@ class Pipeable(PipeablePort):
         # Special handling for bound methods - preserve self binding
         if hasattr(self._func, '__self__'):
           # This is a bound method, self is already bound
-          # The piped value should become the first \"real\" parameter after self
+          # The piped name should become the first \"real\" parameter after self
           result = self._func(other, *self._bound_args, **self._bound_kwargs)
           return result
 
         # Check if first parameter name conflicts with bound kwargs
         if first_param.name in self._bound_kwargs:
           # If there's a conflict, redistribute arguments to avoid the conflict:
-          # - Piped value becomes the first parameter
-          # - Bound args + conflicting kwarg value go into *args
+          # - Piped name becomes the first parameter
+          # - Bound args + conflicting kwarg name go into *args
           # - Other kwargs remain as **kwargs
           conflicting_value = self._bound_kwargs[first_param.name]
           clean_kwargs = {k: v for k, v in self._bound_kwargs.items() if k != first_param.name}
           result = self._func(other, *self._bound_args, conflicting_value, **clean_kwargs)
           return result
         else:
-          # No conflict, piped value becomes first parameter
+          # No conflict, piped name becomes first parameter
           clean_kwargs = {k: v for k, v in self._bound_kwargs.items() if k != first_param.name}
           result = self._func(other, *self._bound_args, **clean_kwargs)
           return result
@@ -156,7 +156,7 @@ class Pipeable(PipeablePort):
         result = self._func(other, *self._bound_args, **self._bound_kwargs)
         return result
       except TypeError as te:
-        # If it's a zero-arg function, try calling without the piped value
+        # If it's a zero-arg function, try calling without the piped name
         if 'takes 0 positional arguments but 1 was given' in str(te):
           result = self._func(**self._bound_kwargs)
           return result

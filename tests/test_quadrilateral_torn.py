@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 from modgud.api.geometry import Quadrilateral, SimplexNoise, Vector
-from modgud.domain.enums import PlacementEnum, QuadShapeEnum
+from modgud.domain.enums import OrdinalEnum, QuadShapeEnum
 from modgud.domain.ports import ShapePort
 
 
@@ -14,7 +14,7 @@ class TestQuadrilateralTorn:
   def create_mock_noise(self):
     """Create a mock noise provider for testing."""
     noise = Mock()
-    noise.noise2d.return_value = 0.5  # Consistent noise value for testing
+    noise.noise2d.return_value = 0.5  # Consistent noise name for testing
     noise.fbm2d.return_value = 0.5
     noise.noise_array2d.return_value = [0.5]
     noise.fbm_array2d.return_value = [0.5]
@@ -27,7 +27,7 @@ class TestQuadrilateralTorn:
     quad = Quadrilateral(
       quad_shape=QuadShapeEnum.RECTANGLE,
       params={'w': 0.8, 'h': 0.6},
-      torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+      torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
       noise=noise,
       noise_amplitude=3.0,
     )
@@ -64,7 +64,7 @@ class TestQuadrilateralTorn:
     quad = Quadrilateral(
       quad_shape=QuadShapeEnum.SQUARE,
       params={'side': 0.7},
-      torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH, PlacementEnum.EAST, PlacementEnum.WEST],
+      torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH, OrdinalEnum.EAST, OrdinalEnum.WEST],
       noise=noise,
       noise_segments=20,  # Smaller for testing
       noise_amplitude=2.0,
@@ -84,7 +84,7 @@ class TestQuadrilateralTorn:
       Quadrilateral(
         quad_shape=QuadShapeEnum.RECTANGLE,
         params={'w': 0.8, 'h': 0.6},
-        torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],  # No noise provided
+        torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],  # No noise provided
       )
 
   def test_torn_quadrilateral_validation_invalid_sides(self):
@@ -98,7 +98,7 @@ class TestQuadrilateralTorn:
       quad = Quadrilateral(
         quad_shape=QuadShapeEnum.RECTANGLE,
         params={'w': 0.8, 'h': 0.6},
-        torn_sides=[PlacementEnum.NE],  # Compound directions not allowed for torn sides
+        torn_sides=[OrdinalEnum.NE],  # Compound directions not allowed for torn sides
         noise=noise,
       )
 
@@ -111,7 +111,7 @@ class TestQuadrilateralTorn:
       Quadrilateral(
         quad_shape=QuadShapeEnum.RECTANGLE,
         params={'w': 0.8, 'h': 0.6},
-        torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+        torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
         noise=noise,
         noise_amplitude=0.05,  # Too small
       )
@@ -121,7 +121,7 @@ class TestQuadrilateralTorn:
       Quadrilateral(
         quad_shape=QuadShapeEnum.RECTANGLE,
         params={'w': 0.8, 'h': 0.6},
-        torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+        torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
         noise=noise,
         noise_amplitude=60.0,  # Too large
       )
@@ -135,7 +135,7 @@ class TestQuadrilateralTorn:
       Quadrilateral(
         quad_shape=QuadShapeEnum.RECTANGLE,
         params={'w': 0.8, 'h': 0.6},
-        torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+        torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
         noise=noise,
         noise_segments=5,  # Too few
       )
@@ -145,7 +145,7 @@ class TestQuadrilateralTorn:
       Quadrilateral(
         quad_shape=QuadShapeEnum.RECTANGLE,
         params={'w': 0.8, 'h': 0.6},
-        torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+        torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
         noise=noise,
         noise_segments=1500,  # Too many
       )
@@ -159,7 +159,7 @@ class TestQuadrilateralTorn:
       Quadrilateral(
         quad_shape=QuadShapeEnum.RECTANGLE,
         params={'w': 0.8, 'h': 0.6},
-        torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+        torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
         noise=noise,
         smoothing_factor=-0.1,  # Too small
       )
@@ -169,7 +169,7 @@ class TestQuadrilateralTorn:
       Quadrilateral(
         quad_shape=QuadShapeEnum.RECTANGLE,
         params={'w': 0.8, 'h': 0.6},
-        torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+        torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
         noise=noise,
         smoothing_factor=1.5,  # Too large
       )
@@ -182,7 +182,7 @@ class TestQuadrilateralTorn:
     para_quad = Quadrilateral(
       quad_shape=QuadShapeEnum.PARALLELOGRAM,
       params={'w': 0.8, 'h': 0.6, 'angle': 60.0},
-      torn_sides=[PlacementEnum.EAST, PlacementEnum.WEST],
+      torn_sides=[OrdinalEnum.EAST, OrdinalEnum.WEST],
       noise=noise,
       noise_amplitude=2.0,
     )
@@ -193,7 +193,7 @@ class TestQuadrilateralTorn:
     trap_quad = Quadrilateral(
       quad_shape=QuadShapeEnum.RIGHTANGLE_TRAPEZOID,
       params={'w1': 0.8, 'w2': 0.6, 'h': 0.5},
-      torn_sides=[PlacementEnum.SOUTH],
+      torn_sides=[OrdinalEnum.SOUTH],
       noise=noise,
       noise_amplitude=1.5,
     )
@@ -201,14 +201,14 @@ class TestQuadrilateralTorn:
     assert len(trap_vectors) > 4
 
   def test_torn_quadrilateral_enum_consistency(self):
-    """Test that torn_sides works consistently with PlacementEnum."""
+    """Test that torn_sides works consistently with OrdinalEnum."""
     noise = self.create_mock_noise()
 
     # Test with individual enums
     quad1 = Quadrilateral(
       quad_shape=QuadShapeEnum.RECTANGLE,
       params={'w': 0.8, 'h': 0.6},
-      torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+      torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
       noise=noise,
     )
     vectors1 = quad1.build_shape()
@@ -217,7 +217,7 @@ class TestQuadrilateralTorn:
     quad2 = Quadrilateral(
       quad_shape=QuadShapeEnum.RECTANGLE,
       params={'w': 0.8, 'h': 0.6},
-      torn_sides=[PlacementEnum.SOUTH, PlacementEnum.NORTH],
+      torn_sides=[OrdinalEnum.SOUTH, OrdinalEnum.NORTH],
       noise=noise,
     )
     vectors2 = quad2.build_shape()
@@ -231,7 +231,7 @@ class TestQuadrilateralTorn:
     quad = Quadrilateral(
       quad_shape=QuadShapeEnum.RECTANGLE,
       params={'w': 0.8, 'h': 0.6},
-      torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+      torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
       noise=noise,
     )
 
@@ -267,7 +267,7 @@ class TestQuadrilateralTorn:
     quad = Quadrilateral(
       quad_shape=QuadShapeEnum.RECTANGLE,
       params={'w': 0.5, 'h': 0.4},
-      torn_sides=[PlacementEnum.NORTH, PlacementEnum.SOUTH],
+      torn_sides=[OrdinalEnum.NORTH, OrdinalEnum.SOUTH],
       noise=noise,
       noise_segments=50,
       noise_amplitude=2.0,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Shape Tools CLI
-Focused CLI tool for joinery operations, specifically dovetail joint calculations.
+Shape Tools CLI - Refactored with individual shape commands
+Focused CLI tool for shape generation with individual shape-specific subcommands.
 """
 import json
 import math
@@ -11,8 +11,9 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Dict, Sequence
 
-from modgud.api.geometry import Joinery, Line, Quadrilateral, SimplexNoise, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorPort
-from modgud.domain.enums import PlacementEnum, QuadShapeEnum
+from modgud.api.geometry import Joinery, Line, SimplexNoise, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorPort
+from modgud.api.geometry.shapes import ShapeFactory, Square, Rectangle, Parallelogram, Rhombus, Trapezoid, Kite
+from modgud.domain.enums import OrdinalEnum, QuadShapeEnum
 from modgud.infrastructure.drawio_manager import DrawIOManager
 from modgud.util import MathUtil
 
@@ -29,7 +30,7 @@ class FooBarEnum(StrEnum):
 
 
 class ShapeTools:
-  """Shape tools for joinery calculations, focused on dovetail joint operations."""
+  """Shape tools for geometry generation with individual shape commands."""
 
   def __init__(self, verbose: bool = False, dry_run: bool = False) -> None:
     """Initialize with optional verbose output and dry-run mode."""
@@ -116,12 +117,154 @@ class ShapeTools:
       print(f"  Parameters: {params}")
       print(f"  Vectors: {len(vectors)} points")
 
+  def _create_shape(
+    self,
+    shape,
+    shape_name: str,
+    torn_sides: str,
+    notch_sides: str,
+    notch_size: float,
+    notch_depth: float,
+    notch_offset: float,
+    segments: int,
+    amplitude: float,
+    noise_scale: float,
+    octaves: int,
+    seed: int,
+    smoothing_factor: float,
+    drawio: bool,
+    drawio_output: str | None
+  ) -> dict[str, Any]:
+    """
+    Common shape creation logic for all shape types.
+    
+    :param shape: Shape instance (Square, Rectangle, etc.)
+    :param shape_name: Name for display purposes
+    :param torn_sides: Comma-separated sides to tear
+    :param notch_sides: Comma-separated sides to notch
+    :param notch_size: Size of notch along edge axis (0.0-1.0)
+    :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0)
+    :param notch_offset: Offset from center position (-0.5 to 0.5)
+    :param segments: Number of segments in torn edges
+    :param amplitude: Amplitude of noise for torn edges
+    :param noise_scale: Scale of noise
+    :param octaves: Number of noise octaves
+    :param seed: Random seed
+    :param smoothing_factor: Smoothing factor
+    :param drawio: Generate draw.io file
+    :param drawio_output: Optional output directory for draw.io file
+    """
+    # Parse torn_sides string into OrdinalEnum list
+    torn_sides_list = OrdinalEnum.parse_sides_string(torn_sides) if torn_sides else [OrdinalEnum.NONE]
+    
+    # Parse notch_sides string into OrdinalEnum list  
+    notch_sides_list = OrdinalEnum.parse_sides_string(notch_sides) if notch_sides else [OrdinalEnum.NONE]
+    
+    # Create noise instance if torn sides specified
+    noise = None
+    if torn_sides_list and any(side != OrdinalEnum.NONE for side in torn_sides_list):
+      noise = SimplexNoise(
+        seed=seed,
+        scale=noise_scale,
+        octaves=octaves,
+        persistence=0.5,
+        lacunarity=2.0,
+        amplitude=1.0
+      )
+    
+    # Add decoration parameters to shape
+    decorated_shape = type(shape)(
+      **shape.__dict__,
+      torn_sides=torn_sides_list,
+      notch_sides=notch_sides_list,
+      notch_size=notch_size,
+      notch_depth=notch_depth,
+      notch_offset=notch_offset,
+      noise=noise,
+      noise_amplitude=amplitude,
+      noise_segments=segments,
+      smoothing_factor=smoothing_factor
+    )
+    
+    # Build the shape
+    shape_vectors = decorated_shape.build_shape()
+    
+    # Scale back up to original coordinate system (from [0,1] to [0,100])
+    scaled_vectors = []
+    for v in shape_vectors:
+      scaled_v = Vector(v.x * 100, v.y * 100, v.z, v.w, name=v.name)
+      scaled_vectors.append(scaled_v)
+    
+    # Convert to legacy format using migrate_shape_result
+    from modgud.api.geometry.svg import migrate_shape_result
+    result = migrate_shape_result(scaled_vectors, 'shape')
+    
+    # Print formatted output
+    svg_shape = result['shape']
+    has_torn_sides = torn_sides_list and any(side != OrdinalEnum.NONE for side in torn_sides_list)
+    has_notches = notch_sides_list and any(side != OrdinalEnum.NONE for side in notch_sides_list)
+    
+    # Build descriptive title
+    title_parts = []
+    if has_torn_sides:
+      torn_str = ','.join(side.name for side in torn_sides_list if side != OrdinalEnum.NONE)
+      title_parts.append(f"torn_sides={torn_str}")
+      title_parts.append(f"amplitude={amplitude}")
+      title_parts.append(f"seed={seed}")
+    
+    if has_notches:
+      notch_str = ','.join(side.name for side in notch_sides_list if side != OrdinalEnum.NONE)
+      title_parts.append(f"notch_sides={notch_str}")
+      title_parts.append(f"notch_size={notch_size}")
+      title_parts.append(f"notch_depth={notch_depth}")
+      if notch_offset != 0.0:
+        title_parts.append(f"notch_offset={notch_offset}")
+    
+    if title_parts:
+      print(f"\n{shape_name} ({', '.join(title_parts)}):")
+    else:
+      print(f"\n{shape_name}:")
+    
+    # Add variant info for trapezoids
+    if hasattr(decorated_shape, 'variant'):
+      print(f"Variant: {decorated_shape.variant.value}")
+    
+    for line in svg_shape:
+      print(line)
+    
+    # Handle draw.io output if requested
+    if drawio:
+      torn_str = ','.join(side.name for side in torn_sides_list if side != OrdinalEnum.NONE) if has_torn_sides else 'none'
+      notch_str = ','.join(side.name for side in notch_sides_list if side != OrdinalEnum.NONE) if has_notches else 'none'
+      
+      draw_params = {
+        'type': shape_name.lower(),
+        'torn': torn_str,
+        'notch': notch_str
+      }
+      
+      # Add additional parameters if they have meaningful values
+      if has_torn_sides:
+        draw_params['amp'] = amplitude
+        draw_params['seed'] = seed
+      
+      if has_notches:
+        if notch_size != 0.1:  # Only include if different from default
+          draw_params['nsize'] = notch_size
+        if notch_depth != 0.0:  # Only include if different from default
+          draw_params['ndepth'] = notch_depth
+        if notch_offset != 0.0:  # Only include if different from default
+          draw_params['noffset'] = notch_offset
+      
+      self._handle_drawio_output(scaled_vectors, f'{shape_name.lower()}', draw_params, drawio, drawio_output)
+    
+    return result
+
   class Joinery:
     """Joinery operations for calculating joint coordinates."""
     def __init__(self, parent) -> None:
       """Initialize with parent ShapeTools instance."""
       self.parent: 'ShapeTools' = parent
-
 
     def dovetail(self, teeth_slope_pct: float = 0.1, teeth_cnt: int = 2, tooth_depth_pct: float = 0.35,
                  corner_pct: float = 0.1, drawio: bool = False, drawio_output: str | None = None) -> dict[str, Any]:
@@ -224,161 +367,292 @@ class ShapeTools:
 
       return trap_path
 
-    def quadrilateral(
+    def square(
       self,
-      quad_shape: QuadShapeEnum = QuadShapeEnum.RECTANGLE,
-      width: float = 100,
-      height: float = 100,
+      side: float = 100,
       torn_sides: str = '',
+      notch_sides: str = '',
+      notch_size: float = 0.1,
+      notch_depth: float = 0.0,
+      notch_offset: float = 0.0,
       segments: int = 100,
       amplitude: float = 5.0,
       noise_scale: float = 0.1,
       octaves: int = 3,
       seed: int = 42,
       smoothing_factor: float = 0.1,
-      angle: float | None = None,
-      side: float | None = None,
-      w1: float | None = None,
-      w2: float | None = None,
-      h1: float | None = None,
-      h2: float | None = None,
-      side_left: float | None = None,
       drawio: bool = False,
       drawio_output: str | None = None
     ) -> dict[str, Any]:
       """
-      Generate a quadrilateral shape with optional torn edges.
-
-      Supports all quadrilateral types: rectangle, square, parallelogram, rhombus,
-      rightangle_trapezoid, general_trapezoid, isosceles_trapezoid, kite.
-
-      :param quad_shape: Type of quadrilateral to generate (QuadShapeEnum enum)
-      :param width: Width parameter (varies by shape type)
-      :param height: Height parameter (varies by shape type)
+      Generate a square with optional torn edges and/or notches.
+      
+      :param side: Length of each side
       :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
-      :param notch_sides: Comma-separated sides to notch (e.g., "NW,SE" or "N,S")
+      :param notch_sides: Comma-separated sides to notch (e.g., "N,S" or "NE,SW")
+      :param notch_size: Size of notch along edge axis (0.0-1.0)
+      :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0) 
+      :param notch_offset: Offset from center position (-0.5 to 0.5)
       :param segments: Number of segments in torn edges
       :param amplitude: Amplitude of noise for torn edges
       :param noise_scale: Scale of noise
       :param octaves: Number of noise octaves
       :param seed: Random seed
       :param smoothing_factor: Smoothing factor
-      :param angle: Angle parameter for parallelogram/rhombus
-      :param side: Side parameter for parallelogram/rhombus
-      :param w1: Bottom width for trapezoids
-      :param w2: Top width for trapezoids
-      :param h1: Top height for kite
-      :param h2: Bottom height for kite
-      :param side_left: Left side length for trapezoids
       :param drawio: Generate draw.io file
       :param drawio_output: Optional output directory for draw.io file
       """
-      # Parse torn_sides string into PlacementEnum list using enhanced convenience method
-      torn_sides_list = PlacementEnum.parse_sides_string(torn_sides) if torn_sides else [PlacementEnum.NONE]
-
-      # Build parameters dict based on shape type and provided values
-      params = {}
-      if quad_shape in [QuadShapeEnum.RECTANGLE]:
-        params = {'w': width/100, 'h': height/100}  # Normalize to [0,1] range
-      elif quad_shape == QuadShapeEnum.SQUARE:
-        params = {'side': min(width, height)/100}  # Use smaller dimension
-      elif quad_shape == QuadShapeEnum.PARALLELOGRAM:
-        params = {'w': width/100, 'h': height/100}
-        if angle is not None:
-          params['angle'] = angle
-        elif side is not None:
-          params['side'] = side/100
-        else:
-          params['angle'] = 45.0  # Default angle
-      elif quad_shape == QuadShapeEnum.RHOMBUS:
-        params = {'side': min(width, height)/100}
-        if angle is not None:
-          params['angle'] = angle
-        elif h1 is not None:
-          params['h'] = h1/100
-        else:
-          params['angle'] = 60.0  # Default angle
-      elif quad_shape == QuadShapeEnum.RIGHTANGLE_TRAPEZOID:
-        params = {'w1': (w1 or width)/100, 'h': height/100}
-        if w2 is not None:
-          params['w2'] = w2/100
-      elif quad_shape == QuadShapeEnum.GENERAL_TRAPEZOID:
-        params = {'w1': (w1 or width)/100, 'h': height/100}
-        if w2 is not None:
-          params['w2'] = w2/100
-        if side_left is not None:
-          params['side_left'] = side_left/100
-      elif quad_shape == QuadShapeEnum.ISOSCELES_TRAPEZOID:
-        params = {'w1': (w1 or width)/100, 'h': height/100}
-        if w2 is not None:
-          params['w2'] = w2/100
-        if side is not None:
-          params['side'] = side/100
-      elif quad_shape == QuadShapeEnum.KITE:
-        params = {'w': width/100, 'h1': (h1 or height/2)/100}
-        if h2 is not None:
-          params['h2'] = h2/100
-      else:
-        raise ValueError(f"Unsupported quad_shape: {quad_shape}")
-
-      # Create noise instance if torn sides specified (and not just NONE)
-      noise = None
-      if torn_sides_list and any(side != PlacementEnum.NONE for side in torn_sides_list):
-        noise = SimplexNoise(
-          seed=seed,
-          scale=noise_scale,
-          octaves=octaves,
-          persistence=0.5,
-          lacunarity=2.0,
-          amplitude=1.0
-        )
-
-      # Create quadrilateral
-      quad = Quadrilateral(
-        quad_shape=quad_shape,
-        params=params,
-        torn_sides=torn_sides_list,
-        noise=noise,
-        noise_segments=segments,
-        noise_amplitude=amplitude,
-        smoothing_factor=smoothing_factor
+      return self.parent._create_shape(
+        Square(side=side/100),
+        'Square',
+        torn_sides, notch_sides, notch_size, notch_depth, notch_offset,
+        segments, amplitude, noise_scale, octaves, seed, smoothing_factor,
+        drawio, drawio_output
       )
 
-      # Convert to legacy format using migrate_shape_result
-      from modgud.api.geometry.svg import migrate_shape_result
-      quad_vectors = quad.build_shape()
+    def rectangle(
+      self,
+      width: float = 100,
+      height: float = 100,
+      torn_sides: str = '',
+      notch_sides: str = '',
+      notch_size: float = 0.1,
+      notch_depth: float = 0.0,
+      notch_offset: float = 0.0,
+      segments: int = 100,
+      amplitude: float = 5.0,
+      noise_scale: float = 0.1,
+      octaves: int = 3,
+      seed: int = 42,
+      smoothing_factor: float = 0.1,
+      drawio: bool = False,
+      drawio_output: str | None = None
+    ) -> dict[str, Any]:
+      """
+      Generate a rectangle with optional torn edges and/or notches.
+      
+      :param width: Width of rectangle
+      :param height: Height of rectangle
+      :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
+      :param notch_sides: Comma-separated sides to notch (e.g., "N,S" or "NE,SW")
+      :param notch_size: Size of notch along edge axis (0.0-1.0)
+      :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0)
+      :param notch_offset: Offset from center position (-0.5 to 0.5)
+      :param segments: Number of segments in torn edges
+      :param amplitude: Amplitude of noise for torn edges
+      :param noise_scale: Scale of noise
+      :param octaves: Number of noise octaves
+      :param seed: Random seed
+      :param smoothing_factor: Smoothing factor
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      return self.parent._create_shape(
+        Rectangle(width=width/100, height=height/100),
+        'Rectangle',
+        torn_sides, notch_sides, notch_size, notch_depth, notch_offset,
+        segments, amplitude, noise_scale, octaves, seed, smoothing_factor,
+        drawio, drawio_output
+      )
 
-      # Scale back up to original coordinate system
-      scaled_vectors = []
-      for v in quad_vectors:
-        scaled_v = Vector(v.x * 100, v.y * 100, v.z, v.w, name=v.name)
-        scaled_vectors.append(scaled_v)
+    def parallelogram(
+      self,
+      width: float = 100,
+      height: float = 100,
+      angle: float = 60.0,
+      slant: float | None = None,
+      torn_sides: str = '',
+      notch_sides: str = '',
+      notch_size: float = 0.1,
+      notch_depth: float = 0.0,
+      notch_offset: float = 0.0,
+      segments: int = 100,
+      amplitude: float = 5.0,
+      noise_scale: float = 0.1,
+      octaves: int = 3,
+      seed: int = 42,
+      smoothing_factor: float = 0.1,
+      drawio: bool = False,
+      drawio_output: str | None = None
+    ) -> dict[str, Any]:
+      """
+      Generate a parallelogram with optional torn edges and/or notches.
+      
+      :param width: Base width
+      :param height: Perpendicular height  
+      :param angle: Interior angle in degrees (default 60.0)
+      :param slant: Optional horizontal offset instead of angle
+      :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
+      :param notch_sides: Comma-separated sides to notch (e.g., "N,S" or "NE,SW")
+      :param notch_size: Size of notch along edge axis (0.0-1.0)
+      :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0)
+      :param notch_offset: Offset from center position (-0.5 to 0.5)
+      :param segments: Number of segments in torn edges
+      :param amplitude: Amplitude of noise for torn edges
+      :param noise_scale: Scale of noise
+      :param octaves: Number of noise octaves
+      :param seed: Random seed
+      :param smoothing_factor: Smoothing factor
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      # Convert angle to radians
+      angle_rad = math.radians(angle)
+      
+      return self.parent._create_shape(
+        Parallelogram(width=width/100, height=height/100, angle=angle_rad, slant=slant/100 if slant else None),
+        'Parallelogram',
+        torn_sides, notch_sides, notch_size, notch_depth, notch_offset,
+        segments, amplitude, noise_scale, octaves, seed, smoothing_factor,
+        drawio, drawio_output
+      )
 
-      result = migrate_shape_result(scaled_vectors, 'shape')
+    def rhombus(
+      self,
+      side: float = 100,
+      angle: float = 60.0,
+      torn_sides: str = '',
+      notch_sides: str = '',
+      notch_size: float = 0.1,
+      notch_depth: float = 0.0,
+      notch_offset: float = 0.0,
+      segments: int = 100,
+      amplitude: float = 5.0,
+      noise_scale: float = 0.1,
+      octaves: int = 3,
+      seed: int = 42,
+      smoothing_factor: float = 0.1,
+      drawio: bool = False,
+      drawio_output: str | None = None
+    ) -> dict[str, Any]:
+      """
+      Generate a rhombus with optional torn edges and/or notches.
+      
+      :param side: Length of all sides
+      :param angle: Interior angle in degrees
+      :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
+      :param notch_sides: Comma-separated sides to notch (e.g., "N,S" or "NE,SW")
+      :param notch_size: Size of notch along edge axis (0.0-1.0)
+      :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0)
+      :param notch_offset: Offset from center position (-0.5 to 0.5)
+      :param segments: Number of segments in torn edges
+      :param amplitude: Amplitude of noise for torn edges
+      :param noise_scale: Scale of noise
+      :param octaves: Number of noise octaves
+      :param seed: Random seed
+      :param smoothing_factor: Smoothing factor
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      # Convert angle to radians
+      angle_rad = math.radians(angle)
+      
+      return self.parent._create_shape(
+        Rhombus(side=side/100, angle=angle_rad),
+        'Rhombus',
+        torn_sides, notch_sides, notch_size, notch_depth, notch_offset,
+        segments, amplitude, noise_scale, octaves, seed, smoothing_factor,
+        drawio, drawio_output
+      )
 
-      # Print formatted output
-      svg_shape = result['shape']
-      has_torn_sides = torn_sides_list and any(side != PlacementEnum.NONE for side in torn_sides_list)
-      if has_torn_sides:
-        torn_str = ','.join(side.name for side in torn_sides_list if side != PlacementEnum.NONE)
-        print(f"\nTorn {quad_shape.value.title()} (sides={torn_str}, amplitude={amplitude}, seed={seed}):")
-      else:
-        print(f"\n{quad_shape.value.title()}:")
-      for line in svg_shape:
-        print(line)
+    def trapezoid(
+      self,
+      w1: float = 100,
+      w2: float = 60,
+      h: float = 80,
+      side_left: float | None = None,
+      torn_sides: str = '',
+      notch_sides: str = '',
+      notch_size: float = 0.1,
+      notch_depth: float = 0.0,
+      notch_offset: float = 0.0,
+      segments: int = 100,
+      amplitude: float = 5.0,
+      noise_scale: float = 0.1,
+      octaves: int = 3,
+      seed: int = 42,
+      smoothing_factor: float = 0.1,
+      drawio: bool = False,
+      drawio_output: str | None = None
+    ) -> dict[str, Any]:
+      """
+      Generate a trapezoid with automatic variant detection and optional torn edges/notches.
+      
+      Variant is automatically determined from parameters:
+      - ISOSCELES: side_left not specified (symmetric)
+      - RIGHT_ANGLE: side_left == h (90-degree left angle) 
+      - GENERAL: side_left specified and != h (asymmetric)
+      
+      :param w1: Bottom width (base)
+      :param w2: Top width
+      :param h: Height
+      :param side_left: Optional left side length constraint
+      :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
+      :param notch_sides: Comma-separated sides to notch (e.g., "N,S" or "NE,SW") 
+      :param notch_size: Size of notch along edge axis (0.0-1.0)
+      :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0)
+      :param notch_offset: Offset from center position (-0.5 to 0.5)
+      :param segments: Number of segments in torn edges
+      :param amplitude: Amplitude of noise for torn edges
+      :param noise_scale: Scale of noise
+      :param octaves: Number of noise octaves
+      :param seed: Random seed
+      :param smoothing_factor: Smoothing factor
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      return self.parent._create_shape(
+        Trapezoid(w1=w1/100, w2=w2/100, h=h/100, side_left=side_left/100 if side_left else None),
+        'Trapezoid',
+        torn_sides, notch_sides, notch_size, notch_depth, notch_offset,
+        segments, amplitude, noise_scale, octaves, seed, smoothing_factor,
+        drawio, drawio_output
+      )
 
-      # Handle draw.io output if requested
-      if drawio:
-        torn_str = ','.join(side.name for side in torn_sides_list if side != PlacementEnum.NONE) if has_torn_sides else 'none'
-        draw_params = {
-          'type': quad_shape.value,
-          'torn': torn_str,
-          'amp': amplitude if has_torn_sides else 0,
-          'seed': seed if has_torn_sides else 0
-        }
-        self.parent._handle_drawio_output(scaled_vectors, f'quadrilateral_{quad_shape.value}', draw_params, drawio, drawio_output)
-
-      return result
+    def kite(
+      self,
+      diagonal1: float = 100,
+      diagonal2: float = 80,
+      torn_sides: str = '',
+      notch_sides: str = '',
+      notch_size: float = 0.1,
+      notch_depth: float = 0.0,
+      notch_offset: float = 0.0,
+      segments: int = 100,
+      amplitude: float = 5.0,
+      noise_scale: float = 0.1,
+      octaves: int = 3,
+      seed: int = 42,
+      smoothing_factor: float = 0.1,
+      drawio: bool = False,
+      drawio_output: str | None = None
+    ) -> dict[str, Any]:
+      """
+      Generate a kite with optional torn edges and/or notches.
+      
+      :param diagonal1: First diagonal length (vertical)
+      :param diagonal2: Second diagonal length (horizontal)
+      :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
+      :param notch_sides: Comma-separated sides to notch (e.g., "N,S" or "NE,SW")
+      :param notch_size: Size of notch along edge axis (0.0-1.0)
+      :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0)
+      :param notch_offset: Offset from center position (-0.5 to 0.5)
+      :param segments: Number of segments in torn edges
+      :param amplitude: Amplitude of noise for torn edges
+      :param noise_scale: Scale of noise
+      :param octaves: Number of noise octaves
+      :param seed: Random seed
+      :param smoothing_factor: Smoothing factor
+      :param drawio: Generate draw.io file
+      :param drawio_output: Optional output directory for draw.io file
+      """
+      return self.parent._create_shape(
+        Kite(diagonal1=diagonal1/100, diagonal2=diagonal2/100),
+        'Kite',
+        torn_sides, notch_sides, notch_size, notch_depth, notch_offset,
+        segments, amplitude, noise_scale, octaves, seed, smoothing_factor,
+        drawio, drawio_output
+      )
 
     def torn_box(
       self,
@@ -533,6 +807,7 @@ class ShapeTools:
         self.parent._handle_drawio_output(line_points, 'noisy_line', params, drawio, drawio_output)
 
       return result
+
 
 if __name__ == '__main__':
   # Create the CLI instance for Shape Tools

@@ -36,7 +36,7 @@ class ShapeTestUtils:
 
     assert isinstance(legacy_dict, dict), 'Legacy result must be a dictionary'
     assert expected_key in legacy_dict, f"Dictionary must contain '{expected_key}' key"
-    assert isinstance(legacy_dict[expected_key], list), 'Dictionary value must be a list'
+    assert isinstance(legacy_dict[expected_key], list), 'Dictionary name must be a list'
     assert len(legacy_dict[expected_key]) > 0, 'SVG commands list must not be empty'
 
     # Verify SVG command structure

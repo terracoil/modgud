@@ -7,8 +7,10 @@ way to specify quadrilateral types.
 
 from enum import StrEnum, auto
 
+from modgud.domain.enums import LookupEnum
 
-class QuadShapeEnum(StrEnum):
+
+class QuadShapeEnum(LookupEnum, StrEnum):
   """Enumeration of supported quadrilateral shape types."""
 
   RECTANGLE = auto()
@@ -19,3 +21,5 @@ class QuadShapeEnum(StrEnum):
   GENERAL_TRAPEZOID = auto()
   ISOSCELES_TRAPEZOID = auto()
   KITE = auto()
+
+  # Note: Using default behavior from LookupEnum which returns first enum (RECTANGLE)

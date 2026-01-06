@@ -96,12 +96,12 @@ class TestGlobalRegistryFunctions:
     GuardRegistry.register('positive_number', positive_number_factory, namespace='math')
     positive_guard = GuardRegistry.get('positive_number', namespace='math')
 
-    @guarded_expression(positive_guard('value'), implicit_return=False)
+    @guarded_expression(positive_guard('name'), implicit_return=False)
     def process_number(value: int):
       return value * 2
 
     result = process_number(5)
     assert result == 10
 
-    with pytest.raises(GuardClauseError, match='value must be positive'):
+    with pytest.raises(GuardClauseError, match='name must be positive'):
       process_number(-5)

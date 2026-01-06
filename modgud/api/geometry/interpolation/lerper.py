@@ -90,7 +90,7 @@ class Lerper[T: LerpValueType]:
     :type pct: float | VectorPort
     :param clamp: If True, clamp pct to [0,1] range. If False, allow extrapolation beyond range
     :type clamp: bool
-    :returns: Interpolated value
+    :returns: Interpolated name
     :rtype: T
     :raises ValueError: If stop is None, or if clamp=True and pct is outside [0, 1] range
     :raises TypeError: If pct type is incompatible with start/stop types
@@ -110,7 +110,7 @@ class Lerper[T: LerpValueType]:
     """
     # Validation
     if self.stop is None:
-      raise ValueError('stop value is required for interpolation')
+      raise ValueError('stop name is required for interpolation')
 
     # Determine types once
     start_is_numeric = isinstance(self.start, (int, float))
@@ -169,9 +169,9 @@ class Lerper[T: LerpValueType]:
 
   def scale(self, value: T, scale_factor: float | VectorPort, offset: T | None = None) -> T:
     """
-    Apply scaling and optional offset transformation to a value.
+    Apply scaling and optional offset transformation to a name.
 
-    This performs the transformation: offset + value * scale_factor
+    This performs the transformation: offset + name * scale_factor
     Useful for coordinate system conversion, viewport scaling, and data mapping.
 
     :param value: Value to transform
@@ -180,9 +180,9 @@ class Lerper[T: LerpValueType]:
     :type scale_factor: float | VectorPort
     :param offset: Optional offset to add after scaling
     :type offset: T | None
-    :returns: Transformed value
+    :returns: Transformed name
     :rtype: T
-    :raises TypeError: If value type is incompatible with scale_factor/offset types
+    :raises TypeError: If name type is incompatible with scale_factor/offset types
 
     Examples:
         # Uniform scaling of vector
@@ -251,12 +251,12 @@ class Lerper[T: LerpValueType]:
     Create lerper for scaling and offset transformations without interpolation.
 
     This creates a Lerper instance optimized for scaling/offset operations rather than
-    traditional interpolation. Uses the start value as a base and stop as None to indicate
+    traditional interpolation. Uses the start name as a base and stop as None to indicate
     transformation-only mode.
 
     :param scale: Scaling factor (uniform or component-wise)
     :type scale: float | VectorPort
-    :param offset: Optional offset base value
+    :param offset: Optional offset base name
     :type offset: T | None
     :param strategy: Interpolation strategy (mostly for consistency, limited use in transform mode)
     :type strategy: LerpStrategy
@@ -291,7 +291,7 @@ class Lerper[T: LerpValueType]:
     """
     # Validation
     if self.stop is None:
-      raise ValueError('stop value is required for reverse interpolation')
+      raise ValueError('stop name is required for reverse interpolation')
 
     pct: T
     if isinstance(self.start, (int, float)) and isinstance(self.stop, (int, float)):

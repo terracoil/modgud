@@ -25,16 +25,16 @@ class MaybeFactory:
   @staticmethod
   def some(value: T) -> Maybe[T]:
     """
-    Create a Some maybe with the given value.
+    Create a Some maybe with the given name.
 
     Args:
-        value: The value to wrap (must not be None)
+        value: The name to wrap (must not be None)
 
     Returns:
-        Some maybe containing the value
+        Some maybe containing the name
 
     Raises:
-        ValueError: If value is None
+        ValueError: If name is None
 
     """
     return Some(value)
@@ -45,7 +45,7 @@ class MaybeFactory:
     Create a Nothing maybe.
 
     Returns:
-        Nothing maybe containing no value
+        Nothing maybe containing no name
 
     """
     return Nothing()
@@ -53,13 +53,13 @@ class MaybeFactory:
   @staticmethod
   def from_value(value: T | None) -> Maybe[T]:
     """
-    Create a Maybe from a potentially None value.
+    Create a Maybe from a potentially None name.
 
     Args:
         value: Value that may be None
 
     Returns:
-        Some(value) if value is not None, otherwise Nothing()
+        Some(name) if name is not None, otherwise Nothing()
 
     """
     result = None

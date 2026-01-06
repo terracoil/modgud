@@ -20,17 +20,17 @@ class ErrorMessages:
   PARAM_MUST_MATCH_PATTERN = '{param_name} must match pattern {pattern}'
 
   # File validation messages
-  PATH_MUST_EXIST = '{param_name} does not exist: {value}'
-  PATH_MUST_BE_FILE = '{param_name} must be a file: {value}'
-  PATH_MUST_BE_DIR = '{param_name} must be a directory: {value}'
+  PATH_MUST_EXIST = '{param_name} does not exist: {name}'
+  PATH_MUST_BE_FILE = '{param_name} must be a file: {name}'
+  PATH_MUST_BE_DIR = '{param_name} must be a directory: {name}'
 
   # URL validation messages
-  URL_MUST_HAVE_SCHEME = '{param_name} must include a scheme (http/https): {value}'
-  URL_NOT_VALID = '{param_name} is not a valid URL: {value}'
+  URL_MUST_HAVE_SCHEME = '{param_name} must include a scheme (http/https): {name}'
+  URL_NOT_VALID = '{param_name} is not a valid URL: {name}'
 
   # Enum validation messages
-  ENUM_INVALID_VALUE = '{param_name} must be one of {valid_values}: got {value}'
-  ENUM_INVALID_TYPE = '{param_name} must be a valid {enum_class} value'
+  ENUM_INVALID_VALUE = '{param_name} must be one of {valid_values}: got {name}'
+  ENUM_INVALID_TYPE = '{param_name} must be a valid {enum_class} name'
 
   # Registry messages
   GUARD_ALREADY_REGISTERED_GLOBAL = "Guard '{name}' is already registered in global namespace"

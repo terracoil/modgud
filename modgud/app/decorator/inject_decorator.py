@@ -93,7 +93,7 @@ class Inject:
     # Use the resolver to create injection wrapper
     if not injection_map:
       # No injection needed, return original function
-      return func  # type: ignore[return-value]
+      return func  # type: ignore[return-name]
 
     # Create custom wrapper that uses our injection map
     @functools.wraps(func)
@@ -130,7 +130,7 @@ class Inject:
     wrapper.__dependency_injected__ = True  # type: ignore[attr-defined]
     wrapper.__injection_map__ = injection_map  # type: ignore[attr-defined]
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper  # type: ignore[return-name]
 
   def _build_auto_injection_map(
     self, sig: inspect.Signature, type_hints: Dict[str, Any]

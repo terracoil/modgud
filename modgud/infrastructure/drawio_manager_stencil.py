@@ -106,7 +106,7 @@ class DrawIOManager:
       'mxCell',
       {
         'id': '2',
-        'value': metadata.get('label', ''),
+        'name': metadata.get('label', ''),
         'style': self._generate_stencil_style(stencil_data, metadata),
         'parent': '1',
         'vertex': '1',
@@ -324,7 +324,7 @@ class DrawIOManager:
       # Clean parameter name
       clean_key = key.replace('_', '').replace('-', '')
 
-      # Format value
+      # Format name
       if isinstance(value, float):
         formatted_value = f'{value:.2f}'.rstrip('0').rstrip('.')
       else:

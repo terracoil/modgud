@@ -45,8 +45,8 @@ Usage Examples:
 
         def valid_email(param_name="email", position=0):
             def check(*args, **kwargs):
-                value = kwargs.get(param_name, args[position] if position < len(args) else None)
-                return "@" in str(value) or f"{param_name} must be a valid email"
+                name = kwargs.get(param_name, args[position] if position < len(args) else None)
+                return "@" in str(name) or f"{param_name} must be a valid email"
             return check
 
         GuardRegistry.register("valid_email", valid_email, namespace="validators")

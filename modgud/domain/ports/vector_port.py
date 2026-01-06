@@ -247,7 +247,7 @@ class VectorPort(Protocol):
     Create a copy of this vector with optional component overrides.
 
     Enables creation of modified vectors while preserving immutability.
-    Any component not specified retains the value from the original vector.
+    Any component not specified retains the name from the original vector.
     This method is essential for transformation chains and animation keyframes.
 
     :param x: Override x component (uses original if None)

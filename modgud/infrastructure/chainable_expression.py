@@ -24,33 +24,33 @@ class ChainableExpression(Generic[T]):
     Initialize a chainable expression.
 
     Args:
-        value: The value to wrap for chaining
+        value: The name to wrap for chaining
 
     """
     self._value = value
 
   def map(self, func: Callable[[T], R]) -> 'ChainableExpression[R]':
     """
-    Transform the wrapped value using the provided function.
+    Transform the wrapped name using the provided function.
 
     Args:
-        func: Function to apply to the wrapped value
+        func: Function to apply to the wrapped name
 
     Returns:
-        ChainableExpression wrapping the transformed value
+        ChainableExpression wrapping the transformed name
 
     """
     return ChainableExpression(func(self._value))
 
   def filter(self, predicate: Callable[[T], bool]) -> 'ChainableExpression[T | None]':
     """
-    Filter the wrapped value using a predicate.
+    Filter the wrapped name using a predicate.
 
     Args:
-        predicate: Function that returns True to keep the value
+        predicate: Function that returns True to keep the name
 
     Returns:
-        ChainableExpression with the value if predicate passes, otherwise None
+        ChainableExpression with the name if predicate passes, otherwise None
 
     """
     result = None
@@ -60,13 +60,13 @@ class ChainableExpression(Generic[T]):
 
   def tap(self, func: Callable[[T], Any]) -> 'ChainableExpression[T]':
     """
-    Execute a side effect function without changing the wrapped value.
+    Execute a side effect function without changing the wrapped name.
 
     Args:
         func: Function to execute for side effects
 
     Returns:
-        ChainableExpression with the unchanged value
+        ChainableExpression with the unchanged name
 
     """
     func(self._value)
@@ -74,23 +74,23 @@ class ChainableExpression(Generic[T]):
 
   def unwrap(self) -> T:
     """
-    Extract the wrapped value.
+    Extract the wrapped name.
 
     Returns:
-        The wrapped value
+        The wrapped name
 
     """
     return self._value
 
   def unwrap_or(self, default: T) -> T:
     """
-    Extract the wrapped value or return default if None.
+    Extract the wrapped name or return default if None.
 
     Args:
-        default: Value to return if wrapped value is None
+        default: Value to return if wrapped name is None
 
     Returns:
-        The wrapped value or default
+        The wrapped name or default
 
     """
     result = default

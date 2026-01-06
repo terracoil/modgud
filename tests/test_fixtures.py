@@ -125,9 +125,9 @@ def noop_function(x):
 def exception_only_function(x):
   """Test function that only raises exceptions in all paths."""
   if x < 0:
-    raise ValueError('Negative value')
+    raise ValueError('Negative name')
   else:
-    raise RuntimeError('Non-negative value')
+    raise RuntimeError('Non-negative name')
 
 
 # Edge case: empty function (just docstring)
@@ -136,7 +136,7 @@ def empty_function(x):
   """Test empty function with just docstring."""
 
 
-# Edge case: conditionally no return value
+# Edge case: conditionally no return name
 @guarded_expression(implicit_return=True)
 def conditional_noop(x):
   """Test function where some paths have values, some have pass."""

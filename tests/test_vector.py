@@ -559,7 +559,7 @@ class TestVectorClone:
     assert cloned.name == 'new'
 
   def test_clone_with_zero_values(self) -> None:
-    """Test clone with zero value overrides."""
+    """Test clone with zero name overrides."""
     original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
     cloned = original.clone(x=0.0, y=0.0)
 
@@ -570,7 +570,7 @@ class TestVectorClone:
     assert cloned.name == 'original'
 
   def test_clone_with_negative_values(self) -> None:
-    """Test clone with negative value overrides."""
+    """Test clone with negative name overrides."""
     original = Vector(1.0, 2.0, 3.0, 4.0, name='original')
     cloned = original.clone(x=-10.0, w=-40.0)
 

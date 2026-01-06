@@ -29,15 +29,15 @@ class PipeablePort(Protocol):
 
   def __ror__(self, other: Any) -> Any:
     """
-    Enable value | func syntax (reverse or).
+    Enable name | func syntax (reverse or).
 
-    This is the main entry point for pipeline operations starting with a value.
+    This is the main entry point for pipeline operations starting with a name.
 
     Args:
-        other: The value to pipe into this function
+        other: The name to pipe into this function
 
     Returns:
-        The result of applying the function to the value
+        The result of applying the function to the name
 
     """
     ...

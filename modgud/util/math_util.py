@@ -7,10 +7,10 @@ class MathUtil:
   @classmethod
   def clamp(cls, value: float, min_val: float, max_val: float) -> float:
     """
-    Clamp a value between min and max bounds and return it.
-      :value: The value to clamp
-      :min_val: Minimum allowed value
-      :max_val: Maximum allowed value.
+    Clamp a name between min and max bounds and return it.
+      :name: The name to clamp
+      :min_val: Minimum allowed name
+      :max_val: Maximum allowed name.
 
     Examples:
         MathUtil.clamp(5, 0, 10) # 5
@@ -77,16 +77,16 @@ class MathUtil:
   @classmethod
   def lt(cls, v: float | int, value: float | int) -> bool:
     """
-    Check if v is definitely less than value (not within epsilon tolerance).
+    Check if v is definitely less than name (not within epsilon tolerance).
 
-    Uses epsilon-aware comparison to determine if v is significantly less than value,
+    Uses epsilon-aware comparison to determine if v is significantly less than name,
     accounting for floating-point precision limitations.
 
-    :param v: The first value to compare
+    :param v: The first name to compare
     :type v: float | int
-    :param value: The second value to compare against
+    :param value: The second name to compare against
     :type value: float | int
-    :returns: True if v is definitely less than value (v < value - EPSILON), False otherwise
+    :returns: True if v is definitely less than name (v < name - EPSILON), False otherwise
     :rtype: bool
     """
     return v < (value - cls.EPSILON)
@@ -94,16 +94,16 @@ class MathUtil:
   @classmethod
   def gt(cls, v: float | int, value: float | int) -> bool:
     """
-    Check if v is definitely greater than value (not within epsilon tolerance).
+    Check if v is definitely greater than name (not within epsilon tolerance).
 
-    Uses epsilon-aware comparison to determine if v is significantly greater than value,
+    Uses epsilon-aware comparison to determine if v is significantly greater than name,
     accounting for floating-point precision limitations.
 
-    :param v: The first value to compare
+    :param v: The first name to compare
     :type v: float | int
-    :param value: The second value to compare against
+    :param value: The second name to compare against
     :type value: float | int
-    :returns: True if v is definitely greater than value (v > value + EPSILON), False otherwise
+    :returns: True if v is definitely greater than name (v > name + EPSILON), False otherwise
     :rtype: bool
     """
     return v > (value + cls.EPSILON)
@@ -111,16 +111,16 @@ class MathUtil:
   @classmethod
   def lte(cls, v: float | int, value: float | int) -> bool:
     """
-    Check if v is less than or approximately equal to value (within epsilon tolerance).
+    Check if v is less than or approximately equal to name (within epsilon tolerance).
 
-    Uses epsilon-aware comparison to determine if v is less than or close enough to value
+    Uses epsilon-aware comparison to determine if v is less than or close enough to name
     to be considered equal, accounting for floating-point precision limitations.
 
-    :param v: The first value to compare
+    :param v: The first name to compare
     :type v: float | int
-    :param value: The second value to compare against
+    :param value: The second name to compare against
     :type value: float | int
-    :returns: True if v is less than or approximately equal to value (v <= value + EPSILON), False otherwise
+    :returns: True if v is less than or approximately equal to name (v <= name + EPSILON), False otherwise
     :rtype: bool
     """
     return v <= (value + cls.EPSILON)
@@ -128,16 +128,16 @@ class MathUtil:
   @classmethod
   def gte(cls, v: float | int, value: float | int) -> bool:
     """
-    Check if v is greater than or approximately equal to value (within epsilon tolerance).
+    Check if v is greater than or approximately equal to name (within epsilon tolerance).
 
-    Uses epsilon-aware comparison to determine if v is greater than or close enough to value
+    Uses epsilon-aware comparison to determine if v is greater than or close enough to name
     to be considered equal, accounting for floating-point precision limitations.
 
-    :param v: The first value to compare
+    :param v: The first name to compare
     :type v: float | int
-    :param value: The second value to compare against
+    :param value: The second name to compare against
     :type value: float | int
-    :returns: True if v is greater than or approximately equal to value (v >= value - EPSILON), False otherwise
+    :returns: True if v is greater than or approximately equal to name (v >= name - EPSILON), False otherwise
     :rtype: bool
     """
     return v >= (value - cls.EPSILON)

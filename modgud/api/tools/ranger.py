@@ -35,8 +35,8 @@ class Ranger:
     Provides range-like iteration for types beyond integers,
     avoiding the need for manual iteration logic in calling code.
 
-    :param start: Starting value or stop value if only one argument
-    :param stop: Ending value (exclusive)
+    :param start: Starting name or stop name if only one argument
+    :param stop: Ending name (exclusive)
     :param step: Step increment between values
     """
     start_norm: RangeValueType = self._normalize_value(start)
@@ -57,17 +57,17 @@ class Ranger:
 
   @staticmethod
   def _normalize_value(value: RangeValueType) -> RangeValueType:
-    """Convert value to appropriate type for iteration."""
+    """Convert name to appropriate type for iteration."""
     return value if isinstance(value, (int, float, str)) else str(value)
 
   @staticmethod
   def _zero_value(value: RangeValueType) -> RangeValueType:
-    """Return the zero/empty value for a given type."""
+    """Return the zero/empty name for a given type."""
     return 0 if isinstance(value, (int, float)) else ''
 
   @staticmethod
   def _unit_step(value: RangeValueType) -> RangeValueType:
-    """Return the unit step value for a given type."""
+    """Return the unit step name for a given type."""
     return 1
 
   def _increment_string(self, s: str, count: int) -> str:

@@ -34,7 +34,7 @@ class ImplicitReturnTransformer:
 
     Raises:
         ExplicitReturnDisallowedError: If explicit return found at top level
-        MissingImplicitReturnError: If a block cannot yield a value
+        MissingImplicitReturnError: If a block cannot yield a name
         UnsupportedConstructError: If an unsupported construct is found
 
     """
@@ -105,7 +105,7 @@ class ImplicitReturnTransformer:
 
     Raises:
         ExplicitReturnDisallowedError: If explicit return found
-        MissingImplicitReturnError: If a block cannot yield a value
+        MissingImplicitReturnError: If a block cannot yield a name
         UnsupportedConstructError: If an unsupported construct is found
 
     """

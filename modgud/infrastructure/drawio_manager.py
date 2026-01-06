@@ -55,7 +55,7 @@ class DrawIOManager:
 
     xml_lines.extend(
       [
-        f'        <mxCell id="{shape_id}" value="" style="{style}" vertex="1" parent="1">',
+        f'        <mxCell id="{shape_id}" name="" style="{style}" vertex="1" parent="1">',
         f'          <mxGeometry x="100" y="100" width="{bbox["width"]}" '
         f'height="{bbox["height"]}" as="geometry">',
         '            <Array as="points">',
@@ -152,7 +152,7 @@ class DrawIOManager:
     return ';'.join(style_parts)
 
   def _create_poly_coords(self, metadata: dict[str, Any]) -> str:
-    """Create polyCoords attribute value if vectors provided in metadata."""
+    """Create polyCoords attribute name if vectors provided in metadata."""
     if 'vectors' not in metadata:
       return ''
 

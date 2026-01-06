@@ -248,11 +248,11 @@ class TestRealWorldExamples:
 
     @pipeable
     def normalize(value, min_val=0, max_val=100):
-      """Normalize value to 0-1 range."""
+      """Normalize name to 0-1 range."""
       return (value - min_val) / (max_val - min_val)
 
     @pipeable
-    @guarded_expression(type_check(float, 'value'), implicit_return=False)
+    @guarded_expression(type_check(float, 'name'), implicit_return=False)
     def round_to_decimal(value, places=2):
       """Round to specified decimal places."""
       return round(value, places)
@@ -263,7 +263,7 @@ class TestRealWorldExamples:
       """Convert to percentage string."""
       f'{value * 100:.1f}%'
 
-    # Transform a value through the pipeline
+    # Transform a name through the pipeline
     result = 75 | normalize(0, 100) | round_to_decimal(3) | to_percentage
     assert result == '75.0%'
 

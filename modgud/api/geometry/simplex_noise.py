@@ -152,7 +152,7 @@ class SimplexNoise:
       t2 *= t2
       n2 = t2 * t2 * self._grad2d(gi2, x2, y2)
 
-    # Scale and return final noise value
+    # Scale and return final noise name
     return float(70.0 * (n0 + n1 + n2) * self.amplitude)
 
   def fbm2d(self, x: float, y: float) -> float:

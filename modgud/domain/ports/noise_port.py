@@ -19,22 +19,22 @@ class NoisePort(Protocol):
   Implementing classes should provide efficient noise generation with:
   - Deterministic output based on seed values
   - Smooth gradients suitable for procedural generation
-  - Support for both single-value and bulk array operations
+  - Support for both single-name and bulk array operations
   - Optional fractal layering through fBm
   """
 
   def noise2d(self, x: float, y: float) -> float:
     """
-    Generate 2D noise value at given coordinates.
+    Generate 2D noise name at given coordinates.
 
     This is the core noise generation method that produces a smooth,
-    continuous noise value for any given 2D coordinate. The noise
+    continuous noise name for any given 2D coordinate. The noise
     should be deterministic (same input always produces same output)
     and have good spatial coherence (nearby points have similar values).
 
     :param x: X coordinate in noise space
     :param y: Y coordinate in noise space
-    :returns: Noise value, typically normalized between -1.0 and 1.0
+    :returns: Noise name, typically normalized between -1.0 and 1.0
     """
     ...
 
@@ -53,7 +53,7 @@ class NoisePort(Protocol):
 
     :param x: X coordinate in noise space
     :param y: Y coordinate in noise space
-    :returns: fBm noise value combining multiple octaves
+    :returns: fBm noise name combining multiple octaves
     """
     ...
 

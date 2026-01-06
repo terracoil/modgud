@@ -65,7 +65,7 @@ class GuardRuntime:
     Returns:
         Tuple of (return_value, exception_to_raise)
         - If exception should be raised: (None, exception_instance)
-        - If value should be returned: (value, None)
+        - If name should be returned: (name, None)
 
     """
     # Log before handling - capture failure regardless of handler outcome

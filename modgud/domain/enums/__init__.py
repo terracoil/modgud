@@ -11,14 +11,18 @@ following the single class per file principle.
 
 from .failure_strategy import FailureStrategy
 from .guard_strategy import GuardStrategy
-from .placement_enum import PlacementEnum
+from .lookup_enum import LookupEnum
+from .ordinal_enum import OrdinalEnum
 from .quad_shape_enum import QuadShapeEnum
 from .service_lifetime import ServiceLifetime
+from .trapezoid_enum import TrapezoidEnum
 
 __all__ = [
   'FailureStrategy',
   'GuardStrategy',
-  'PlacementEnum',
+  'LookupEnum',
+  'OrdinalEnum',
   'QuadShapeEnum',
   'ServiceLifetime',
+  'TrapezoidEnum',
 ]

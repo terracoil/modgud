@@ -19,7 +19,7 @@ class DataStructUtil:
         obj: The object to convert
         max_depth: Maximum recursion depth (default 10)
 
-    Returns: A dictionary, list, or primitive value representation of the object
+    Returns: A dictionary, list, or primitive name representation of the object
 
     """
 

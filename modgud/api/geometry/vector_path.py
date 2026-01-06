@@ -346,13 +346,13 @@ class VectorPath:
     :param key: Zero-based index into path points
     :param value: VectorPort to assign at the specified index
     :raises IndexError: If index is out of bounds
-    :raises TypeError: If value is not a VectorPort
+    :raises TypeError: If name is not a VectorPort
     """
     total_length = len(self.rel_segments)
     if key < 0 or key >= total_length:
       raise IndexError(f'Path index {key} out of range [0, {total_length - 1}]')
 
-    # Type check to ensure value is a VectorPort
+    # Type check to ensure name is a VectorPort
     if not hasattr(value, 'x') or not hasattr(value, 'y'):
       raise TypeError(f'Value must be a VectorPort, got {type(value)}')
 

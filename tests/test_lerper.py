@@ -23,7 +23,7 @@ class TestLerperConstruction:
     assert lerper.strategy == LerpStrategy.SINE
 
   def test_construction_without_stop(self) -> None:
-    """Test Lerper construction without stop value."""
+    """Test Lerper construction without stop name."""
     lerper = Lerper(start=5.0)
     assert lerper.start == 5.0
     assert lerper.stop is None
@@ -81,7 +81,7 @@ class TestNumericLinearInterpolation:
     assert lerper.lerp(1.0) == 10.0
 
   def test_reverse_interpolation(self) -> None:
-    """Test interpolation from larger to smaller value."""
+    """Test interpolation from larger to smaller name."""
     lerper = Lerper(start=100.0, stop=0.0)
     assert lerper.lerp(0.0) == 100.0
     assert lerper.lerp(0.5) == 50.0
@@ -342,15 +342,15 @@ class TestValidation:
   """Test validation and error handling."""
 
   def test_lerp_without_stop(self) -> None:
-    """Test lerp without stop value."""
+    """Test lerp without stop name."""
     lerper = Lerper(start=0.0)
-    with pytest.raises(ValueError, match='stop value is required'):
+    with pytest.raises(ValueError, match='stop name is required'):
       lerper.lerp(0.5)
 
   def test_rlerp_without_stop(self) -> None:
-    """Test rlerp without stop value."""
+    """Test rlerp without stop name."""
     lerper = Lerper(start=0.0)
-    with pytest.raises(ValueError, match='stop value is required'):
+    with pytest.raises(ValueError, match='stop name is required'):
       lerper.rlerp(5.0)
 
   def test_lerp_invalid_percentage(self) -> None:
@@ -511,7 +511,7 @@ class TestVectorPercentageInterpolation:
     assert result_one.z == 130.0 and result_one.w == 140.0
 
   def test_vector_percentage_negative_ranges(self) -> None:
-    """Test component-wise interpolation with negative value ranges."""
+    """Test component-wise interpolation with negative name ranges."""
     start = Vector(-100, -50, 0, 50)
     stop = Vector(100, 50, 100, 150)
     lerper = Lerper(start=start, stop=stop)
@@ -763,7 +763,7 @@ class TestLerperScaling:
     with pytest.raises(TypeError, match='scale_factor must be numeric or VectorPort'):
       lerper.scale(Vector(1, 2), 'invalid')  # type: ignore
 
-    # Invalid value type
+    # Invalid name type
     with pytest.raises(TypeError, match='Unsupported type for scaling'):
       lerper.scale('invalid', 2.0)  # type: ignore
 
@@ -791,7 +791,7 @@ class TestLerperFromTransform:
     """Test from_transform with no offset."""
     transformer = Lerper.from_transform(scale=3.0)
 
-    # Should default to appropriate zero value
+    # Should default to appropriate zero name
     assert transformer.start == 0
     assert transformer.stop is None
 

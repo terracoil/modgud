@@ -14,26 +14,26 @@ U = TypeVar('U')
 
 
 class Nothing(MaybePort[T]):
-  """Represents a Maybe that contains no value."""
+  """Represents a Maybe that contains no name."""
 
   def __init__(self) -> None:
-    """Initialize a Nothing value."""
+    """Initialize a Nothing name."""
     pass
 
   def is_some(self) -> bool:
-    """Return False since this contains no value."""
+    """Return False since this contains no name."""
     return False
 
   def is_nothing(self) -> bool:
-    """Return True since this contains no value."""
+    """Return True since this contains no name."""
     return True
 
   def unwrap(self) -> T:
-    """Raise an exception since there is no value."""
+    """Raise an exception since there is no name."""
     raise ValueError('Called unwrap on Nothing')
 
   def unwrap_or(self, default: T) -> T:
-    """Return the default value since there is no wrapped value."""
+    """Return the default name since there is no wrapped name."""
     return default
 
   def map(self, func: Callable[[T], U]) -> MaybePort[U]:

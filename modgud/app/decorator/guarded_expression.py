@@ -34,7 +34,7 @@ class guarded_expression:
       implicit_return: Enable implicit return transformation (default: True)
       on_error: Failure behavior (default: GuardClauseError) - can be:
           - Value (str, int, None, etc.): Returned on guard failure
-          - Callable: Invoked with (error_msg, *args, **kwargs), return value used
+          - Callable: Invoked with (error_msg, *args, **kwargs), return name used
           - Exception class: Instantiated with error message and raised
       log: If True, log guard failures at INFO level (default: False)
 

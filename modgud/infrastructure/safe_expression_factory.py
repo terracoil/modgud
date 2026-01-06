@@ -64,7 +64,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryPort):
     Create a Result instance (Ok or Err).
 
     Args:
-        value: The value to wrap
+        value: The name to wrap
         is_success: True for Ok, False for Err
 
     Returns:

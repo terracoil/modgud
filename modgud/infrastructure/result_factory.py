@@ -26,13 +26,13 @@ class ResultFactory:
   @staticmethod
   def ok(value: T) -> Result[T, E]:
     """
-    Create an Ok result with the given value.
+    Create an Ok result with the given name.
 
     Args:
-        value: The success value to wrap
+        value: The success name to wrap
 
     Returns:
-        Ok result containing the value
+        Ok result containing the name
 
     """
     return Ok(value)
@@ -43,7 +43,7 @@ class ResultFactory:
     Create an Err result with the given error.
 
     Args:
-        error: The error value to wrap
+        error: The error name to wrap
 
     Returns:
         Err result containing the error
@@ -74,14 +74,14 @@ class ResultFactory:
   @staticmethod
   def from_optional(value: T | None, error_message: str = 'Value is None') -> Result[T, str]:
     """
-    Create a Result from an optional value.
+    Create a Result from an optional name.
 
     Args:
         value: Value that may be None
-        error_message: Error message if value is None
+        error_message: Error message if name is None
 
     Returns:
-        Ok with value if not None, otherwise Err with error message
+        Ok with name if not None, otherwise Err with error message
 
     """
     result = None

@@ -32,7 +32,7 @@ class SafeDecoratorFactoryPort(Protocol):
     Create a Result instance.
 
     Args:
-        value: The value to wrap
+        value: The name to wrap
         is_success: True for Ok, False for Err
 
     Returns:

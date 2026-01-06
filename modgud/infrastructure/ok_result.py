@@ -15,14 +15,14 @@ E = TypeVar('E')
 
 
 class Ok(ResultPort[T, E]):
-  """Represents a successful result containing a value."""
+  """Represents a successful result containing a name."""
 
   def __init__(self, value: T) -> None:
     """
     Initialize an Ok result.
 
     Args:
-        value: The success value to wrap
+        value: The success name to wrap
 
     """
     self._value = value
@@ -36,19 +36,19 @@ class Ok(ResultPort[T, E]):
     return False
 
   def unwrap(self) -> T:
-    """Extract the wrapped value."""
+    """Extract the wrapped name."""
     return self._value
 
   def unwrap_or(self, default: T) -> T:
-    """Return the wrapped value, ignoring the default."""
+    """Return the wrapped name, ignoring the default."""
     return self._value
 
   def map(self, func: Callable[[T], U]) -> ResultPort[U, E]:
-    """Apply the function to the wrapped value."""
+    """Apply the function to the wrapped name."""
     return Ok(func(self._value))
 
   def and_then(self, func: Callable[[T], ResultPort[U, E]]) -> ResultPort[U, E]:
-    """Apply the function to the wrapped value."""
+    """Apply the function to the wrapped name."""
     return func(self._value)
 
   def __eq__(self, other: Any) -> bool:
