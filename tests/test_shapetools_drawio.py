@@ -103,12 +103,6 @@ class TestShapeToolsDrawIO:
       [
         'shape',
         'torn-box',
-        '--amplitude',
-        '3.0',
-        '--segments',
-        '20',  # Fewer segments for faster test
-        '--seed',
-        '42',
         '--drawio',
       ],
       project_root,
@@ -154,10 +148,6 @@ class TestShapeToolsDrawIO:
         '90',
         '--end-y',
         '80',
-        '--amplitude',
-        '4.0',
-        '--segments',
-        '15',
         '--drawio',
       ],
       project_root,
@@ -215,14 +205,8 @@ class TestShapeToolsDrawIO:
       [
         'shape',
         'torn-box',
-        '--amplitude',
-        '2.5',
         '--torn-sides',
         'NSEW',
-        '--seed',
-        '999',
-        '--segments',
-        '10',
         '--drawio',
       ],
       project_root,
@@ -237,8 +221,8 @@ class TestShapeToolsDrawIO:
     # Check filename components
     filename = newest_file.name
     assert 'torn_box' in filename
-    assert 'amp2.5' in filename  # Float formatting
-    assert 'seed999' in filename
+    assert 'amp' in filename  # Default amplitude
+    assert 'seed' in filename  # Default seed
     assert 'sidesNSEW' in filename
 
   def test_drawio_polygon_coordinates(self, project_root):

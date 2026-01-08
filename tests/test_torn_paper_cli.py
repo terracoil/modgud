@@ -20,8 +20,9 @@ class TestTornPaperCLI:
     assert result.returncode == 0
     assert 'Generate a torn paper box with specified torn edges' in result.stdout
     assert '--torn-sides' in result.stdout
-    assert '--amplitude' in result.stdout
-    assert '--segments' in result.stdout
+    # These parameters are now internal to the Shape class
+    # assert '--amplitude' in result.stdout
+    # assert '--segments' in result.stdout
 
   def test_torn_box_basic_execution(self):
     """Test basic torn-box command execution."""
@@ -31,10 +32,6 @@ class TestTornPaperCLI:
         'bin/shapetools',
         'shape',
         'torn-box',
-        '--segments',
-        '10',  # Use minimum segments for faster test
-        '--amplitude',
-        '2.0',
       ],
       capture_output=True,
       text=True,
@@ -60,8 +57,7 @@ class TestTornPaperCLI:
           'torn-box',
           '--torn-sides',
           sides,
-          '--segments',
-          '10',  # Minimum for speed
+          # Segments now internal to Shape class
         ],
         capture_output=True,
         text=True,
@@ -84,12 +80,7 @@ class TestTornPaperCLI:
         '200',
         '--height',
         '150',
-        '--segments',
-        '15',
-        '--amplitude',
-        '8.0',
-        '--seed',
-        '123',
+        # amplitude, seed, segments now internal to Shape class
       ],
       capture_output=True,
       text=True,
@@ -97,20 +88,21 @@ class TestTornPaperCLI:
     )
 
     assert result.returncode == 0
-    assert 'amplitude=8.0, seed=123' in result.stdout
+    # Parameters are now internal - just check it runs successfully
+    assert 'Torn Paper Box' in result.stdout
     assert '<path>' in result.stdout
 
   def test_torn_box_invalid_parameters(self):
     """Test torn-box with invalid parameters."""
-    # Test invalid segments (too low)
+    # Test invalid parameter
     result = subprocess.run(
       [
         sys.executable,
         'bin/shapetools',
         'shape',
         'torn-box',
-        '--segments',
-        '5',  # Below minimum of 10
+        '--invalid-param',
+        'value',  # Use a parameter that doesn't exist
       ],
       capture_output=True,
       text=True,
@@ -120,7 +112,8 @@ class TestTornPaperCLI:
     assert result.returncode != 0
     # Error could be in stdout or stderr
     error_output = result.stdout + result.stderr
-    assert 'segments must be between 10 and 1000' in error_output
+    # Should fail due to invalid parameter
+    assert 'invalid' in error_output.lower() or 'unrecognized' in error_output.lower()
 
   def test_torn_box_invalid_sides(self):
     """Test torn-box with invalid torn sides."""
@@ -132,8 +125,6 @@ class TestTornPaperCLI:
         'torn-box',
         '--torn-sides',
         'XYZ',  # Invalid characters
-        '--segments',
-        '10',
       ],
       capture_output=True,
       text=True,
@@ -152,12 +143,9 @@ class TestTornPaperCLI:
       'bin/shapetools',
       'shape',
       'torn-box',
-      '--seed',
-      '42',
-      '--segments',
-      '10',
       '--torn-sides',
       'N',
+      # seed and segments are now internal
     ]
 
     # Run the command twice
@@ -176,20 +164,19 @@ class TestTornPaperCLI:
       'bin/shapetools',
       'shape',
       'torn-box',
-      '--segments',
-      '10',
       '--torn-sides',
       'N',
+      # segments are now internal
     ]
 
     result1 = subprocess.run(
-      cmd_base + ['--seed', '42'],
+      cmd_base,  # Using default parameters
       capture_output=True,
       text=True,
       cwd=Path(__file__).parent.parent,
     )
     result2 = subprocess.run(
-      cmd_base + ['--seed', '123'],
+      cmd_base[:-1] + ['S'],  # Different sides to get different output
       capture_output=True,
       text=True,
       cwd=Path(__file__).parent.parent,

@@ -66,6 +66,7 @@ The UI/app can choose any variant within a category (emoji, Lucide, FontAwesome,
 - **Validation / Guarantees:** ✅ ☑️ 🧪  
 
 **Suggested meanings (optional):**
+- 🗂️ = folder
 - 📜 = contract/spec (API/event/schema)  
 - 🔌 = integration point / port  
 - 🧬 = schema/data shape (esp. domain/event)  
@@ -190,7 +191,8 @@ If you want a small set that’s **always consistent**:
 - 🗺️ = Context / Domain Map  
 - 📍 = Ownership / Source-of-truth anchor  
 - 📚 = Reference / Docs hub  
-- 📜 = Contract / Spec  
+- 📜 = Contract / Spec
+- 🗂️ = Folder
 - 🧩 = Component  
 - 🔌 = Port / Integration seam  
 - 🌀 = Workflow / System dynamics  
