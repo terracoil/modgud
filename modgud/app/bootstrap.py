@@ -1,6 +1,6 @@
 """Bootstrap configuration for dependency injection."""
 
-from ..domain.ports import (
+from modgud.domain.ports import (
   DependencyResolverPort,
   DIContainerPort,
   GuardRuntimePort,
@@ -8,23 +8,18 @@ from ..domain.ports import (
   ImplicitReturnTransformerPort,
   InjectableDetectorPort,
 )
-from ..infrastructure.di.energy_inverter import EnergyInverter
-from ..infrastructure.di_adapters import (
+from modgud.infrastructure import EnergyInverter, ServiceLocator
+from modgud.infrastructure.di_adapters import (
   DependencyResolverService,
   DIContainerAdapter,
   InjectableDetectorService,
 )
-from ..infrastructure.guard import (
-  GuardRuntimeAdapter,
-  GuardWrapperService,
-)
-from ..infrastructure.service_locator import ServiceLocator
-from ..infrastructure.transform import ImplicitReturnAdapter
+from modgud.infrastructure.guard import GuardRuntimeAdapter, GuardWrapperService
+from modgud.infrastructure.transform import ImplicitReturnAdapter
 
 
 def configure_dependencies() -> ServiceLocator:
-  """
-  Configure all dependencies for the application.
+  """Configure all dependencies for the application.
 
   This function sets up the service locator with all necessary
   infrastructure implementations for the ports defined in the domain.

@@ -1,5 +1,4 @@
-"""
-MaybePort for modgud domain layer.
+"""MaybePort for modgud domain layer.
 
 Port definition for Maybe types following domain-driven design
 principles. This port defines the interface for optional name
@@ -15,8 +14,7 @@ U = TypeVar('U')
 
 
 class MaybePort(Protocol, Generic[T]):
-  """
-  Port for Maybe types.
+  """Port for Maybe types.
 
   Maybe represents a name that may or may not exist, providing safe operations
   for working with optional values without null pointer exceptions.
@@ -31,8 +29,7 @@ class MaybePort(Protocol, Generic[T]):
     ...
 
   def unwrap(self) -> T:
-    """
-    Extract the name, raising an exception if None.
+    """Extract the name, raising an exception if None.
 
     :returns: The wrapped name if Some
     :rtype: T
@@ -41,8 +38,7 @@ class MaybePort(Protocol, Generic[T]):
     ...
 
   def unwrap_or(self, default: T) -> T:
-    """
-    Extract the name or return a default if Nothing.
+    """Extract the name or return a default if Nothing.
 
     :param default: Value to return if Nothing
     :type default: T
@@ -52,8 +48,7 @@ class MaybePort(Protocol, Generic[T]):
     ...
 
   def map(self, func: Callable[[T], U]) -> 'MaybePort[U]':
-    """
-    Transform the Some name using the provided function.
+    """Transform the Some name using the provided function.
 
     :param func: Function to apply to the Some name
     :type func: Callable[[T], U]
@@ -63,8 +58,7 @@ class MaybePort(Protocol, Generic[T]):
     ...
 
   def and_then(self, func: Callable[[T], 'MaybePort[U]']) -> 'MaybePort[U]':
-    """
-    Chain Maybe operations (monadic bind).
+    """Chain Maybe operations (monadic bind).
 
     :param func: Function that takes Some name and returns a Maybe
     :type func: Callable[[T], MaybePort[U]]

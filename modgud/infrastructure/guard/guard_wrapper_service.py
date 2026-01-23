@@ -3,16 +3,15 @@
 import functools
 from typing import Any, Callable, Tuple
 
-from ...domain.ports.guard import GuardRuntimePort
-from ...domain.types import FailureBehavior, GuardFunction
+from modgud.domain import FailureBehavior, GuardFunction
+from modgud.domain.ports import GuardRuntimePort
 
 
 class GuardWrapperService:
   """Service that wraps functions with guard checking."""
 
   def __init__(self, runtime: GuardRuntimePort) -> None:
-    """
-    Initialize with a guard runtime.
+    """Initialize with a guard runtime.
 
     :param runtime: Guard runtime implementation
     """
@@ -25,8 +24,7 @@ class GuardWrapperService:
     on_error: FailureBehavior,
     log: bool,
   ) -> Callable:
-    """
-    Wrap a function with guard checking.
+    """Wrap a function with guard checking.
 
     :param func: Function to wrap
     :param guards: Guards to apply

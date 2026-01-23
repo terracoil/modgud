@@ -1,5 +1,4 @@
-"""
-Protocol defining the interface for 4D mathematical vectors.
+"""Protocol defining the interface for 4D mathematical vectors.
 
 This protocol establishes the contract for vector implementations supporting
 2D/3D graphics operations and quaternion mathematics. The 4-component design
@@ -17,8 +16,7 @@ from typing import Any, ClassVar, Protocol, runtime_checkable
 
 @runtime_checkable
 class VectorPort(Protocol):
-  """
-  Interface for 4D mathematical vectors supporting geometric transformations.
+  """Interface for 4D mathematical vectors supporting geometric transformations.
 
   Vectors are immutable to ensure thread safety and predictable behavior in
   transformation pipelines. The protocol supports component-wise arithmetic
@@ -48,8 +46,7 @@ class VectorPort(Protocol):
   ATTRS: ClassVar[tuple[str, ...]]
 
   def as_tuple(self) -> tuple[float, float, float, float]:
-    """
-    Convert vector to tuple for interoperability with graphics APIs.
+    """Convert vector to tuple for interoperability with graphics APIs.
 
     Essential for passing vectors to OpenGL, numpy, or other libraries
     expecting tuple representations. Always returns 4-element tuple
@@ -59,8 +56,7 @@ class VectorPort(Protocol):
     """
 
   def format(self, dim: int = 2, precision: int = 4, name: bool = True) -> str:
-    """
-    Format vector for human-readable display with dimension control.
+    """Format vector for human-readable display with dimension control.
 
     Supports debugging by showing only relevant dimensions - useful when
     working with 2D vectors in a 4D implementation. The precision parameter
@@ -78,8 +74,7 @@ class VectorPort(Protocol):
 
   @classmethod
   def from_input(cls, t: Any) -> list[VectorPort]:
-    """
-    Parse various input formats into a list of vectors.
+    """Parse various input formats into a list of vectors.
 
     Provides flexible vector creation from multiple sources, enabling
     batch operations and format conversion. Critical for loading vector
@@ -97,8 +92,7 @@ class VectorPort(Protocol):
 
   @classmethod
   def from_dict(cls, args: dict[str, Any]) -> VectorPort | None:
-    """
-    Create vector from dictionary with named components.
+    """Create vector from dictionary with named components.
 
     Enables vector creation from JSON/YAML data or keyword arguments.
     Returns None for invalid input to support optional vector creation
@@ -114,8 +108,7 @@ class VectorPort(Protocol):
 
   @classmethod
   def from_tuple(cls, t: tuple[float, ...]) -> VectorPort:
-    """
-    Create vector from coordinate tuple.
+    """Create vector from coordinate tuple.
 
     Supports variable-length tuples for dimension flexibility. Essential
     for numpy integration and graphics APIs that return coordinate tuples.
@@ -128,8 +121,7 @@ class VectorPort(Protocol):
 
   @classmethod
   def zero(cls, name: str | None = None) -> VectorPort:
-    """
-    Create zero vector representing the origin point.
+    """Create zero vector representing the origin point.
 
     The zero vector is the additive identity: v + zero = v for any vector v.
     Used as default starting point for accumulation operations and as
@@ -141,8 +133,7 @@ class VectorPort(Protocol):
 
   @classmethod
   def identity(cls, name: str | None = None) -> VectorPort:
-    """
-    Create multiplicative identity vector.
+    """Create multiplicative identity vector.
 
     Returns (1, 1, 0, 0) which preserves x,y components in multiplication.
     Note: This is NOT a unit vector, but rather the identity for component-wise
@@ -154,8 +145,7 @@ class VectorPort(Protocol):
     """
 
   def __add__(self, other: VectorPort) -> VectorPort:
-    """
-    Add vectors component-wise for translation operations.
+    """Add vectors component-wise for translation operations.
 
     Vector addition represents translation in space. Each component is
     added independently: result = (x1+x2, y1+y2, z1+z2, w1+w2).
@@ -166,8 +156,7 @@ class VectorPort(Protocol):
     """
 
   def __sub__(self, other: VectorPort) -> VectorPort:
-    """
-    Subtract vectors component-wise for displacement calculations.
+    """Subtract vectors component-wise for displacement calculations.
 
     Vector subtraction finds the displacement from other to self.
     Used to calculate distances, directions, and relative positions.
@@ -178,8 +167,7 @@ class VectorPort(Protocol):
     """
 
   def __mul__(self, other: VectorPort) -> VectorPort:
-    """
-    Multiply vectors component-wise for scaling operations.
+    """Multiply vectors component-wise for scaling operations.
 
     Component-wise multiplication (Hadamard product) scales each axis
     independently. Used for non-uniform scaling, color mixing in graphics,
@@ -190,8 +178,7 @@ class VectorPort(Protocol):
     """
 
   def __truediv__(self, other: VectorPort) -> VectorPort:
-    """
-    Divide vectors component-wise for inverse scaling operations.
+    """Divide vectors component-wise for inverse scaling operations.
 
     Component-wise division inverts scaling operations. Each component
     is divided independently: result = (x1/x2, y1/y2, z1/z2, w1/w2).
@@ -203,8 +190,7 @@ class VectorPort(Protocol):
     """
 
   def __repr__(self) -> str:
-    """
-    Return developer-friendly representation for debugging.
+    """Return developer-friendly representation for debugging.
 
     Shows full constructor syntax enabling copy-paste recreation of vectors
     during debugging sessions. Includes all components and name.
@@ -213,8 +199,7 @@ class VectorPort(Protocol):
     """
 
   def __str__(self) -> str:
-    """
-    Return user-friendly string representation.
+    """Return user-friendly string representation.
 
     More compact than repr(), suitable for logging and display to end users.
     Shows components in a readable format without constructor details.
@@ -223,8 +208,7 @@ class VectorPort(Protocol):
     """
 
   def __eq__(self, other: object) -> bool:
-    """
-    Compare vectors by component equality.
+    """Compare vectors by component equality.
 
     Vectors are equal if all components (x, y, z, w) match exactly.
     Name is intentionally excluded from comparison as it's metadata.
@@ -243,8 +227,7 @@ class VectorPort(Protocol):
     w: float | None = None,
     name: str = '',
   ) -> VectorPort:
-    """
-    Create a copy of this vector with optional component overrides.
+    """Create a copy of this vector with optional component overrides.
 
     Enables creation of modified vectors while preserving immutability.
     Any component not specified retains the name from the original vector.
@@ -259,8 +242,7 @@ class VectorPort(Protocol):
     """
 
   def inverse(self) -> VectorPort:
-    """
-    Create the additive inverse (negation) of this vector.
+    """Create the additive inverse (negation) of this vector.
 
     Returns a new vector with all components negated, representing the
     opposite direction. Essential for vector subtraction implementations

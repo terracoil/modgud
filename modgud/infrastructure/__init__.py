@@ -1,5 +1,4 @@
-"""
-Core infrastructure for modgud - foundational functionality for expression-oriented features.
+"""Core infrastructure for modgud - foundational functionality for expression-oriented features.
 
 This package provides the core building blocks that support the expression-oriented
 functionality but aren't part of the primary user-facing API.
@@ -22,6 +21,7 @@ from .pipeable_factory import PipeableFactory
 from .pipeable_wrapper import Pipeable
 from .result_factory import ResultFactory
 from .safe_expression_factory import SafeExpressionFactory
+from .service_locator import ServiceLocator
 from .some_maybe import Some
 from .transform import ImplicitReturnTransformer
 
@@ -44,5 +44,6 @@ __all__ = [
   'ResultFactory',
   'SafeExpressionFactory',
   'ServiceContainer',
+  'ServiceLocator',
   'Some',
 ]

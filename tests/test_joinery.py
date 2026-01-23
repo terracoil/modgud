@@ -1,7 +1,8 @@
 """Tests for the Joinery geometry generator."""
 
 import pytest
-from modgud.api.geometry import Joinery, migrate_shape_result
+from modgud.util.geo import Joinery
+from modgud.util.geo.svg import SVGConverter
 
 from tests.test_shape_utils import ShapeTestUtils
 
@@ -18,7 +19,7 @@ class TestJoinery:
     ShapeTestUtils.assert_valid_vector_sequence(result)
 
     # Test backward compatibility for primary shape
-    legacy_result = migrate_shape_result(result, 'teeth')
+    legacy_result = SVGConverter.shape_dict(result, key='teeth')
     assert isinstance(legacy_result, dict)
     assert 'teeth' in legacy_result
     assert isinstance(legacy_result['teeth'], list)
@@ -47,24 +48,6 @@ class TestJoinery:
     assert teeth_result != adapter_result
     assert teeth_result != port_result
     assert adapter_result != port_result
-
-  def test_build_all_shapes_backward_compatibility(self):
-    """Test that build_all_shapes returns legacy format."""
-    j = Joinery(slope_pct=0.15, teeth_cnt=3)
-    all_shapes = j.build_all_shapes()
-
-    # Should return dictionary with expected keys
-    assert isinstance(all_shapes, dict)
-    assert 'teeth' in all_shapes
-    assert 'left' in all_shapes
-    assert 'right' in all_shapes
-
-    # Each component should be a list of SVG strings
-    for key, svg_list in all_shapes.items():
-      assert isinstance(svg_list, list)
-      assert len(svg_list) > 0
-      assert any('<path' in line for line in svg_list)
-      assert any('<close/>' in line for line in svg_list)
 
   def test_dataclass_immutability(self):
     """Test that Joinery is immutable (frozen=True)."""
@@ -199,7 +182,7 @@ class TestJoinery:
     result1 = j1.build_shape()
     result2 = j2.build_shape()
     result3 = j3.build_shape()
-    result4 = j4.build_shape()
+    j4.build_shape()
 
     # Different slope_pct should produce different results
     assert result1 != result2

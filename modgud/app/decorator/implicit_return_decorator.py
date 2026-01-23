@@ -1,5 +1,4 @@
-"""
-Standalone implicit_return decorator.
+"""Standalone implicit_return decorator.
 
 Provides a decorator that enables Ruby-style implicit returns where the last
 expression in each code path is automatically returned without explicit return
@@ -20,8 +19,7 @@ F = TypeVar('F', bound=Callable[..., Any])
 
 
 class implicit_return:
-  """
-  Decorator that enables implicit returns for functions.
+  """Decorator that enables implicit returns for functions.
 
   Transforms a function to automatically return the last expression in each
   code path, similar to Ruby's implicit return behavior. Explicit return
@@ -62,8 +60,7 @@ class implicit_return:
     self._transformer = locator.resolve(ImplicitReturnTransformerPort)
 
   def __call__(self, func: F) -> F:
-    """
-    Transform the function to use implicit returns.
+    """Transform the function to use implicit returns.
 
     Args:
         func: The function to transform

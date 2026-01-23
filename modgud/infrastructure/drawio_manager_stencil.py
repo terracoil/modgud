@@ -1,5 +1,4 @@
-"""
-DrawIOManager - Converts vector sequences to draw.io diagram files.
+"""DrawIOManager - Converts vector sequences to draw.io diagram files.
 
 This module provides functionality to generate draw.io (diagrams.net) files
 from vector sequences produced by shape generators. It creates valid mxGraph
@@ -12,12 +11,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 
-from ..domain.ports.vector_port import VectorPort
+from modgud.domain.ports import VectorPort
 
 
 class DrawIOManager:
-  """
-  Manages conversion of vector sequences to draw.io diagram files.
+  """Manages conversion of vector sequences to draw.io diagram files.
 
   This class handles:
   - Vector to mxGraph XML conversion
@@ -27,8 +25,7 @@ class DrawIOManager:
   """
 
   def __init__(self, default_width: float = 800, default_height: float = 600):
-    """
-    Initialize DrawIOManager with default canvas dimensions.
+    """Initialize DrawIOManager with default canvas dimensions.
 
     :param default_width: Default canvas width in pixels
     :param default_height: Default canvas height in pixels
@@ -39,8 +36,7 @@ class DrawIOManager:
   def vectors_to_drawio(
     self, vectors: Sequence[VectorPort], metadata: dict[str, Any] | None = None
   ) -> str:
-    """
-    Convert a sequence of vectors to draw.io XML format.
+    """Convert a sequence of vectors to draw.io XML format.
 
     :param vectors: Sequence of VectorPort objects representing the shape
     :param metadata: Optional metadata including shape name, parameters, etc.
@@ -90,8 +86,8 @@ class DrawIOManager:
 
     # Create root cells
     root_element = ET.SubElement(graph_model, 'root')
-    cell0 = ET.SubElement(root_element, 'mxCell', {'id': '0'})
-    cell1 = ET.SubElement(root_element, 'mxCell', {'id': '1', 'parent': '0'})
+    ET.SubElement(root_element, 'mxCell', {'id': '0'})
+    ET.SubElement(root_element, 'mxCell', {'id': '1', 'parent': '0'})
 
     # Calculate bounding box and normalize vectors
     bbox = self._calculate_bounding_box(vectors)
@@ -114,7 +110,7 @@ class DrawIOManager:
     )
 
     # Add geometry
-    geometry = ET.SubElement(
+    ET.SubElement(
       shape_cell,
       'mxGeometry',
       {
@@ -132,8 +128,7 @@ class DrawIOManager:
   def _normalize_vectors(
     self, vectors: Sequence[VectorPort], bbox: dict[str, float]
   ) -> list[tuple[float, float]]:
-    """
-    Normalize vectors to 0-1 range for stencil format.
+    """Normalize vectors to 0-1 range for stencil format.
 
     :param vectors: Sequence of VectorPort objects
     :param bbox: Bounding box dictionary
@@ -156,8 +151,7 @@ class DrawIOManager:
     return normalized
 
   def _create_stencil_data(self, normalized_vectors: list[tuple[float, float]]) -> str:
-    """
-    Create stencil data string from normalized vectors.
+    """Create stencil data string from normalized vectors.
 
     :param normalized_vectors: List of (x, y) tuples in 0-1 range
     :returns: Stencil path data string
@@ -184,8 +178,7 @@ class DrawIOManager:
     return ' '.join(commands)
 
   def _calculate_bounding_box(self, vectors: Sequence[VectorPort]) -> dict[str, float]:
-    """
-    Calculate bounding box for vector sequence.
+    """Calculate bounding box for vector sequence.
 
     :param vectors: Sequence of VectorPort objects
     :returns: Dictionary with x, y, width, height
@@ -209,8 +202,7 @@ class DrawIOManager:
     }
 
   def _generate_stencil_style(self, stencil_data: str, metadata: dict[str, Any]) -> str:
-    """
-    Generate draw.io stencil style string.
+    """Generate draw.io stencil style string.
 
     :param stencil_data: Stencil path data
     :param metadata: Shape metadata
@@ -253,8 +245,7 @@ class DrawIOManager:
     return ';'.join(style_parts) + ';'
 
   def _prettify_xml(self, element: ET.Element) -> str:
-    """
-    Convert XML element to prettified string.
+    """Convert XML element to prettified string.
 
     :param element: XML element
     :returns: Formatted XML string
@@ -285,8 +276,7 @@ class DrawIOManager:
     filepath: Path | str,
     metadata: dict[str, Any] | None = None,
   ) -> Path:
-    """
-    Create a draw.io file from vector sequence.
+    """Create a draw.io file from vector sequence.
 
     :param vectors: Sequence of VectorPort objects
     :param filepath: Output file path
@@ -308,8 +298,7 @@ class DrawIOManager:
     return filepath
 
   def generate_filename(self, shape_type: str, params: dict[str, Any]) -> str:
-    """
-    Generate smart filename with parameters and timestamp.
+    """Generate smart filename with parameters and timestamp.
 
     :param shape_type: Type of shape (e.g., 'dovetail', 'torn_box')
     :param params: Shape parameters

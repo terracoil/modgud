@@ -23,7 +23,7 @@ from modgud import (
 def add_implicit(x, y):
   """Add with implicit return."""
   result = x + y
-  result
+  result  # noqa: B018 - implicit return
 
 
 @pipeable
@@ -31,7 +31,7 @@ def add_implicit(x, y):
 def multiply_implicit(x, factor):
   """Multiply with implicit return."""
   result = x * factor
-  result
+  result  # noqa: B018 - implicit return
 
 
 # 3. Pipeable with guarded_expression
@@ -74,7 +74,7 @@ def calculate_discount(amount, discount_rate=0.1):
 def process_value(x):
   """Process with different decorator order."""
   result = x * 2 + 10
-  result
+  result  # noqa: B018 - implicit return
 
 
 # Module-level test fixtures for implicit return
@@ -86,7 +86,7 @@ def compound_interest(base, rate=0.05, years=1):
   total = base
   for _ in range(int(years)):
     total = total * (1 + rate)
-  total
+  total  # noqa: B018 - implicit return
 
 
 class TestPipeableWithImplicitReturn:

@@ -10,8 +10,7 @@ class DIContainerPort(Protocol):
   """Port for dependency injection container operations."""
 
   def resolve(self, interface_type: Type[T], name: str = 'default') -> T:
-    """
-    Resolve a dependency by interface type.
+    """Resolve a dependency by interface type.
 
     :param interface_type: The interface/protocol type to resolve
     :param name: Named instance identifier
@@ -21,8 +20,7 @@ class DIContainerPort(Protocol):
     ...
 
   def register(self, interface_type: Type[T], implementation: T, name: str = 'default') -> None:
-    """
-    Register an implementation for an interface.
+    """Register an implementation for an interface.
 
     :param interface_type: The interface/protocol type
     :param implementation: The implementation instance
@@ -31,8 +29,7 @@ class DIContainerPort(Protocol):
     ...
 
   def has_registration(self, interface_type: Type[T], name: str = 'default') -> bool:
-    """
-    Check if an implementation is registered.
+    """Check if an implementation is registered.
 
     :param interface_type: The interface/protocol type
     :param name: Named instance identifier

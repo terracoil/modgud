@@ -10,8 +10,7 @@ class SourceExtractorService:
   """Service for extracting source code from functions."""
 
   def extract_source(self, func: Callable) -> str:
-    """
-    Extract dedented source code from function.
+    """Extract dedented source code from function.
 
     :param func: Function to extract source from
     :return: Dedented source code string
@@ -22,11 +21,10 @@ class SourceExtractorService:
       # Remove any indentation
       return textwrap.dedent(source)
     except (TypeError, OSError) as e:
-      raise ValueError(f'Cannot extract source from {func.__name__}: {str(e)}')
+      raise ValueError(f'Cannot extract source from {func.__name__}: {str(e)}') from e
 
   def get_function_ast(self, func: Callable) -> Any:
-    """
-    Get AST representation of function.
+    """Get AST representation of function.
 
     :param func: Function to parse
     :return: AST node representing the function
@@ -42,4 +40,4 @@ class SourceExtractorService:
             return node
       raise ValueError(f'Function {func.__name__} not found in parsed AST')
     except SyntaxError as e:
-      raise SyntaxError(f'Failed to parse source for {func.__name__}: {str(e)}')
+      raise SyntaxError(f'Failed to parse source for {func.__name__}: {str(e)}') from e

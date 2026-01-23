@@ -9,8 +9,7 @@ class ConsoleFormatter:
   def __init__(
     self, show_classes: bool = True, show_cycles: bool = True, colors: Dict[str, str] = None
   ):
-    """
-    Initialize formatter with display options.
+    """Initialize formatter with display options.
 
     :param show_classes: Include class-level dependencies in output
     :param show_cycles: Include circular dependency warnings

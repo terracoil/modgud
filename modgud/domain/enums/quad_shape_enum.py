@@ -1,5 +1,4 @@
-"""
-Quadrilateral shape enumeration for modgud domain layer.
+"""Quadrilateral shape enumeration for modgud domain layer.
 
 Enumeration for all supported quadrilateral shapes, providing a type-safe
 way to specify quadrilateral types.

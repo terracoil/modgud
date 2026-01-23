@@ -1,5 +1,4 @@
-"""
-EnergyInverter - Main dependency injection facade.
+"""EnergyInverter - Main dependency injection facade.
 
 This module provides the EnergyInverter class that serves as the main entry point
 for dependency injection operations following the single class per file principle.
@@ -17,8 +16,7 @@ T = TypeVar('T')
 
 
 class EnergyInverter:
-  """
-  Main dependency injection facade.
+  """Main dependency injection facade.
 
   Provides a simple, unified interface for dependency injection operations
   including service registration, resolution, and auto-discovery.
@@ -48,8 +46,7 @@ class EnergyInverter:
     return cls()
 
   def register(self, interface: Type[T], implementation: Type[T], name: str = 'default') -> None:
-    """
-    Register a service implementation.
+    """Register a service implementation.
 
     Args:
         interface: Interface type
@@ -64,8 +61,7 @@ class EnergyInverter:
       self._container.register(interface, implementation, name)
 
   def resolve(self, interface: Type[T], name: str = 'default') -> T:
-    """
-    Resolve a service instance.
+    """Resolve a service instance.
 
     Args:
         interface: Interface type to resolve
@@ -88,8 +84,7 @@ class EnergyInverter:
       raise
 
   def scan_modules(self, *module_names: str) -> None:
-    """
-    Scan modules for interface implementations.
+    """Scan modules for interface implementations.
 
     Args:
         *module_names: Module names to scan
@@ -99,8 +94,7 @@ class EnergyInverter:
       self._discovery.scan_module(module_name)
 
   def auto_register(self, interface: Type[T]) -> bool:
-    """
-    Auto-register implementations for an interface.
+    """Auto-register implementations for an interface.
 
     Args:
         interface: Interface type to auto-register
@@ -112,8 +106,7 @@ class EnergyInverter:
     return self._strategies.auto_register_interface(interface)
 
   def is_registered(self, interface: Type[T], name: str = 'default') -> bool:
-    """
-    Check if a service is registered.
+    """Check if a service is registered.
 
     Args:
         interface: Interface type
@@ -126,8 +119,7 @@ class EnergyInverter:
     return self._container.is_registered(interface, name)
 
   def get_implementations(self, interface: Type[T]) -> List[Type]:
-    """
-    Get discovered implementations for an interface.
+    """Get discovered implementations for an interface.
 
     Args:
         interface: Interface type

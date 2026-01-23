@@ -3,7 +3,7 @@
 import math
 
 import pytest
-from modgud.api.geometry import GeoUtil, Vector
+from modgud.util.geo import GeoUtil, Vector
 
 
 class TestGeoUtil:

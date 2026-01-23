@@ -12,8 +12,7 @@ class PipeableFactoryPort(Protocol):
   """Interface for factories that create pipeable objects."""
 
   def create_pipeable(self, func: Callable[..., Any]) -> PipeablePort:
-    """
-    Create a pipeable wrapper around a function.
+    """Create a pipeable wrapper around a function.
 
     Args:
         func: The function to make pipeable
@@ -25,8 +24,7 @@ class PipeableFactoryPort(Protocol):
     ...
 
   def pipeable_decorator(self, func: Callable[..., T]) -> PipeablePort:
-    """
-    Decorator that makes functions pipeable via | operator.
+    """Make a function pipeable via the | operator.
 
     Args:
         func: The function to make pipeable

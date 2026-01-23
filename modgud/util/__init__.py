@@ -1,5 +1,4 @@
-"""
-Utility module - Generic utilities for modgud.
+"""Utility module - Generic utilities for modgud.
 
 This module provides generic utility functions and classes:
 - Math utilities

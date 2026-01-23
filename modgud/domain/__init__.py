@@ -1,5 +1,4 @@
-"""
-Domain layer for modgud - passive domain objects.
+"""Domain layer for modgud - passive domain objects.
 
 This package contains the core domain concepts for modgud including:
 - Types and type definitions
@@ -14,7 +13,7 @@ only data structures and interface definitions.
 
 # Core types
 # Domain enums (from enums package)
-from .enums import FailureStrategy, GuardStrategy, ServiceLifetime
+from .enums import FailureStrategy, GuardStrategy, InfoMessageEnum, ServiceLifetime
 
 # Message templates
 from .error_messages import ErrorMessages
@@ -29,19 +28,9 @@ from .exceptions import (
   ServiceNotFoundError,
   UnsupportedConstructError,
 )
-from .info_message_enum import InfoMessageEnum
 
-# Domain protocols (ports) - import both new and legacy aliases
-from .protocols import (
-  # New port classes
-  MaybePort,
-  # Legacy aliases
-  MaybeProtocol,
-  PipeablePort,
-  PipeableProtocol,
-  ResultPort,
-  ResultProtocol,
-)
+# Domain protocols (ports)
+from .protocols import MaybePort, PipeablePort, ResultPort
 from .types import FailureBehavior, FailureTypes, GuardFunction
 
 __all__ = [
@@ -57,14 +46,10 @@ __all__ = [
   'UnsupportedConstructError',
   'DependencyInjectionError',
   'ServiceNotFoundError',
-  # Ports (new)
+  # Ports
   'MaybePort',
   'PipeablePort',
   'ResultPort',
-  # Protocols (legacy aliases)
-  'MaybeProtocol',
-  'PipeableProtocol',
-  'ResultProtocol',
   # Enums
   'GuardStrategy',
   'FailureStrategy',

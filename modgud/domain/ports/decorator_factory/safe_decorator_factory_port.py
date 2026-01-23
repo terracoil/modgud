@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Protocol, runtime_checkable
 
-from ..result_port import ResultPort
+from modgud.domain.ports.result_port import ResultPort
 
 
 @runtime_checkable
@@ -14,8 +14,7 @@ class SafeDecoratorFactoryPort(Protocol):
   def create_decorator(
     self, catch_exceptions: tuple[type[Exception], ...] = (Exception,), convert_none: bool = False
   ) -> Callable[[Callable], Callable]:
-    """
-    Create a decorator that wraps function results in Result types.
+    """Create a decorator that wraps function results in Result types.
 
     Args:
         catch_exceptions: Tuple of exception types to catch
@@ -28,8 +27,7 @@ class SafeDecoratorFactoryPort(Protocol):
     ...
 
   def create_result(self, value: Any, is_success: bool = True) -> ResultPort:
-    """
-    Create a Result instance.
+    """Create a Result instance.
 
     Args:
         value: The name to wrap

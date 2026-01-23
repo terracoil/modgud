@@ -1,5 +1,4 @@
-"""
-Chained expression decorator for fluent interfaces.
+"""Chained expression decorator for fluent interfaces.
 
 This module provides the ChainedExpressionDecorator class that wraps function results
 in ChainableExpression instances, following the single class per file principle.
@@ -21,8 +20,7 @@ class ChainedExpressionDecorator:
   """Decorator that wraps function results in ChainableExpression for method chaining."""
 
   def __init__(self, auto_unwrap: bool = False) -> None:
-    """
-    Initialize the chained expression decorator.
+    """Initialize the chained expression decorator.
 
     Args:
         auto_unwrap: If True, automatically unwrap single ChainableExpression arguments
@@ -31,8 +29,7 @@ class ChainedExpressionDecorator:
     self.auto_unwrap = auto_unwrap
 
   def __call__(self, func: Callable[..., T]) -> Callable[..., ChainableExpression[T]]:
-    """
-    Decorate a function to return ChainableExpression.
+    """Decorate a function to return ChainableExpression.
 
     Args:
         func: Function to decorate

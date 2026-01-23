@@ -1,8 +1,8 @@
 """Tests for Quadrilateral notch functionality."""
 
 import pytest
-from modgud.api.geometry import Quadrilateral
 from modgud.domain.enums import OrdinalEnum, QuadShapeEnum
+from modgud.util.geo import Quadrilateral
 
 
 class TestQuadrilateralNotch:

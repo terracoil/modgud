@@ -17,7 +17,7 @@ from modgud import GuardClauseError, guarded_expression, implicit_return, not_no
 def composed_guards_then_implicit(x):
   """Recommended composition: guards then implicit_return."""
   result = x * 2
-  result
+  result  # noqa: B018 - implicit return
 
 
 # This composition pattern is dangerous because it bypasses guards!
@@ -28,7 +28,7 @@ def composed_guards_then_implicit(x):
 def composed_implicit_then_guards(x):
   """Invalid composition: bypasses guards due to source retrieval behavior."""
   result = x * 2
-  result
+  result  # noqa: B018 - implicit return
 
 
 @implicit_return
@@ -112,7 +112,7 @@ class TestDecoratorComposition:
       @guarded_expression(positive('x'))  # Default implicit_return=True
       def default_usage(x):
         result = x * 2
-        result
+        result  # noqa: B018 - implicit return
 
       # No warning should be issued
       assert len(w) == 0

@@ -1,9 +1,11 @@
 """Tests for Quadrilateral shape generator class."""
 
+import dataclasses
+
 import pytest
-from modgud.api.geometry import Quadrilateral, Vector
 from modgud.domain.enums import QuadShapeEnum
 from modgud.domain.ports import ShapePort
+from modgud.util.geo import Quadrilateral, Vector
 
 
 class TestQuadrilateral:
@@ -92,21 +94,19 @@ class TestQuadrilateral:
     quad = Quadrilateral(quad_shape=QuadShapeEnum.SQUARE, params={'side': 0.5})
 
     # Should not be able to modify quad_shape via normal assignment
-    with pytest.raises(Exception):  # FrozenInstanceError or AttributeError
+    with pytest.raises((dataclasses.FrozenInstanceError, AttributeError)):
       quad.quad_shape = QuadShapeEnum.RECTANGLE
 
     # Test frozen behavior - try to modify an attribute that should be frozen
     # Note: The actual frozen behavior varies by Python implementation
     # Let's verify that the dataclass is indeed frozen by checking the class attributes
-    import dataclasses
-
     assert dataclasses.is_dataclass(quad)
 
     # Verify that attempting direct modification fails
     try:
       quad.quad_shape = QuadShapeEnum.RECTANGLE
       # If we get here, the assignment succeeded, which it shouldn't for frozen dataclass
-      assert False, 'Expected assignment to fail on frozen dataclass'
+      raise AssertionError('Expected assignment to fail on frozen dataclass')
     except (dataclasses.FrozenInstanceError, AttributeError):
       # This is expected - frozen dataclass should prevent assignment
       pass

@@ -1,5 +1,4 @@
-"""
-Chainable expression wrapper for fluent interfaces.
+"""Chainable expression wrapper for fluent interfaces.
 
 This module provides the ChainableExpression class that enables method
 chaining for any object, following the single class per file principle.
@@ -12,16 +11,14 @@ R = TypeVar('R')
 
 
 class ChainableExpression(Generic[T]):
-  """
-  Wrapper that enables method chaining for any object.
+  """Wrapper that enables method chaining for any object.
 
   This class wraps values and provides chainable methods for functional-style
   data transformation and fluent interfaces.
   """
 
   def __init__(self, value: T) -> None:
-    """
-    Initialize a chainable expression.
+    """Initialize a chainable expression.
 
     Args:
         value: The name to wrap for chaining
@@ -30,8 +27,7 @@ class ChainableExpression(Generic[T]):
     self._value = value
 
   def map(self, func: Callable[[T], R]) -> 'ChainableExpression[R]':
-    """
-    Transform the wrapped name using the provided function.
+    """Transform the wrapped name using the provided function.
 
     Args:
         func: Function to apply to the wrapped name
@@ -43,8 +39,7 @@ class ChainableExpression(Generic[T]):
     return ChainableExpression(func(self._value))
 
   def filter(self, predicate: Callable[[T], bool]) -> 'ChainableExpression[T | None]':
-    """
-    Filter the wrapped name using a predicate.
+    """Filter the wrapped name using a predicate.
 
     Args:
         predicate: Function that returns True to keep the name
@@ -59,8 +54,7 @@ class ChainableExpression(Generic[T]):
     return ChainableExpression(result)
 
   def tap(self, func: Callable[[T], Any]) -> 'ChainableExpression[T]':
-    """
-    Execute a side effect function without changing the wrapped name.
+    """Execute a side effect function without changing the wrapped name.
 
     Args:
         func: Function to execute for side effects
@@ -73,8 +67,7 @@ class ChainableExpression(Generic[T]):
     return self
 
   def unwrap(self) -> T:
-    """
-    Extract the wrapped name.
+    """Extract the wrapped name.
 
     Returns:
         The wrapped name
@@ -83,8 +76,7 @@ class ChainableExpression(Generic[T]):
     return self._value
 
   def unwrap_or(self, default: T) -> T:
-    """
-    Extract the wrapped name or return default if None.
+    """Extract the wrapped name or return default if None.
 
     Args:
         default: Value to return if wrapped name is None

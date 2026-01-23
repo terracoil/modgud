@@ -5,7 +5,9 @@ from __future__ import annotations
 import math
 
 import pytest
-from modgud.api.geometry.shapes import (
+from modgud.domain.enums import OrdinalEnum
+from modgud.util.geo import SimplexNoise
+from modgud.util.geo.shapes import (
   Kite,
   Parallelogram,
   Rectangle,
@@ -14,8 +16,6 @@ from modgud.api.geometry.shapes import (
   Square,
   Trapezoid,
 )
-from modgud.api.geometry.simplex_noise import SimplexNoise
-from modgud.domain.enums import OrdinalEnum, QuadShapeEnum
 
 
 class TestSquare:
@@ -231,7 +231,7 @@ class TestKite:
     assert all(0 <= y <= 1 for y in y_coords)
 
     # Should have distinct vertices
-    assert len(set(zip(x_coords, y_coords))) == 4
+    assert len(set(zip(x_coords, y_coords, strict=False))) == 4
 
   def test_kite_edge_angles(self):
     """Test kite edge angles."""
@@ -262,40 +262,34 @@ class TestKite:
 class TestShapeFactory:
   """Test suite for ShapeFactory."""
 
-  def test_create_from_legacy_square(self):
-    """Test creating square from legacy API."""
-    shape = ShapeFactory.create_from_legacy(QuadShapeEnum.SQUARE, {'side': 0.5})
+  def test_create_square(self):
+    """Test creating square directly."""
+    shape = Square(side=0.5)
     assert isinstance(shape, Square)
     vertices = shape.build_shape()
     assert len(vertices) == 4
 
-  def test_create_from_legacy_rectangle(self):
-    """Test creating rectangle from legacy API."""
-    shape = ShapeFactory.create_from_legacy(QuadShapeEnum.RECTANGLE, {'w': 0.8, 'h': 0.6})
+  def test_create_rectangle(self):
+    """Test creating rectangle directly."""
+    shape = Rectangle(width=0.8, height=0.6)
     assert isinstance(shape, Rectangle)
 
-  def test_create_from_legacy_trapezoid_variants(self):
-    """Test creating different trapezoid variants."""
+  def test_create_trapezoid_variants(self):
+    """Test creating different trapezoid variants directly."""
     # Isosceles
-    iso = ShapeFactory.create_from_legacy(
-      QuadShapeEnum.ISOSCELES_TRAPEZOID, {'w1': 1.0, 'w2': 0.6, 'h': 0.8}
-    )
+    iso = Trapezoid(w1=1.0, w2=0.6, h=0.8)
     assert isinstance(iso, Trapezoid)
 
     # Right angle
-    right = ShapeFactory.create_from_legacy(
-      QuadShapeEnum.RIGHTANGLE_TRAPEZOID, {'w1': 1.0, 'w2': 0.6, 'h': 0.8, 'side_left': 0.8}
-    )
+    right = Trapezoid(w1=1.0, w2=0.6, h=0.8, side_left=0.8)
     assert isinstance(right, Trapezoid)
 
     # General
-    general = ShapeFactory.create_from_legacy(
-      QuadShapeEnum.GENERAL_TRAPEZOID, {'w1': 1.0, 'w2': 0.6, 'h': 0.8, 'side_left': 1.2}
-    )
+    general = Trapezoid(w1=1.0, w2=0.6, h=0.8, side_left=1.2)
     assert isinstance(general, Trapezoid)
 
-  def test_create_shape_new_api(self):
-    """Test new string-based API."""
+  def test_create_shape_api(self):
+    """Test string-based API."""
     square = ShapeFactory.create_shape('square', side=0.5)
     assert isinstance(square, Square)
 
@@ -307,29 +301,18 @@ class TestShapeFactory:
 
   def test_factory_error_handling(self):
     """Test factory error conditions."""
-    # Unknown shape type
-    with pytest.raises(ValueError, match='Unknown shape type'):
-      ShapeFactory.create_from_legacy(None, {})
-
-    # Missing required parameters
-    with pytest.raises(ValueError, match='Square requires'):
-      ShapeFactory.create_from_legacy(QuadShapeEnum.SQUARE, {})
-
     # Invalid shape name
     with pytest.raises(ValueError, match='Unknown shape type'):
       ShapeFactory.create_shape('hexagon', side=1.0)
 
-  def test_legacy_parameter_mapping(self):
-    """Test various legacy parameter name mappings."""
-    # Rectangle with alternative names
-    rect = ShapeFactory.create_from_legacy(
-      QuadShapeEnum.RECTANGLE,
-      {'width': 0.8, 'height': 0.6},  # Using full names
-    )
+  def test_direct_shape_creation(self):
+    """Test direct shape creation with various parameters."""
+    # Rectangle
+    rect = Rectangle(width=0.8, height=0.6)
     assert isinstance(rect, Rectangle)
 
-    # Kite with alternative diagonal names
-    kite = ShapeFactory.create_from_legacy(QuadShapeEnum.KITE, {'d1': 1.0, 'd2': 0.6})
+    # Kite
+    kite = Kite(diagonal1=1.0, diagonal2=0.6)
     assert isinstance(kite, Kite)
 
   def test_list_available_shapes(self):

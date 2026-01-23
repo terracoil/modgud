@@ -1,5 +1,4 @@
-"""
-Placement enum for modgud domain layer.
+"""Placement enum for modgud domain layer.
 
 Enumeration for cardinal directions and compound directions with enhanced lookup functionality.
 """
@@ -16,8 +15,7 @@ if TYPE_CHECKING:
 
 
 class OrdinalEnum(LookupEnum, IntFlag):
-  """
-  Placement enumeration for cardinal and compound directions.
+  """Placement enumeration for cardinal and compound directions.
 
   Uses bitmask pattern for cardinal directions (powers of 2) allowing
   compound directions to be created by combining values.
@@ -49,6 +47,7 @@ class OrdinalEnum(LookupEnum, IntFlag):
 
   @classmethod
   def __dir__(cls):
+    """Return enum member names for dir() introspection."""
     return cls.__members__.keys()
 
   @classmethod
@@ -59,8 +58,7 @@ class OrdinalEnum(LookupEnum, IntFlag):
   # Override from_string to add docstring with OrdinalEnum-specific examples
   @classmethod
   def from_string(cls, value: str) -> Self:
-    """
-    Convert string to OrdinalEnum with comprehensive lookup support.
+    """Convert string to OrdinalEnum with comprehensive lookup support.
 
     Supports:
     - Full names: "North", "SOUTH", "northwest"

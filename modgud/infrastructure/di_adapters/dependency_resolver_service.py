@@ -4,26 +4,21 @@ import functools
 import inspect
 from typing import Any, Callable, Dict
 
-from ...domain.ports import (
-  DIContainerPort,
-  InjectableDetectorPort,
-)
+from modgud.domain.ports import DIContainerPort, InjectableDetectorPort
 
 
 class DependencyResolverService:
   """Service for resolving dependencies and creating injection wrappers."""
 
   def __init__(self, detector: InjectableDetectorPort) -> None:
-    """
-    Initialize with an injectable detector.
+    """Initialize with an injectable detector.
 
     :param detector: Injectable detector service
     """
     self._detector = detector
 
   def resolve_dependencies(self, func: Callable, container: DIContainerPort) -> Dict[str, Any]:
-    """
-    Resolve all dependencies for a function.
+    """Resolve all dependencies for a function.
 
     :param func: Function with dependencies
     :param container: DI container to resolve from
@@ -43,8 +38,7 @@ class DependencyResolverService:
     return resolved
 
   def create_injection_wrapper(self, func: Callable, container: DIContainerPort) -> Callable:
-    """
-    Create a wrapper that injects dependencies.
+    """Create a wrapper that injects dependencies.
 
     :param func: Function to wrap
     :param container: DI container to use

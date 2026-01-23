@@ -1,7 +1,7 @@
 """Tests for refactored TornPaper dataclass implementation."""
 
 import pytest
-from modgud.api.geometry import SimplexNoise, TornPaper
+from modgud.util.geo import SimplexNoise, TornPaper
 
 from tests.test_shape_utils import ShapeTestUtils
 

@@ -14,8 +14,7 @@ class ExecutionSpinner:
   """Manages spinner and status display during command execution."""
 
   def __init__(self, color_formatter=None, verbose: bool = False):
-    """
-    Initialize the execution spinner.
+    """Initialize the execution spinner.
 
     :param color_formatter: ColorFormatter instance for styling
     :param verbose: Whether to run in verbose mode
@@ -31,8 +30,7 @@ class ExecutionSpinner:
     self._lock = threading.Lock()
 
   def augment_status(self, custom_status: str):
-    """
-    Add custom status to the display.
+    """Add custom status to the display.
 
     :param custom_status: Custom status message to append
     """
@@ -42,8 +40,7 @@ class ExecutionSpinner:
         self._update_status_line()
 
   def _format_command_name(self) -> str:
-    """
-    Format command name based on context.
+    """Format command name based on context.
 
     :return: Formatted command name string
     """
@@ -60,8 +57,7 @@ class ExecutionSpinner:
     return ':'.join(parts) if parts else ''
 
   def _format_options(self) -> list[str]:
-    """
-    Format all options for display.
+    """Format all options for display.
 
     :return: List of formatted option strings
     """
@@ -116,8 +112,7 @@ class ExecutionSpinner:
     self.status_line = ' '.join(status_parts)
 
   def start(self, command_context: CommandContext):
-    """
-    Start the spinner with given context.
+    """Start the spinner with given context.
 
     :param command_context: CommandContext with execution details
     """
@@ -189,8 +184,7 @@ class ExecutionSpinner:
       time.sleep(0.1)
 
   def stop(self, success: bool = True):
-    """
-    Stop the spinner with robust error handling.
+    """Stop the spinner with robust error handling.
 
     :param success: Whether the command succeeded
     """
@@ -245,8 +239,7 @@ class ExecutionSpinner:
 
   @contextmanager
   def execute(self, command_context: CommandContext):
-    """
-    Context manager for command execution with spinner.
+    """Context manager for command execution with spinner.
 
     :param command_context: CommandContext with execution details
     """

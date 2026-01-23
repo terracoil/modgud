@@ -16,8 +16,7 @@ class ImplicitReturnAdapter:
     self._transformer = ImplicitReturnTransformer
 
   def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
-    """
-    Transform function to use implicit returns.
+    """Transform function to use implicit returns.
 
     :param func: Function to transform
     :return: Transformed function with implicit returns
@@ -27,7 +26,7 @@ class ImplicitReturnAdapter:
     try:
       source = inspect.getsource(func)
     except (TypeError, OSError) as e:
-      raise ValueError(f'Cannot extract source from {func.__name__}: {str(e)}')
+      raise ValueError(f'Cannot extract source from {func.__name__}: {str(e)}') from e
 
     # Remove indentation
     import textwrap
@@ -56,8 +55,7 @@ class ImplicitReturnAdapter:
     return transformed_func
 
   def validate_source(self, func: Callable) -> bool:
-    """
-    Check if function source is available for transformation.
+    """Check if function source is available for transformation.
 
     :param func: Function to validate
     :return: True if source can be extracted and transformed

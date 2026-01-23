@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import math
 
-from modgud.api.geometry.shapes import Trapezoid
-from modgud.api.geometry.simplex_noise import SimplexNoise
 from modgud.domain.enums import OrdinalEnum, TrapezoidEnum
+from modgud.util.geo import SimplexNoise
+from modgud.util.geo.shapes import Trapezoid
 
 
 class TestTrapezoidAngleNotchFix:
@@ -141,12 +141,8 @@ class TestTrapezoidAngleNotchFix:
       assert -2.0 <= vertex.y <= 3.0, f'Vertex y={vertex.y} out of bounds for torn shape'
 
   def test_notch_angle_improvement_validation(self):
-    """
-    Validate that the angle-aware notch method produces different results
-    than the old perpendicular method for slanted edges.
-    """
-    from modgud.api.geometry.geo_util import GeoUtil
-    from modgud.api.geometry.vector import Vector
+    """Validate angle-aware notch differs from perpendicular method for slanted edges."""
+    from modgud.util.geo import GeoUtil, Vector
 
     # Test on a slanted edge (like trapezoid right side)
     start = Vector(x=1.0, y=0.0)

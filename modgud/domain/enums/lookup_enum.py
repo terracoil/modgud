@@ -1,5 +1,4 @@
-"""
-Lookup enum mixin for modgud domain layer.
+"""Lookup enum mixin for modgud domain layer.
 
 Mixin class that provides string lookup functionality for enums,
 supporting case-insensitive matching and aliases.
@@ -15,8 +14,7 @@ if TYPE_CHECKING:
 
 
 class LookupEnum:
-  """
-  Mixin class providing string lookup functionality for enums.
+  """Mixin class providing string lookup functionality for enums.
 
   Subclasses must:
   1. Inherit from both LookupEnum and an Enum type (in that order)
@@ -31,7 +29,7 @@ class LookupEnum:
 
   @classmethod
   def valid_members(cls) -> str:
-    """Return & memoize a comma-separated list of valid enum member names"""
+    """Return and memoize a comma-separated list of valid enum member names."""
     if not cls._valid_members:
       cls._valid_members = ', '.join(sorted(cls.__members__.keys()))
 
@@ -39,8 +37,7 @@ class LookupEnum:
 
   @classmethod
   def _get_default_value(cls) -> Enum:
-    """
-    Get the default enum name for None/empty string lookups.
+    """Get the default enum name for None/empty string lookups.
 
     Default implementation returns the first enum name defined in the class.
     Subclasses can override this method to provide custom default behavior
@@ -63,8 +60,7 @@ class LookupEnum:
 
   @classmethod
   def key(cls, name: str | None) -> str:
-    """
-    Check key for validity and return converted key.
+    """Check key for validity and return converted key.
 
     Converts to uppercase and validates against enum members.
     Returns default value's name if value is None/empty.
@@ -84,8 +80,7 @@ class LookupEnum:
 
   @classmethod
   def from_string(cls: Type[Self], value: str) -> Self:
-    """
-    Convert string to enum name with case-insensitive matching.
+    """Convert string to enum name with case-insensitive matching.
 
     :param value: String representation
     :returns: Corresponding enum name
@@ -96,8 +91,7 @@ class LookupEnum:
 
   @classmethod
   def from_list(cls: Type[Self], values: Sequence[str]) -> list[Self]:
-    """
-    Convert list of strings to enum list.
+    """Convert list of strings to enum list.
 
     :param values: List of string representations
     :returns: List of corresponding enum values
@@ -107,8 +101,7 @@ class LookupEnum:
 
   @classmethod
   def parse_sides_string(cls: Type[Self], sides_str: str) -> list[Self]:
-    """
-    Parse comma/space-separated enum values from string.
+    """Parse comma/space-separated enum values from string.
 
     :param sides_str: String containing enum values
     :returns: List of parsed enum values

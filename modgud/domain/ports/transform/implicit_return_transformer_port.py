@@ -10,8 +10,7 @@ class ImplicitReturnTransformerPort(Protocol):
   """Port for implicit return transformation functionality."""
 
   def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
-    """
-    Transform function to use implicit returns.
+    """Transform function to use implicit returns.
 
     :param func: Function to transform
     :return: Transformed function with implicit returns
@@ -20,8 +19,7 @@ class ImplicitReturnTransformerPort(Protocol):
     ...
 
   def validate_source(self, func: Callable) -> bool:
-    """
-    Check if function source is available for transformation.
+    """Check if function source is available for transformation.
 
     :param func: Function to validate
     :return: True if source can be extracted and transformed

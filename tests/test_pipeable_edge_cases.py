@@ -5,7 +5,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from modgud import guarded_expression, implicit_return, pipeable, positive
+from modgud import GuardClauseError, guarded_expression, implicit_return, pipeable, positive
 
 
 # Test functions for edge cases
@@ -18,7 +18,7 @@ def slow_add(x, y, delay=0.01):
 
 @pipeable
 def stateful_counter():
-  """A stateful function to test thread safety."""
+  """Track calls to test thread safety."""
   if not hasattr(stateful_counter, '_count'):
     stateful_counter._count = 0
   stateful_counter._count += 1
@@ -27,19 +27,19 @@ def stateful_counter():
 
 @pipeable
 def no_args():
-  """Function with no arguments."""
+  """Return 42 with no arguments."""
   return 42
 
 
 @pipeable
 def many_args(a, b, c, d, e, f):
-  """Function with many arguments."""
+  """Add six arguments together."""
   return a + b + c + d + e + f
 
 
 @pipeable
 def with_varargs(x, *args, **kwargs):
-  """Function with variable arguments."""
+  """Sum variable arguments."""
   total = x
   for arg in args:
     total += arg
@@ -50,7 +50,7 @@ def with_varargs(x, *args, **kwargs):
 
 @pipeable
 def returns_pipeable(x):
-  """Function that returns another pipeable function."""
+  """Return another pipeable function."""
 
   @pipeable
   def inner(y):
@@ -71,6 +71,7 @@ class CustomClass:
   """Custom class to test with pipeable."""
 
   def __init__(self, value):
+    """Initialize with a value."""
     self.value = value
 
   @pipeable
@@ -79,6 +80,7 @@ class CustomClass:
     return CustomClass(self.value + x)
 
   def __repr__(self):
+    """Return string representation."""
     return f'CustomClass({self.value})'
 
 
@@ -339,5 +341,5 @@ class TestComplexEdgeCases:
     assert calc.call_log == ['sqrt(16)', 'double(4.0)']
 
     # Test guard validation
-    with pytest.raises(Exception):  # GuardClauseError
+    with pytest.raises(GuardClauseError):
       -16 | calc.safe_sqrt

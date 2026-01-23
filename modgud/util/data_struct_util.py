@@ -1,3 +1,5 @@
+"""Utility functions for data structure manipulation."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -12,8 +14,7 @@ class DataStructUtil:
 
   @classmethod
   def simplify(cls, obj: Any, max_depth: int = 10) -> Simple:
-    """
-    Recursively convert any class or collection to a "simple" representation.
+    """Recursively convert any class or collection to a "simple" representation.
 
     Args:
         obj: The object to convert

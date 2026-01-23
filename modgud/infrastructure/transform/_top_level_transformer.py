@@ -8,8 +8,7 @@ if TYPE_CHECKING:
 
 
 class _TopLevelTransformer(ast.NodeTransformer):
-  """
-  Transform only the target function definition.
+  """Transform only the target function definition.
 
   Applies transformation only to the *decorated* function definition that we parsed.
   We rely on inspect.getsource(func) returning just that function (common in modules).

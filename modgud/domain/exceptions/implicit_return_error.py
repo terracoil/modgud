@@ -11,8 +11,7 @@ class ImplicitReturnError(SyntaxError):
   def __init__(
     self, message: str, lineno: Optional[int] = None, col_offset: Optional[int] = None
   ) -> None:
-    """
-    Initialize the ImplicitReturnError with location information.
+    """Initialize the ImplicitReturnError with location information.
 
     :param message: Error message describing the issue
     :type message: str

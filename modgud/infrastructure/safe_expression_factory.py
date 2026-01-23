@@ -1,24 +1,25 @@
+"""Factory for creating safe expression decorators."""
+
 from __future__ import annotations
 
 from typing import Any, Callable
 
-from ..domain.ports import SafeDecoratorFactoryPort
-from ..domain.ports.result_port import ResultPort
+from modgud.domain.ports import ResultPort, SafeDecoratorFactoryPort
+
 from .err_result import ErrResult
 from .ok_result import Ok
 
 
 class SafeExpressionFactory(SafeDecoratorFactoryPort):
-  """
-  Factory for creating safe expression decorators and utilities.
+  """Factory for creating safe expression decorators and utilities.
+
   Provides error-safe functional programming patterns.
   """
 
   def create_decorator(
     self, catch_exceptions: tuple[type[Exception], ...] = (Exception,), convert_none: bool = False
   ) -> Callable[[Callable], Callable]:
-    """
-    Create a safe expression decorator function.
+    """Create a safe expression decorator function.
 
     Args:
         catch_exceptions: Tuple of exception types to catch
@@ -30,8 +31,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryPort):
     """
 
     def safe_decorator(func: Callable) -> Callable:
-      """
-      Decorator that wraps function results in Result types (Ok/Err).
+      """Wrap function results in Result types (Ok/Err).
 
       Args:
           func: Function to decorate
@@ -60,8 +60,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryPort):
     return safe_decorator
 
   def create_result(self, value: Any, is_success: bool = True) -> ResultPort:
-    """
-    Create a Result instance (Ok or Err).
+    """Create a Result instance (Ok or Err).
 
     Args:
         value: The name to wrap

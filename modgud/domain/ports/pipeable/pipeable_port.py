@@ -7,16 +7,14 @@ from typing import Any, Protocol, Union, runtime_checkable
 
 @runtime_checkable
 class PipeablePort(Protocol):
-  """
-  Port for objects that support pipeline operations via | operator.
+  """Port for objects that support pipeline operations via | operator.
 
   This port defines the interface for pipeable objects that enable
   functional-style pipeline composition with partial application support.
   """
 
   def __or__(self, other: Union['PipeablePort', Any]) -> Any:
-    """
-    Enable func | func syntax for pipeline operations.
+    """Enable func | func syntax for pipeline operations.
 
     Args:
         other: The next function in the pipeline
@@ -28,8 +26,7 @@ class PipeablePort(Protocol):
     ...
 
   def __ror__(self, other: Any) -> Any:
-    """
-    Enable name | func syntax (reverse or).
+    """Enable name | func syntax (reverse or).
 
     This is the main entry point for pipeline operations starting with a name.
 
@@ -43,8 +40,7 @@ class PipeablePort(Protocol):
     ...
 
   def __call__(self, *args: Any, **kwargs: Any) -> Union['PipeablePort', Any]:
-    """
-    Execute the wrapped function or create a partial application.
+    """Execute the wrapped function or create a partial application.
 
     This method tries to execute the function with the provided arguments.
     If execution fails due to missing required arguments, it returns a

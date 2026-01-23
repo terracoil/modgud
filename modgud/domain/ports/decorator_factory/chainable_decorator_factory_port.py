@@ -10,8 +10,7 @@ class ChainableDecoratorFactoryPort(Protocol):
   """Interface for factories that create chainable expression decorators."""
 
   def create_decorator(self) -> Callable[[Callable], Callable]:
-    """
-    Create a decorator that makes functions return chainable expressions.
+    """Create a decorator that makes functions return chainable expressions.
 
     Returns:
         Callable: A decorator function
@@ -20,8 +19,7 @@ class ChainableDecoratorFactoryPort(Protocol):
     ...
 
   def create_expression(self, value: Any) -> Any:
-    """
-    Wrap a name for chaining.
+    """Wrap a name for chaining.
 
     Args:
         value: The name to wrap

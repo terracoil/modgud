@@ -1,5 +1,4 @@
-"""
-Pipeable wrapper implementation for functional-style data transformation.
+"""Pipeable wrapper implementation for functional-style data transformation.
 
 This module provides the Pipeable class which enables functional-style
 pipeline operations using the | operator, similar to shell pipes or functional
@@ -10,15 +9,14 @@ import functools
 import inspect
 from typing import Any, Callable, TypeVar, Union
 
-from ..domain.ports import PipeablePort
+from modgud.domain.ports import PipeablePort
 
 T = TypeVar('T')
 R = TypeVar('R')
 
 
 class Pipeable(PipeablePort):
-  """
-  Wrapper that enables pipeline operations via __or__ overloading.
+  """Wrapper that enables pipeline operations via __or__ overloading.
 
   This class wraps functions to make them work with the | operator for
   functional-style pipeline composition. It supports partial application
@@ -57,8 +55,7 @@ class Pipeable(PipeablePort):
       self.__module__ = func.__module__
 
   def __or__(self, other: Union['Pipeable', Any]) -> Any:
-    """
-    Enable x | func syntax for pipeline operations.
+    """Enable x | func syntax for pipeline operations.
 
     When used with the | operator, this method applies the wrapped function
     to the left-hand operand. If the right operand is itself a Pipeable,
@@ -88,8 +85,7 @@ class Pipeable(PipeablePort):
     )
 
   def __ror__(self, other: Any) -> Any:
-    """
-    Enable name | func syntax (reverse or).
+    """Enable name | func syntax (reverse or).
 
     This is called when the left operand doesn't support __or__ with our type.
     This is the main entry point for pipeline operations starting with a name.
@@ -163,8 +159,7 @@ class Pipeable(PipeablePort):
         raise te
 
   def __call__(self, *args: Any, **kwargs: Any) -> Union['Pipeable', Any]:
-    """
-    Execute the wrapped function or create a partial application.
+    """Execute the wrapped function or create a partial application.
 
     This method tries to execute the function with the provided arguments.
     If execution fails due to missing required arguments, it returns a

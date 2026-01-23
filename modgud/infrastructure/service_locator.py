@@ -6,8 +6,7 @@ T = TypeVar('T')
 
 
 class ServiceLocator:
-  """
-  Central service locator for managing application dependencies.
+  """Central service locator for managing application dependencies.
 
   Provides a simple way to register and resolve services without
   coupling the app layer directly to infrastructure implementations.
@@ -24,8 +23,7 @@ class ServiceLocator:
     return cls._instance
 
   def register_factory(self, port_type: Type[T], factory: Callable[[], T]) -> None:
-    """
-    Register a factory function for a port type.
+    """Register a factory function for a port type.
 
     :param port_type: The port interface type
     :param factory: Factory function that creates the service
@@ -33,8 +31,7 @@ class ServiceLocator:
     self._factories[port_type] = factory
 
   def register_instance(self, port_type: Type[T], instance: T) -> None:
-    """
-    Register a service instance directly.
+    """Register a service instance directly.
 
     :param port_type: The port interface type
     :param instance: The service instance
@@ -42,8 +39,7 @@ class ServiceLocator:
     self._services[port_type] = instance
 
   def resolve(self, port_type: Type[T]) -> T:
-    """
-    Resolve a service by its port type.
+    """Resolve a service by its port type.
 
     :param port_type: The port interface type to resolve
     :return: The service instance

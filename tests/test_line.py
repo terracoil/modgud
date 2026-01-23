@@ -1,7 +1,7 @@
 """Test the Line geometry class."""
 
 import pytest
-from modgud.api.geometry import Line, SimplexNoise, Vector
+from modgud.util.geo import Line, SimplexNoise, Vector
 
 
 class TestLine:

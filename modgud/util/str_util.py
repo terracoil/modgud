@@ -43,7 +43,7 @@ class StrUtils:
 
   @classmethod
   def pluralize(cls, word: str) -> str:
-    """Simple pluralization (handles common cases)."""
+    """Pluralize a word using simple rules for common cases."""
     if word.endswith('y') and len(word) > 1 and word[-2] not in 'aeiou':
       return word[:-1] + 'ies'
     elif word.endswith(('s', 'ss', 'sh', 'ch', 'x', 'z')):
@@ -57,7 +57,7 @@ class StrUtils:
 
   @classmethod
   def singularize(cls, word: str) -> str:
-    """Simple singularization (handles common cases)."""
+    """Singularize a word using simple rules for common cases."""
     if word.endswith('ies') and len(word) > 3:
       return word[:-3] + 'y'
     elif word.endswith('es') and len(word) > 2:

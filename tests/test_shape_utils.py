@@ -2,9 +2,9 @@
 
 from typing import Sequence
 
-from modgud.api.geometry import SimplexNoise, Vector
-from modgud.api.geometry.svg import SVGConverter, migrate_shape_result
-from modgud.domain.ports.vector_port import VectorPort
+from modgud.domain.ports import VectorPort
+from modgud.util.geo import SimplexNoise, Vector
+from modgud.util.geo.svg import SVGConverter
 
 
 class ShapeTestUtils:
@@ -32,7 +32,7 @@ class ShapeTestUtils:
     vectors: Sequence[VectorPort], expected_key: str = 'shape'
   ) -> dict[str, list[str]]:
     """Assert that vectors can be converted to legacy format."""
-    legacy_dict = migrate_shape_result(vectors, expected_key)
+    legacy_dict = SVGConverter.shape_dict(vectors, key=expected_key)
 
     assert isinstance(legacy_dict, dict), 'Legacy result must be a dictionary'
     assert expected_key in legacy_dict, f"Dictionary must contain '{expected_key}' key"

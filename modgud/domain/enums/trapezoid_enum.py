@@ -16,8 +16,7 @@ class TrapezoidEnum(Enum):
   def from_params(
     cls, w1: float, w2: float, h: float, side_left: float | None = None, tolerance: float = 1e-6
   ) -> TrapezoidEnum:
-    """
-    Automatically determine trapezoid variant from parameters.
+    """Automatically determine trapezoid variant from parameters.
 
     Args:
       w1: Bottom width

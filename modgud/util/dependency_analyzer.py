@@ -9,8 +9,7 @@ class DependencyAnalyzer(ast.NodeVisitor):
   """AST visitor to extract import dependencies and class hierarchies."""
 
   def __init__(self, project_path: Path, include_external: bool = False, max_depth: int = 10):
-    """
-    Initialize analyzer with configuration.
+    """Initialize analyzer with configuration.
 
     :param project_path: Root path of the project to analyze
     :param include_external: Include external (non-project) dependencies

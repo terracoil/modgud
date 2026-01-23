@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Optional, Protocol, Tuple, runtime_checkable
 
-from ...types import FailureBehavior, GuardFunction
+from modgud.domain.types import FailureBehavior, GuardFunction
 
 
 @runtime_checkable
@@ -15,8 +15,7 @@ class GuardRuntimePort(Protocol):
     args: Tuple[Any, ...],
     kwargs: Dict[str, Any],
   ) -> Optional[str]:
-    """
-    Check all guards and return error message if any fail.
+    """Check all guards and return error message if any fail.
 
     :param guards: Tuple of guard functions to check
     :param args: Positional arguments to pass to guards
@@ -34,8 +33,7 @@ class GuardRuntimePort(Protocol):
     kwargs: Dict[str, Any],
     log_enabled: bool,
   ) -> Tuple[Any, Optional[BaseException]]:
-    """
-    Handle guard failure according to configuration.
+    """Handle guard failure according to configuration.
 
     :param error_msg: The error message from the failed guard
     :param on_error: Failure behavior configuration

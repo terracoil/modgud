@@ -4,8 +4,7 @@ import ast
 
 
 class _NoExplicitReturnChecker(ast.NodeVisitor):
-  """
-  Check for explicit return statements in top-level function body.
+  """Check for explicit return statements in top-level function body.
 
   Ensures no explicit `return` appears in the *top-level* body of the decorated
   function. We deliberately do NOT descend into nested function/async def/lambda

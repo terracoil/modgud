@@ -9,8 +9,7 @@ import numpy as np
 
 @runtime_checkable
 class NoisePort(Protocol):
-  """
-  Protocol defining the interface for noise generators.
+  """Protocol defining the interface for noise generators.
 
   This protocol establishes a common interface for various noise generation
   algorithms (Simplex, Perlin, Worley, etc.) with support for both single-point
@@ -24,8 +23,7 @@ class NoisePort(Protocol):
   """
 
   def noise2d(self, x: float, y: float) -> float:
-    """
-    Generate 2D noise name at given coordinates.
+    """Generate 2D noise name at given coordinates.
 
     This is the core noise generation method that produces a smooth,
     continuous noise name for any given 2D coordinate. The noise
@@ -39,8 +37,7 @@ class NoisePort(Protocol):
     ...
 
   def fbm2d(self, x: float, y: float) -> float:
-    """
-    Generate fractal Brownian motion (fBm) noise at given coordinates.
+    """Generate fractal Brownian motion (fBm) noise at given coordinates.
 
     Fractal Brownian motion combines multiple octaves of noise at
     different frequencies and amplitudes to create more complex,
@@ -58,8 +55,7 @@ class NoisePort(Protocol):
     ...
 
   def noise_array2d(self, x_coords: np.ndarray, y_coords: np.ndarray) -> np.ndarray:
-    """
-    Generate 2D noise values for arrays of coordinates.
+    """Generate 2D noise values for arrays of coordinates.
 
     Efficient bulk generation of noise values for multiple coordinate
     pairs. This method should handle coordinate arrays of any shape,
@@ -77,8 +73,7 @@ class NoisePort(Protocol):
     ...
 
   def fbm_array2d(self, x_coords: np.ndarray, y_coords: np.ndarray) -> np.ndarray:
-    """
-    Generate fractal Brownian motion values for arrays of coordinates.
+    """Generate fractal Brownian motion values for arrays of coordinates.
 
     Bulk generation of fBm noise values, combining the efficiency of
     array processing with the complexity of fractal noise. This method
@@ -100,8 +95,7 @@ class NoisePort(Protocol):
     y_offset: float = 0.0,
     use_fbm: bool = True,
   ) -> np.ndarray:
-    """
-    Generate a 2D noise map of specified dimensions.
+    """Generate a 2D noise map of specified dimensions.
 
     Creates a complete 2D array of noise values suitable for use as
     heightmaps, textures, or other 2D data. The map covers a rectangular

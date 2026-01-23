@@ -1,7 +1,7 @@
 """Comprehensive tests for Vector implementation."""
 
 import pytest
-from modgud.api.geometry import Vector, VectorPort
+from modgud.util.geo import Vector, VectorPath, VectorPort
 
 
 class TestVectorConstruction:
@@ -296,17 +296,6 @@ class TestFromInput:
     """Test from_input with empty list."""
     vectors = Vector.from_input([])
     assert len(vectors) == 0
-
-
-class TestFromArgs:
-  """Test legacy from_args method."""
-
-  def test_from_args_delegates_to_from_dict(self) -> None:
-    """Test that from_args delegates to from_dict."""
-    vector = Vector.from_args({'x': 1.0, 'y': 2.0})
-    assert vector is not None
-    assert vector.x == 1.0
-    assert vector.y == 2.0
 
 
 class TestVectorEquality:
@@ -819,8 +808,6 @@ class TestVectorPathSubscriptable:
 
   def test_getitem_origin(self) -> None:
     """Test accessing origin via index 0."""
-    from modgud.api.geometry import VectorPath
-
     origin = Vector(1.0, 2.0)
     path = VectorPath(rel_segments=origin)
 
@@ -831,8 +818,6 @@ class TestVectorPathSubscriptable:
 
   def test_getitem_rel_segments(self) -> None:
     """Test accessing relative segments via index > 0."""
-    from modgud.api.geometry import VectorPath
-
     origin = Vector(0.0, 0.0)
     seg1 = Vector(1.0, 0.0)
     seg2 = Vector(0.0, 1.0)
@@ -849,8 +834,6 @@ class TestVectorPathSubscriptable:
 
   def test_getitem_index_out_of_bounds_negative(self) -> None:
     """Test accessing with negative index raises IndexError."""
-    from modgud.api.geometry import VectorPath
-
     path = VectorPath(rel_segments=Vector(0.0, 0.0))
     path.push_segment(Vector(1.0, 1.0))
 
@@ -859,8 +842,6 @@ class TestVectorPathSubscriptable:
 
   def test_getitem_index_out_of_bounds_too_high(self) -> None:
     """Test accessing with index >= length raises IndexError."""
-    from modgud.api.geometry import VectorPath
-
     path = VectorPath(rel_segments=Vector(0.0, 0.0))
     path.push_segment(Vector(1.0, 1.0))
 
@@ -870,8 +851,6 @@ class TestVectorPathSubscriptable:
 
   def test_getitem_empty_path(self) -> None:
     """Test accessing path with only origin."""
-    from modgud.api.geometry import VectorPath
-
     origin = Vector(5.0, 10.0)
     path = VectorPath(rel_segments=origin)
 
@@ -884,8 +863,6 @@ class TestVectorPathSubscriptable:
 
   def test_getitem_consistency_with_len(self) -> None:
     """Test that subscriptable access is consistent with __len__."""
-    from modgud.api.geometry import VectorPath
-
     origin = Vector(0.0, 0.0)
     segments = [Vector(1.0, 0.0), Vector(0.0, 1.0), Vector(-1.0, 0.0)]
 
@@ -905,8 +882,6 @@ class TestVectorPathSubscriptable:
 
   def test_getitem_with_named_vectors(self) -> None:
     """Test accessing path with named vectors preserves names."""
-    from modgud.api.geometry import VectorPath
-
     origin = Vector(0.0, 0.0, name='start')
     seg1 = Vector(1.0, 0.0, name='right')
     seg2 = Vector(0.0, 1.0, name='up')

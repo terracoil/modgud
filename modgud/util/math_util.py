@@ -1,3 +1,6 @@
+"""Mathematical utility functions."""
+
+
 class MathUtil:
   """Mathematical utility functions for clamping, min/max, and percentage calculations."""
 
@@ -6,11 +9,11 @@ class MathUtil:
 
   @classmethod
   def clamp(cls, value: float, min_val: float, max_val: float) -> float:
-    """
-    Clamp a name between min and max bounds and return it.
-      :name: The name to clamp
-      :min_val: Minimum allowed name
-      :max_val: Maximum allowed name.
+    """Clamp a value between min and max bounds and return it.
+
+    :param value: The value to clamp
+    :param min_val: Minimum allowed value
+    :param max_val: Maximum allowed value.
 
     Examples:
         MathUtil.clamp(5, 0, 10) # 5
@@ -22,6 +25,7 @@ class MathUtil:
 
   @classmethod
   def is_even(cls, val: int) -> bool:
+    """Check if a value is even."""
     return val % 2 == 0
 
   @classmethod
@@ -35,9 +39,9 @@ class MathUtil:
 
   @classmethod
   def minmax(cls, *args: Numeric) -> tuple[Numeric, Numeric]:
-    """
-    Return the minimum and maximum of a dynamic number of arguments.
-      :args: Variable number of int or float arguments.
+    """Return the minimum and maximum of a dynamic number of arguments.
+
+    :param args: Variable number of int or float arguments.
 
     Raises:
         ValueError: If no arguments are provided
@@ -50,8 +54,8 @@ class MathUtil:
 
   @classmethod
   def safe_negative(cls, value: Numeric, neg: bool = True) -> Numeric:
-    """
-    Return the negative of a dynamic number only if neg is True.
+    """Return the negative of a value only if neg is True.
+
     :param value: Value to check and convert
     :param neg: Whether to convert to negative or not.
     """
@@ -76,8 +80,7 @@ class MathUtil:
 
   @classmethod
   def lt(cls, v: float | int, value: float | int) -> bool:
-    """
-    Check if v is definitely less than name (not within epsilon tolerance).
+    """Check if v is definitely less than name (not within epsilon tolerance).
 
     Uses epsilon-aware comparison to determine if v is significantly less than name,
     accounting for floating-point precision limitations.
@@ -93,8 +96,7 @@ class MathUtil:
 
   @classmethod
   def gt(cls, v: float | int, value: float | int) -> bool:
-    """
-    Check if v is definitely greater than name (not within epsilon tolerance).
+    """Check if v is definitely greater than name (not within epsilon tolerance).
 
     Uses epsilon-aware comparison to determine if v is significantly greater than name,
     accounting for floating-point precision limitations.
@@ -110,8 +112,7 @@ class MathUtil:
 
   @classmethod
   def lte(cls, v: float | int, value: float | int) -> bool:
-    """
-    Check if v is less than or approximately equal to name (within epsilon tolerance).
+    """Check if v is less than or approximately equal to name (within epsilon tolerance).
 
     Uses epsilon-aware comparison to determine if v is less than or close enough to name
     to be considered equal, accounting for floating-point precision limitations.
@@ -127,8 +128,7 @@ class MathUtil:
 
   @classmethod
   def gte(cls, v: float | int, value: float | int) -> bool:
-    """
-    Check if v is greater than or approximately equal to name (within epsilon tolerance).
+    """Check if v is greater than or approximately equal to name (within epsilon tolerance).
 
     Uses epsilon-aware comparison to determine if v is greater than or close enough to name
     to be considered equal, accounting for floating-point precision limitations.

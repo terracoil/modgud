@@ -2,15 +2,14 @@
 
 from typing import Any, Callable
 
-from ...domain.types import GuardFunction
+from modgud.domain import GuardFunction
 
 
 class GuardValidatorService:
   """Service for validating and creating guards."""
 
   def validate_guard(self, guard: Any) -> bool:
-    """
-    Validate that a guard is properly formed.
+    """Validate that a guard is properly formed.
 
     :param guard: Guard to validate
     :return: True if valid, False otherwise
@@ -30,8 +29,7 @@ class GuardValidatorService:
       return False
 
   def create_guard(self, predicate: Callable[..., bool], error_message: str) -> GuardFunction:
-    """
-    Create a guard function from a predicate and error message.
+    """Create a guard function from a predicate and error message.
 
     :param predicate: Boolean predicate function
     :param error_message: Error message if predicate fails
@@ -39,7 +37,7 @@ class GuardValidatorService:
     """
 
     def guard(*args: Any, **kwargs: Any) -> bool | str:
-      """Generated guard function."""
+      """Validate arguments against the predicate."""
       try:
         if predicate(*args, **kwargs):
           return True

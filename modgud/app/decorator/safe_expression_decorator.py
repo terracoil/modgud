@@ -1,5 +1,4 @@
-"""
-Safe expression decorator for monadic error handling.
+"""Safe expression decorator for monadic error handling.
 
 This module provides the SafeExpressionDecorator class that wraps function results
 in Result types, following the single class per file principle.
@@ -17,8 +16,7 @@ R = TypeVar('R')
 
 
 class SafeExpressionDecorator:
-  """
-  Decorator that wraps function results in Result types for safe error handling.
+  """Decorator that wraps function results in Result types for safe error handling.
 
   Functions decorated with this class automatically catch exceptions
   and return Result[T, Exception] instead of raising exceptions.
@@ -27,8 +25,7 @@ class SafeExpressionDecorator:
   def __init__(
     self, catch_exceptions: tuple[type[Exception], ...] = (Exception,), convert_none: bool = False
   ) -> None:
-    """
-    Initialize the safe expression decorator.
+    """Initialize the safe expression decorator.
 
     Args:
         catch_exceptions: Tuple of exception types to catch (default: all exceptions)
@@ -39,8 +36,7 @@ class SafeExpressionDecorator:
     self.convert_none = convert_none
 
   def __call__(self, func: Callable[..., T]) -> Callable[..., Result[T, Exception]]:
-    """
-    Decorate a function to return Result types.
+    """Decorate a function to return Result types.
 
     Args:
         func: Function to decorate

@@ -3,9 +3,9 @@
 from unittest.mock import Mock
 
 import pytest
-from modgud.api.geometry import Quadrilateral, SimplexNoise, Vector
 from modgud.domain.enums import OrdinalEnum, QuadShapeEnum
 from modgud.domain.ports import ShapePort
+from modgud.util.geo import Quadrilateral, SimplexNoise, Vector
 
 
 class TestQuadrilateralTorn:
@@ -95,7 +95,7 @@ class TestQuadrilateralTorn:
     # The type system will catch this at development time
     # Let's test with an invalid enum combination instead
     with pytest.raises(ValueError, match='Invalid torn side'):
-      quad = Quadrilateral(
+      Quadrilateral(
         quad_shape=QuadShapeEnum.RECTANGLE,
         params={'w': 0.8, 'h': 0.6},
         torn_sides=[OrdinalEnum.NE],  # Compound directions not allowed for torn sides

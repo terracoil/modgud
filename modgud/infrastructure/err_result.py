@@ -1,5 +1,4 @@
-"""
-ErrResult result type for failed computations.
+"""ErrResult result type for failed computations.
 
 This module provides the ErrResult class representing failed Result values,
 following the single class per file principle.
@@ -7,7 +6,7 @@ following the single class per file principle.
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.ports.result_port import ResultPort
+from modgud.domain.ports import ResultPort
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -18,8 +17,7 @@ class ErrResult(ResultPort[T, E]):
   """Represents a failed result containing an error name."""
 
   def __init__(self, error: E) -> None:
-    """
-    Initialize an ErrResult result.
+    """Initialize an ErrResult result.
 
     Args:
         error: The error name to wrap

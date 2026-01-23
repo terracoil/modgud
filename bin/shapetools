@@ -11,8 +11,8 @@ from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Dict, Sequence
 
-from modgud.api.geometry import Joinery, Line, SimplexNoise, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorPort
-from modgud.api.geometry.shapes import ShapeFactory, Square, Rectangle, Parallelogram, Rhombus, Trapezoid, Kite
+from modgud.util.geo import Joinery, Line, SimplexNoise, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorPort
+from modgud.util.geo.shapes import ShapeFactory, Square, Rectangle, Parallelogram, Rhombus, Trapezoid, Kite
 from modgud.domain.enums import OrdinalEnum, QuadShapeEnum
 from modgud.infrastructure.drawio_manager import DrawIOManager
 from modgud.util import MathUtil
@@ -89,7 +89,7 @@ class ShapeTools:
   ) -> dict[str, Any]:
     """
     Common shape creation logic for all shape types.
-    
+
     :param shape: Shape instance (Square, Rectangle, etc.)
     :param shape_name: Name for display purposes
     :param torn_sides: Comma-separated sides to tear
@@ -108,10 +108,10 @@ class ShapeTools:
     """
     # Parse torn_sides string into OrdinalEnum list
     torn_sides_list = OrdinalEnum.parse_sides_string(torn_sides) if torn_sides else [OrdinalEnum.NONE]
-    
-    # Parse notch_sides string into OrdinalEnum list  
+
+    # Parse notch_sides string into OrdinalEnum list
     notch_sides_list = OrdinalEnum.parse_sides_string(notch_sides) if notch_sides else [OrdinalEnum.NONE]
-    
+
     # Create noise instance if torn sides specified
     noise = None
     if torn_sides_list and any(side != OrdinalEnum.NONE for side in torn_sides_list):
@@ -123,15 +123,15 @@ class ShapeTools:
         lacunarity=2.0,
         amplitude=1.0
       )
-    
+
     # Create shape with decoration parameters
     import inspect
     shape_constructor = type(shape).__init__
     constructor_params = inspect.signature(shape_constructor).parameters
-    
+
     # Filter shape.__dict__ to only include constructor parameters (exclude 'self')
     filtered_dict = {k: v for k, v in shape.__dict__.items() if k in constructor_params and k != 'self'}
-    
+
     # Update with decoration parameters
     filtered_dict.update({
       'torn_sides': torn_sides_list,
@@ -145,25 +145,25 @@ class ShapeTools:
       'smoothing_factor': smoothing_factor
     })
     decorated_shape = type(shape)(**filtered_dict)
-    
+
     # Build the shape
     shape_vectors = decorated_shape.build_shape()
-    
+
     # Scale back up to original coordinate system (from [0,1] to [0,100])
     scaled_vectors = []
     for v in shape_vectors:
       scaled_v = Vector(v.x * 100, v.y * 100, v.z, v.w, name=v.name)
       scaled_vectors.append(scaled_v)
-    
-    # Convert to legacy format using migrate_shape_result
-    from modgud.api.geometry.svg import migrate_shape_result
-    result = migrate_shape_result(scaled_vectors, 'shape')
-    
+
+    # Convert to SVG format
+    from modgud.util.geo.svg import SVGConverter
+    result = SVGConverter.shape_dict(scaled_vectors, key='shape')
+
     # Print formatted output
     svg_shape = result['shape']
     has_torn_sides = torn_sides_list and any(side != OrdinalEnum.NONE for side in torn_sides_list)
     has_notches = notch_sides_list and any(side != OrdinalEnum.NONE for side in notch_sides_list)
-    
+
     # Build descriptive title
     title_parts = []
     if has_torn_sides:
@@ -171,7 +171,7 @@ class ShapeTools:
       title_parts.append(f"torn_sides={torn_str}")
       title_parts.append(f"amplitude={amplitude}")
       title_parts.append(f"seed={seed}")
-    
+
     if has_notches:
       notch_str = ','.join(side.name for side in notch_sides_list if side != OrdinalEnum.NONE)
       title_parts.append(f"notch_sides={notch_str}")
@@ -179,35 +179,35 @@ class ShapeTools:
       title_parts.append(f"notch_depth={notch_depth}")
       if notch_offset != 0.0:
         title_parts.append(f"notch_offset={notch_offset}")
-    
+
     if title_parts:
       print(f"\n{shape_name} ({', '.join(title_parts)}):")
     else:
       print(f"\n{shape_name}:")
-    
+
     # Add variant info for trapezoids
     if hasattr(decorated_shape, 'variant'):
       print(f"Variant: {decorated_shape.variant.value}")
-    
+
     for line in svg_shape:
       print(line)
-    
+
     # Handle draw.io output if requested
     if drawio:
       torn_str = ','.join(side.name for side in torn_sides_list if side != OrdinalEnum.NONE) if has_torn_sides else 'none'
       notch_str = ','.join(side.name for side in notch_sides_list if side != OrdinalEnum.NONE) if has_notches else 'none'
-      
+
       draw_params = {
         'type': shape_name.lower(),
         'torn': torn_str,
         'notch': notch_str
       }
-      
+
       # Add additional parameters if they have meaningful values
       if has_torn_sides:
         draw_params['amp'] = amplitude
         draw_params['seed'] = seed
-      
+
       if has_notches:
         if notch_size != 0.1:  # Only include if different from default
           draw_params['nsize'] = notch_size
@@ -215,9 +215,9 @@ class ShapeTools:
           draw_params['ndepth'] = notch_depth
         if notch_offset != 0.0:  # Only include if different from default
           draw_params['noffset'] = notch_offset
-      
+
       self._handle_drawio_output(scaled_vectors, f'{shape_name.lower()}', draw_params, drawio, drawio_output)
-    
+
     return result
 
   def _handle_drawio_output(
@@ -286,7 +286,7 @@ class ShapeTools:
   ) -> dict[str, Any]:
     """
     Common shape creation logic for all shape types.
-    
+
     :param shape: Shape instance (Square, Rectangle, etc.)
     :param shape_name: Name for display purposes
     :param torn_sides: Comma-separated sides to tear
@@ -305,10 +305,10 @@ class ShapeTools:
     """
     # Parse torn_sides string into OrdinalEnum list
     torn_sides_list = OrdinalEnum.parse_sides_string(torn_sides) if torn_sides else [OrdinalEnum.NONE]
-    
-    # Parse notch_sides string into OrdinalEnum list  
+
+    # Parse notch_sides string into OrdinalEnum list
     notch_sides_list = OrdinalEnum.parse_sides_string(notch_sides) if notch_sides else [OrdinalEnum.NONE]
-    
+
     # Create noise instance if torn sides specified
     noise = None
     if torn_sides_list and any(side != OrdinalEnum.NONE for side in torn_sides_list):
@@ -320,15 +320,15 @@ class ShapeTools:
         lacunarity=2.0,
         amplitude=1.0
       )
-    
+
     # Create shape with decoration parameters
     import inspect
     shape_constructor = type(shape).__init__
     constructor_params = inspect.signature(shape_constructor).parameters
-    
+
     # Filter shape.__dict__ to only include constructor parameters (exclude 'self')
     filtered_dict = {k: v for k, v in shape.__dict__.items() if k in constructor_params and k != 'self'}
-    
+
     # Update with decoration parameters
     filtered_dict.update({
       'torn_sides': torn_sides_list,
@@ -342,25 +342,25 @@ class ShapeTools:
       'smoothing_factor': smoothing_factor
     })
     decorated_shape = type(shape)(**filtered_dict)
-    
+
     # Build the shape
     shape_vectors = decorated_shape.build_shape()
-    
+
     # Scale back up to original coordinate system (from [0,1] to [0,100])
     scaled_vectors = []
     for v in shape_vectors:
       scaled_v = Vector(v.x * 100, v.y * 100, v.z, v.w, name=v.name)
       scaled_vectors.append(scaled_v)
-    
-    # Convert to legacy format using migrate_shape_result
-    from modgud.api.geometry.svg import migrate_shape_result
-    result = migrate_shape_result(scaled_vectors, 'shape')
-    
+
+    # Convert to SVG format
+    from modgud.util.geo.svg import SVGConverter
+    result = SVGConverter.shape_dict(scaled_vectors, key='shape')
+
     # Print formatted output
     svg_shape = result['shape']
     has_torn_sides = torn_sides_list and any(side != OrdinalEnum.NONE for side in torn_sides_list)
     has_notches = notch_sides_list and any(side != OrdinalEnum.NONE for side in notch_sides_list)
-    
+
     # Build descriptive title
     title_parts = []
     if has_torn_sides:
@@ -368,7 +368,7 @@ class ShapeTools:
       title_parts.append(f"torn_sides={torn_str}")
       title_parts.append(f"amplitude={amplitude}")
       title_parts.append(f"seed={seed}")
-    
+
     if has_notches:
       notch_str = ','.join(side.name for side in notch_sides_list if side != OrdinalEnum.NONE)
       title_parts.append(f"notch_sides={notch_str}")
@@ -376,35 +376,35 @@ class ShapeTools:
       title_parts.append(f"notch_depth={notch_depth}")
       if notch_offset != 0.0:
         title_parts.append(f"notch_offset={notch_offset}")
-    
+
     if title_parts:
       print(f"\n{shape_name} ({', '.join(title_parts)}):")
     else:
       print(f"\n{shape_name}:")
-    
+
     # Add variant info for trapezoids
     if hasattr(decorated_shape, 'variant'):
       print(f"Variant: {decorated_shape.variant.value}")
-    
+
     for line in svg_shape:
       print(line)
-    
+
     # Handle draw.io output if requested
     if drawio:
       torn_str = ','.join(side.name for side in torn_sides_list if side != OrdinalEnum.NONE) if has_torn_sides else 'none'
       notch_str = ','.join(side.name for side in notch_sides_list if side != OrdinalEnum.NONE) if has_notches else 'none'
-      
+
       draw_params = {
         'type': shape_name.lower(),
         'torn': torn_str,
         'notch': notch_str
       }
-      
+
       # Add additional parameters if they have meaningful values
       if has_torn_sides:
         draw_params['amp'] = amplitude
         draw_params['seed'] = seed
-      
+
       if has_notches:
         if notch_size != 0.1:  # Only include if different from default
           draw_params['nsize'] = notch_size
@@ -412,9 +412,9 @@ class ShapeTools:
           draw_params['ndepth'] = notch_depth
         if notch_offset != 0.0:  # Only include if different from default
           draw_params['noffset'] = notch_offset
-      
+
       self._handle_drawio_output(scaled_vectors, f'{shape_name.lower()}', draw_params, drawio, drawio_output)
-    
+
     return result
 
   class Joinery:
@@ -445,14 +445,22 @@ class ShapeTools:
         corner_pct=corner_pct
       )
 
-      shapeResult = joinery.build_all_shapes()  # Use backward compatibility method
+      # Build all shape components using new API
+      from modgud.util.geo.svg import SVGConverter
+
+      teeth_vectors = joinery.build_shape()
+      adapter_vectors = joinery.build_adapter_shape()
+      port_vectors = joinery.build_port_shape()
+
+      # Convert to SVG format
+      svg_teeth = SVGConverter.vectors_to_svg(teeth_vectors, close=True, name='teeth')
+      svg_left = SVGConverter.vectors_to_svg(adapter_vectors, close=True, name='adapter')
+      svg_right = SVGConverter.vectors_to_svg(port_vectors, close=True, name='port')
+
+      shapeResult = {'teeth': svg_teeth, 'left': svg_left, 'right': svg_right}
 
       # Print formatted output
-      svg_left = shapeResult['left']
-      svg_right = shapeResult['right']
-      svg_teeth = shapeResult['teeth']
-
-      for k,v in shapeResult.items():
+      for k, v in shapeResult.items():
         print(f"\n{k}: {'\n'.join(v)}\n\n")
 
       max_len = max(len(svg_left), len(svg_right), len(svg_teeth))
@@ -481,12 +489,12 @@ class ShapeTools:
         """Initialize with parent ShapeTools instance and common parameters."""
         self.parent: 'ShapeTools' = parent
         # Common parameters with defaults - these could be made configurable in the future
-        self.segments = 100
-        self.amplitude = 5.0
+        self.segments = 200
+        self.amplitude = 4.0
         self.noise_scale = 0.1
-        self.octaves = 3
+        self.octaves = 7
         self.seed = 42
-        self.smoothing_factor = 0.1
+        self.smoothing_factor = 0.2
         self.drawio = False
         self.drawio_output = '.'
 
@@ -511,10 +519,10 @@ class ShapeTools:
         invert=invert
       )
 
-      # Convert to legacy format using migrate_shape_result
-      from modgud.api.geometry.svg import migrate_shape_result
+      # Convert to SVG format
+      from modgud.util.geo.svg import SVGConverter
       trap_vectors = trapezoid.build_shape()
-      trap_path:dict[str, list[str]] = migrate_shape_result(trap_vectors, 'shape')
+      trap_path:dict[str, list[str]] = SVGConverter.shape_dict(trap_vectors, key='shape')
 
       # Print formatted output
       svg_shape = trap_path['shape']
@@ -544,12 +552,12 @@ class ShapeTools:
     ) -> dict[str, Any]:
       """
       Generate a square with optional torn edges and/or notches.
-      
+
       :param side: Length of each side
       :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
       :param notch_sides: Comma-separated sides to notch (e.g., "N,S" or "NE,SW")
       :param notch_size: Size of notch along edge axis (0.0-1.0)
-      :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0) 
+      :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0)
       :param notch_offset: Offset from center position (-0.5 to 0.5)
       """
       return self.parent._create_shape(
@@ -572,7 +580,7 @@ class ShapeTools:
     ) -> dict[str, Any]:
       """
       Generate a rectangle with optional torn edges and/or notches.
-      
+
       :param width: Width of rectangle
       :param height: Height of rectangle
       :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
@@ -611,9 +619,9 @@ class ShapeTools:
     ) -> dict[str, Any]:
       """
       Generate a parallelogram with optional torn edges and/or notches.
-      
+
       :param width: Base width
-      :param height: Perpendicular height  
+      :param height: Perpendicular height
       :param angle: Interior angle in degrees (default 60.0)
       :param slant: Optional horizontal offset instead of angle
       :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
@@ -632,7 +640,7 @@ class ShapeTools:
       """
       # Convert angle to radians
       angle_rad = math.radians(angle)
-      
+
       return self.parent._create_shape(
         Parallelogram(width=width/100, height=height/100, angle=angle_rad, slant=slant/100 if slant >= 0 else None),
         'Parallelogram',
@@ -653,7 +661,7 @@ class ShapeTools:
     ) -> dict[str, Any]:
       """
       Generate a rhombus with optional torn edges and/or notches.
-      
+
       :param side: Length of all sides
       :param angle: Interior angle in degrees
       :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
@@ -672,7 +680,7 @@ class ShapeTools:
       """
       # Convert angle to radians
       angle_rad = math.radians(angle)
-      
+
       return self.parent._create_shape(
         Rhombus(side=side/100, angle=angle_rad),
         'Rhombus',
@@ -695,18 +703,18 @@ class ShapeTools:
     ) -> dict[str, Any]:
       """
       Generate a trapezoid with automatic variant detection and optional torn edges/notches.
-      
+
       Variant is automatically determined from parameters:
       - ISOSCELES: side_left not specified (symmetric)
-      - RIGHT_ANGLE: side_left == h (90-degree left angle) 
+      - RIGHT_ANGLE: side_left == h (90-degree left angle)
       - GENERAL: side_left specified and != h (asymmetric)
-      
+
       :param w1: Bottom width (base)
       :param w2: Top width
       :param h: Height
       :param side_left: Optional left side length constraint
       :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
-      :param notch_sides: Comma-separated sides to notch (e.g., "N,S" or "NE,SW") 
+      :param notch_sides: Comma-separated sides to notch (e.g., "N,S" or "NE,SW")
       :param notch_size: Size of notch along edge axis (0.0-1.0)
       :param notch_depth: Depth of notch perpendicular to edge (0.0-1.0)
       :param notch_offset: Offset from center position (-0.5 to 0.5)
@@ -739,7 +747,7 @@ class ShapeTools:
     ) -> dict[str, Any]:
       """
       Generate a kite with optional torn edges and/or notches.
-      
+
       :param diagonal1: First diagonal length (vertical)
       :param diagonal2: Second diagonal length (horizontal)
       :param torn_sides: Comma-separated sides to tear (e.g., "NORTH,SOUTH" or "N,S")
@@ -811,9 +819,9 @@ class ShapeTools:
       # Build the shape
       torn_vectors = torn_paper.build_shape()
 
-      # Convert to legacy format using migrate_shape_result
-      from modgud.api.geometry.svg import migrate_shape_result
-      result = migrate_shape_result(torn_vectors, 'shape')
+      # Convert to SVG format
+      from modgud.util.geo.svg import SVGConverter
+      result = SVGConverter.shape_dict(torn_vectors, key='shape')
 
       # Print formatted output
       svg_shape = result['shape']

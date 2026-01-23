@@ -1,5 +1,4 @@
-"""
-GuardStrategy enum for modgud domain layer.
+"""GuardStrategy enum for modgud domain layer.
 
 Enumeration for guard evaluation strategies following domain-driven design
 principles. The domain layer is passive and contains no business logic

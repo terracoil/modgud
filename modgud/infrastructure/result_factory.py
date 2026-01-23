@@ -1,5 +1,4 @@
-"""
-Result factory for creating Result instances.
+"""Result factory for creating Result instances.
 
 This module provides the ResultFactory class for creating Result instances
 and performing Result operations, following the single class per file principle.
@@ -7,7 +6,8 @@ and performing Result operations, following the single class per file principle.
 
 from typing import Callable, TypeVar
 
-from ..domain.ports.result_port import ResultPort as Result
+from modgud.domain.ports import ResultPort as Result
+
 from .err_result import ErrResult
 from .ok_result import Ok
 
@@ -16,8 +16,7 @@ E = TypeVar('E')
 
 
 class ResultFactory:
-  """
-  Factory class for creating and manipulating Result instances.
+  """Factory class for creating and manipulating Result instances.
 
   This class encapsulates all Result-related operations following the
   single class per file and class encapsulation principles.
@@ -25,8 +24,7 @@ class ResultFactory:
 
   @staticmethod
   def ok(value: T) -> Result[T, E]:
-    """
-    Create an Ok result with the given name.
+    """Create an Ok result with the given name.
 
     Args:
         value: The success name to wrap
@@ -39,8 +37,7 @@ class ResultFactory:
 
   @staticmethod
   def err(error: E) -> Result[T, E]:
-    """
-    Create an Err result with the given error.
+    """Create an Err result with the given error.
 
     Args:
         error: The error name to wrap
@@ -53,8 +50,7 @@ class ResultFactory:
 
   @staticmethod
   def from_exception(func: Callable[[], T]) -> Result[T, Exception]:
-    """
-    Execute a function and wrap the result in a Result type.
+    """Execute a function and wrap the result in a Result type.
 
     Args:
         func: Function to execute
@@ -73,8 +69,7 @@ class ResultFactory:
 
   @staticmethod
   def from_optional(value: T | None, error_message: str = 'Value is None') -> Result[T, str]:
-    """
-    Create a Result from an optional name.
+    """Create a Result from an optional name.
 
     Args:
         value: Value that may be None

@@ -1,5 +1,4 @@
-"""
-Domain ports (interfaces) for modgud.
+"""Domain ports (interfaces) for modgud.
 
 Port definitions (interfaces) used throughout the modgud library
 following domain-driven design principles. Ports are preferred over
@@ -9,6 +8,7 @@ This module re-exports port definitions from their individual files
 following the single class per file principle.
 """
 
+# Import base ports first (no dependencies on other ports)
 from .decorator_factory import (
   ChainableDecoratorFactoryPort,
   SafeDecoratorFactoryPort,
@@ -22,6 +22,8 @@ from .di import (
 from .guard import GuardRuntimePort, GuardValidatorPort, GuardWrapperPort
 from .maybe_port import MaybePort
 from .noise_port import NoisePort
+
+# Import ports with dependencies on base ports
 from .pipeable import PipeableFactoryPort, PipeablePort
 from .result_port import ResultPort
 from .shape_port import ShapePort

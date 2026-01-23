@@ -1,5 +1,4 @@
-"""
-Pipeable factory for creating pipeable decorators and wrappers.
+"""Pipeable factory for creating pipeable decorators and wrappers.
 
 This module provides the PipeableFactory class for creating pipeable decorators,
 following clean architecture principles by implementing domain protocols.
@@ -9,21 +8,21 @@ from __future__ import annotations
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.ports import PipeableFactoryPort, PipeablePort
+from modgud.domain.ports import PipeableFactoryPort, PipeablePort
+
 from .pipeable_wrapper import Pipeable
 
 T = TypeVar('T')
 
 
 class PipeableFactory(PipeableFactoryPort):
-  """
-  Factory for creating pipeable decorators and utilities.
+  """Factory for creating pipeable decorators and utilities.
+
   Provides clean interface for functional programming patterns.
   """
 
   def create_pipeable(self, func: Callable[..., Any]) -> PipeablePort:
-    """
-    Create a pipeable wrapper around a function.
+    """Create a pipeable wrapper around a function.
 
     Args:
         func: The function to make pipeable
@@ -45,11 +44,10 @@ class PipeableFactory(PipeableFactoryPort):
     return Pipeable(func)
 
   def pipeable_decorator(self, func: Callable[..., T]) -> PipeablePort:
-    """
-    Decorator that makes functions pipeable via | operator.
+    """Make a function pipeable via the | operator.
 
-    This decorator wraps a function in a Pipeable instance, enabling it to be used
-    in functional-style pipelines with the | operator. It supports partial application
+    Wraps a function in a Pipeable instance, enabling it to be used
+    in functional-style pipelines with the | operator. Supports partial application
     and preserves function metadata.
 
     Can also be used with built-in types and functions directly:

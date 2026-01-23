@@ -1,5 +1,4 @@
-"""
-ServiceLifetime enum for modgud domain layer.
+"""ServiceLifetime enum for modgud domain layer.
 
 Enumeration for dependency injection service lifetimes following domain-driven
 design principles. The domain layer is passive and contains no business logic

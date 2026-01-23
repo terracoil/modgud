@@ -1,5 +1,4 @@
-"""
-ANSI-aware string wrapper for proper alignment in format strings.
+"""ANSI-aware string wrapper for proper alignment in format strings.
 
 This module provides the AnsiString class which enables proper text alignment
 in f-strings and format() calls when working with ANSI escape codes for terminal colors.
@@ -10,8 +9,7 @@ from typing import Union
 
 
 class AnsiString:
-  r"""
-  String wrapper that implements proper alignment with ANSI escape codes.
+  r"""String wrapper that implements proper alignment with ANSI escape codes.
 
   This class wraps a string containing ANSI escape codes and provides
   a __format__ method that correctly handles alignment by considering
@@ -28,8 +26,7 @@ class AnsiString:
   ANSI_ESCAPE_PATTERN = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
   def __init__(self, text: str):
-    """
-    Initialize with text that may contain ANSI escape codes.
+    """Initialize with text that may contain ANSI escape codes.
 
     :param text: The string to wrap (may contain ANSI codes)
     """
@@ -38,8 +35,7 @@ class AnsiString:
 
   @classmethod
   def strip_ansi_codes(cls, text: str) -> str:
-    """
-    Remove ANSI escape sequences from text to get visible character count.
+    """Remove ANSI escape sequences from text to get visible character count.
 
     :param text: Text that may contain ANSI escape codes
     :return: Text with ANSI codes removed
@@ -59,8 +55,7 @@ class AnsiString:
     return len(self._visible_text)
 
   def __format__(self, format_spec: str) -> str:
-    """
-    Format the string with proper ANSI-aware alignment.
+    """Format the string with proper ANSI-aware alignment.
 
     This method implements Python's format protocol to handle alignment
     correctly when the string contains ANSI escape codes.

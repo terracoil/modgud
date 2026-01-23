@@ -1,7 +1,8 @@
 """Tests for the StackableTrapezoid geometry generator."""
 
 import pytest
-from modgud.api.geometry import StackableTrapezoid, migrate_shape_result
+from modgud.util.geo import StackableTrapezoid
+from modgud.util.geo.svg import SVGConverter
 
 from tests.test_shape_utils import ShapeTestUtils
 
@@ -18,7 +19,7 @@ class TestStackableTrapezoid:
     ShapeTestUtils.assert_valid_vector_sequence(result)
 
     # Test backward compatibility
-    legacy_result = migrate_shape_result(result)
+    legacy_result = SVGConverter.shape_dict(result)
     assert isinstance(legacy_result, dict)
     assert 'shape' in legacy_result
     assert isinstance(legacy_result['shape'], list)
@@ -39,7 +40,7 @@ class TestStackableTrapezoid:
     ShapeTestUtils.assert_valid_vector_sequence(result)
 
     # Test backward compatibility
-    legacy_result = migrate_shape_result(result)
+    legacy_result = SVGConverter.shape_dict(result)
     assert 'shape' in legacy_result
     svg_lines = legacy_result['shape']
 
@@ -60,7 +61,7 @@ class TestStackableTrapezoid:
     ShapeTestUtils.assert_valid_vector_sequence(result)
 
     # Test backward compatibility
-    legacy_result = migrate_shape_result(result)
+    legacy_result = SVGConverter.shape_dict(result)
     assert 'shape' in legacy_result
     svg_lines = legacy_result['shape']
 
@@ -115,7 +116,7 @@ class TestStackableTrapezoid:
 
     # Test backward compatibility for each shape
     for i, shape in enumerate(result):
-      legacy_dict = migrate_shape_result(shape, f'shape_{i}')
+      legacy_dict = SVGConverter.shape_dict(shape, key=f'shape_{i}')
       assert isinstance(legacy_dict, dict)
       assert f'shape_{i}' in legacy_dict
 
@@ -140,7 +141,7 @@ class TestStackableTrapezoid:
     )  # Should have at least 8 points for trapezoid with notch
 
     # Test backward compatibility to check SVG structure
-    legacy_result = migrate_shape_result(result)
+    legacy_result = SVGConverter.shape_dict(result)
     svg_lines = legacy_result['shape']
 
     # Check that notch-related segments are present
@@ -175,7 +176,7 @@ class TestStackableTrapezoid:
     assert st.notch_height == 0.35
     assert st.width == 150
     assert st.height == 120
-    assert st.invert == True
+    assert st.invert
 
     # Verify build_shape works
     result = st.build_shape()
@@ -270,7 +271,7 @@ class TestStackableTrapezoid:
     assert len(positions) == 3
 
     # Each position should be valid
-    for i, shape in enumerate(positions):
+    for _i, shape in enumerate(positions):
       ShapeTestUtils.assert_valid_vector_sequence(shape)
 
     # First shape should be at original position (y=0 at top)

@@ -3,13 +3,14 @@
 import ast
 from typing import Any
 
+from .implicit_return_transformer import ImplicitReturnTransformer
+
 
 class ASTTransformationService:
   """Service for AST manipulation and transformation."""
 
   def strip_decorators(self, ast_node: Any) -> Any:
-    """
-    Remove decorators from AST node to prevent re-application.
+    """Remove decorators from AST node to prevent re-application.
 
     :param ast_node: AST node to process
     :return: AST node with decorators removed
@@ -20,8 +21,7 @@ class ASTTransformationService:
     return ast_node
 
   def transform_to_implicit_return(self, ast_node: Any) -> Any:
-    """
-    Transform AST to use implicit returns.
+    """Transform AST to use implicit returns.
 
     This delegates to the ImplicitReturnTransformer for the actual transformation.
 
@@ -29,9 +29,6 @@ class ASTTransformationService:
     :return: Transformed AST with implicit returns
     :raises ImplicitReturnError: If transformation fails
     """
-    # Import here to avoid circular dependency
-    from ..implicit_return import ImplicitReturnTransformer
-
     if not isinstance(ast_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
       raise ValueError('AST node must be a function definition')
 
@@ -39,8 +36,7 @@ class ASTTransformationService:
     return ImplicitReturnTransformer.apply_transform_to_function_node(ast_node)
 
   def compile_ast(self, ast_node: Any, filename: str, mode: str = 'exec') -> Any:
-    """
-    Compile AST node to code object.
+    """Compile AST node to code object.
 
     :param ast_node: AST to compile
     :param filename: Filename for error messages

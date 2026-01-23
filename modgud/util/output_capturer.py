@@ -19,8 +19,7 @@ class OutputCapture:
     encoding: str = 'utf-8',
     errors: str = 'replace',
   ):
-    """
-    Initialize output capture with configurable streams.
+    """Initialize output capture with configurable streams.
 
     :param capture_stdout: Whether to capture stdout
     :param capture_stderr: Whether to capture stderr
@@ -48,8 +47,7 @@ class OutputCapture:
     self._active = False
 
   def start(self):
-    """
-    Start capturing output.
+    """Start capturing output.
 
     :raises RuntimeError: If capture is already active
     """
@@ -72,8 +70,7 @@ class OutputCapture:
     self._active = True
 
   def stop(self) -> tuple[str, str]:
-    """
-    Stop capturing and return captured output.
+    """Stop capturing and return captured output.
 
     :return: Tuple of (stdout_content, stderr_content)
     :raises RuntimeError: If capture is not active
@@ -104,8 +101,7 @@ class OutputCapture:
     return stdout_content, stderr_content
 
   def is_active(self) -> bool:
-    """
-    Check if capture is currently active.
+    """Check if capture is currently active.
 
     :return: True if capture is active
     """
@@ -113,8 +109,7 @@ class OutputCapture:
 
   @contextmanager
   def capture_output(self):
-    """
-    Context manager for output capture.
+    """Context manager for output capture.
 
     Usage:
         capture = OutputCapture()
@@ -130,8 +125,7 @@ class OutputCapture:
         self.stop()
 
   def get_output(self, stream: str = 'stdout') -> str | None:
-    """
-    Get captured output for specific stream.
+    """Get captured output for specific stream.
 
     :param stream: Stream name ('stdout', 'stderr', 'stdin')
     :return: Captured content or None if stream not captured
@@ -147,8 +141,7 @@ class OutputCapture:
     return None
 
   def get_all_output(self) -> dict[str, str | None]:
-    """
-    Get all captured output.
+    """Get all captured output.
 
     :return: Dictionary with captured content for each stream
     """

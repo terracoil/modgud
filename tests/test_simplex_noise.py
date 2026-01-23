@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from modgud.api.geometry import SimplexNoise
+from modgud.util.geo import SimplexNoise
 
 
 class TestSimplexNoiseCore:

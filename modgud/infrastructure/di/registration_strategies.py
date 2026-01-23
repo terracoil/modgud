@@ -1,5 +1,4 @@
-"""
-Registration strategies for dependency injection.
+"""Registration strategies for dependency injection.
 
 This module provides the RegistrationStrategies class that handles different
 patterns of service registration following the single class per file principle.
@@ -14,16 +13,14 @@ T = TypeVar('T')
 
 
 class RegistrationStrategies:
-  """
-  Handles different patterns of service registration.
+  """Handles different patterns of service registration.
 
   Provides strategies for auto-registration, manual registration,
   and convention-based registration with support for default implementations.
   """
 
   def __init__(self, container: ServiceContainer, discovery: InterfaceDiscovery) -> None:
-    """
-    Initialize registration strategies.
+    """Initialize registration strategies.
 
     Args:
         container: Service container to register services with
@@ -34,8 +31,7 @@ class RegistrationStrategies:
     self._discovery = discovery
 
   def auto_register_interface(self, interface: Type[T]) -> bool:
-    """
-    Auto-register implementations for an interface.
+    """Auto-register implementations for an interface.
 
     Uses the following strategy:
     1. If only one implementation exists, register it as 'default'
@@ -72,8 +68,7 @@ class RegistrationStrategies:
     return registrations_made
 
   def register_by_convention(self, interface: Type[T], implementation: Type[T]) -> None:
-    """
-    Register an implementation using naming conventions.
+    """Register an implementation using naming conventions.
 
     Registers the implementation with multiple names based on conventions:
     - Class name
@@ -102,8 +97,7 @@ class RegistrationStrategies:
   def register_singleton(
     self, interface: Type[T], implementation: Type[T], name: str = 'default'
   ) -> None:
-    """
-    Register an implementation as a singleton.
+    """Register an implementation as a singleton.
 
     Args:
         interface: Interface type
@@ -116,8 +110,7 @@ class RegistrationStrategies:
   def register_transient(
     self, interface: Type[T], implementation: Type[T], name: str = 'default'
   ) -> None:
-    """
-    Register an implementation as transient (new instance each time).
+    """Register an implementation as transient (new instance each time).
 
     Args:
         interface: Interface type
@@ -128,8 +121,7 @@ class RegistrationStrategies:
     self._container.register(interface, implementation, name, singleton=False)
 
   def bulk_auto_register(self, interfaces: List[Type]) -> int:
-    """
-    Auto-register implementations for multiple interfaces.
+    """Auto-register implementations for multiple interfaces.
 
     Args:
         interfaces: List of interface types to auto-register
@@ -147,8 +139,7 @@ class RegistrationStrategies:
     return registered_count
 
   def ensure_default_registered(self, interface: Type[T]) -> bool:
-    """
-    Ensure a default implementation is registered for an interface.
+    """Ensure a default implementation is registered for an interface.
 
     If no default is registered, attempts to auto-register one.
 

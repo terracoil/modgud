@@ -1,5 +1,4 @@
-"""
-Inject decorator for dependency injection.
+"""Inject decorator for dependency injection.
 
 This module provides the Inject decorator that enables automatic dependency
 injection into function parameters following the single class per file principle.
@@ -18,8 +17,7 @@ F = TypeVar('F', bound=Callable[..., Any])
 
 
 class Inject:
-  """
-  Decorator for automatic dependency injection into function parameters.
+  """Decorator for automatic dependency injection into function parameters.
 
   Injects services based on parameter type annotations or explicit interface specifications.
   Integrates seamlessly with other modgud decorators for composition.
@@ -36,8 +34,7 @@ class Inject:
   """
 
   def __init__(self, *interfaces: Type, service_names: Optional[Dict[str, str]] = None) -> None:
-    """
-    Initialize the inject decorator.
+    """Initialize the inject decorator.
 
     Args:
         *interfaces: Interface types to inject (in parameter order)
@@ -55,8 +52,7 @@ class Inject:
 
   @classmethod
   def auto(cls, service_names: Optional[Dict[str, str]] = None) -> 'Inject':
-    """
-    Create an auto-injection decorator that uses type hints.
+    """Create an auto-injection decorator that uses type hints.
 
     Args:
         service_names: Optional mapping of parameter names to service names
@@ -70,8 +66,7 @@ class Inject:
     return instance
 
   def __call__(self, func: F) -> F:
-    """
-    Apply dependency injection to the function.
+    """Apply dependency injection to the function.
 
     Args:
         func: Function to decorate
@@ -135,8 +130,7 @@ class Inject:
   def _build_auto_injection_map(
     self, sig: inspect.Signature, type_hints: Dict[str, Any]
   ) -> Dict[str, Type]:
-    """
-    Build injection map using type hints for auto-injection.
+    """Build injection map using type hints for auto-injection.
 
     Args:
         sig: Function signature
@@ -168,8 +162,7 @@ class Inject:
     return injection_map
 
   def _build_explicit_injection_map(self, sig: inspect.Signature) -> Dict[str, Type]:
-    """
-    Build injection map using explicitly provided interfaces.
+    """Build injection map using explicitly provided interfaces.
 
     Args:
         sig: Function signature
@@ -189,8 +182,7 @@ class Inject:
     return injection_map
 
   def _is_injectable_type(self, param_type: Any) -> bool:
-    """
-    Check if a type is suitable for dependency injection.
+    """Check if a type is suitable for dependency injection.
 
     Args:
         param_type: Type to check
@@ -239,8 +231,7 @@ class Inject:
 
 # Convenient function-style decorators
 def inject(*interfaces: Type, service_names: Optional[Dict[str, str]] = None) -> Callable[[F], F]:
-  """
-  Function-style decorator for explicit dependency injection.
+  """Function-style decorator for explicit dependency injection.
 
   Args:
       *interfaces: Interface types to inject
@@ -254,8 +245,7 @@ def inject(*interfaces: Type, service_names: Optional[Dict[str, str]] = None) ->
 
 
 def inject_auto(service_names: Optional[Dict[str, str]] = None) -> Callable[[F], F]:
-  """
-  Function-style decorator for auto dependency injection.
+  """Function-style decorator for auto dependency injection.
 
   Args:
       service_names: Optional service name mappings

@@ -12,8 +12,7 @@ class InjectionMapBuilderPort(Protocol):
   def build_injection_map(
     self, func: Callable, detector: InjectableDetectorPort
   ) -> Dict[str, Type]:
-    """
-    Build a map of parameters that need injection.
+    """Build a map of parameters that need injection.
 
     :param func: Function to analyze
     :param detector: Injectable detector to use
@@ -24,8 +23,7 @@ class InjectionMapBuilderPort(Protocol):
   def merge_with_provided(
     self, injection_map: Dict[str, Type], provided_args: tuple, provided_kwargs: dict
   ) -> Dict[str, Type]:
-    """
-    Remove already-provided parameters from injection map.
+    """Remove already-provided parameters from injection map.
 
     :param injection_map: Full injection map
     :param provided_args: Positional arguments provided

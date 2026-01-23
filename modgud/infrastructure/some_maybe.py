@@ -1,5 +1,4 @@
-"""
-Some maybe type for values that exist.
+"""Some maybe type for values that exist.
 
 This module provides the Some class representing Maybe values that contain data,
 following the single class per file principle.
@@ -7,7 +6,7 @@ following the single class per file principle.
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.ports.maybe_port import MaybePort
+from modgud.domain.ports import MaybePort
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -17,8 +16,7 @@ class Some(MaybePort[T]):
   """Represents a Maybe that contains a name."""
 
   def __init__(self, value: T) -> None:
-    """
-    Initialize a Some name.
+    """Initialize a Some name.
 
     Args:
         value: The name to wrap (should not be None)

@@ -8,8 +8,7 @@ class SourceExtractorPort(Protocol):
   """Port for source code extraction functionality."""
 
   def extract_source(self, func: Callable) -> str:
-    """
-    Extract dedented source code from function.
+    """Extract dedented source code from function.
 
     :param func: Function to extract source from
     :return: Dedented source code string
@@ -18,8 +17,7 @@ class SourceExtractorPort(Protocol):
     ...
 
   def get_function_ast(self, func: Callable) -> Any:
-    """
-    Get AST representation of function.
+    """Get AST representation of function.
 
     :param func: Function to parse
     :return: AST node representing the function

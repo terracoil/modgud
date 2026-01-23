@@ -1,5 +1,4 @@
-"""
-FailureStrategy enum for modgud domain layer.
+"""FailureStrategy enum for modgud domain layer.
 
 Enumeration for guard failure handling strategies following domain-driven design
 principles. The domain layer is passive and contains no business logic

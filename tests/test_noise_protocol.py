@@ -1,7 +1,7 @@
 """Test that SimplexNoise properly implements NoisePort."""
 
 import numpy as np
-from modgud.api.geometry import NoisePort, SimplexNoise
+from modgud.util.geo import NoisePort, SimplexNoise
 
 
 def test_simplex_noise_implements_protocol():

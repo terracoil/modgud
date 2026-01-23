@@ -9,8 +9,7 @@ class OutputFormatter:
   """Formats captured output with command prefixes."""
 
   def __init__(self, color_formatter=None):
-    """
-    Initialize output formatter.
+    """Initialize output formatter.
 
     :param color_formatter: ColorFormatter instance for styling
     """
@@ -19,8 +18,7 @@ class OutputFormatter:
   def format_output(
     self, command_name: str, stdout: str, stderr: str, style_name: str = 'command_output'
   ) -> None:
-    """
-    Format and print captured output with command prefix.
+    """Format and print captured output with command prefix.
 
     :param command_name: Name of the command that generated the output
     :param stdout: Captured stdout content
@@ -59,8 +57,7 @@ class OutputFormatter:
           print(error_prefix + f' {line}', file=sys.stderr)
 
   def should_display_output(self, verbose: bool, command_success: bool) -> bool:
-    """
-    Determine if output should be displayed.
+    """Determine if output should be displayed.
 
     :param verbose: Whether verbose mode is enabled
     :param command_success: Whether the command succeeded

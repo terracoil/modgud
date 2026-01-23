@@ -1,5 +1,4 @@
-"""
-Domain error message templates for modgud.
+"""Domain error message templates for modgud.
 
 Centralized error message templates following domain-driven design principles.
 The domain layer is passive and contains no business logic - only message

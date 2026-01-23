@@ -1,5 +1,4 @@
-"""
-Pipeable decorator for the app layer.
+"""Pipeable decorator for the app layer.
 
 This module provides the @pipeable decorator that uses dependency injection
 to get the infrastructure implementation, maintaining clean architecture.
@@ -11,6 +10,7 @@ from typing import Any, Callable, TypeVar
 
 from modgud.domain.ports import PipeableFactoryPort, PipeablePort
 from modgud.infrastructure.pipeable_factory import PipeableFactory
+from modgud.infrastructure.pipeable_wrapper import Pipeable
 
 T = TypeVar('T')
 
@@ -19,11 +19,10 @@ _pipeable_factory: PipeableFactoryPort = PipeableFactory()
 
 
 def pipeable(func: Callable[..., T]) -> PipeablePort:
-  """
-  Decorator that makes functions pipeable via | operator.
+  """Make a function pipeable via the | operator.
 
-  This decorator wraps a function in a Pipeable instance, enabling it to be used
-  in functional-style pipelines with the | operator. It supports partial application
+  Wraps a function in a Pipeable instance, enabling it to be used
+  in functional-style pipelines with the | operator. Supports partial application
   and preserves function metadata.
 
   Can also be used with built-in types and functions directly:
@@ -57,8 +56,7 @@ def pipeable(func: Callable[..., T]) -> PipeablePort:
 
 # For compatibility with the infrastructure, also provide the factory
 def create_pipeable(func: Callable[..., Any]) -> PipeablePort:
-  """
-  Create a pipeable wrapper around a function.
+  """Create a pipeable wrapper around a function.
 
   Args:
       func: The function to make pipeable
@@ -69,8 +67,5 @@ def create_pipeable(func: Callable[..., Any]) -> PipeablePort:
   """
   return _pipeable_factory.create_pipeable(func)
 
-
-# Export the Pipeable class for tests that need direct access
-from modgud.infrastructure.pipeable_wrapper import Pipeable
 
 __all__ = ['pipeable', 'create_pipeable', 'Pipeable']

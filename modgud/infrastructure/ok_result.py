@@ -1,5 +1,4 @@
-"""
-Ok result type for successful computations.
+"""Ok result type for successful computations.
 
 This module provides the Ok class representing successful Result values,
 following the single class per file principle.
@@ -7,7 +6,7 @@ following the single class per file principle.
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.ports.result_port import ResultPort
+from modgud.domain.ports import ResultPort
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -18,8 +17,7 @@ class Ok(ResultPort[T, E]):
   """Represents a successful result containing a name."""
 
   def __init__(self, value: T) -> None:
-    """
-    Initialize an Ok result.
+    """Initialize an Ok result.
 
     Args:
         value: The success name to wrap

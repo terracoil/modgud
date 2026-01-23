@@ -1,20 +1,22 @@
+"""Factory for creating chained expression decorators."""
+
 from __future__ import annotations
 
 from typing import Any, Callable
 
-from ..domain.ports import ChainableDecoratorFactoryPort
+from modgud.domain.ports import ChainableDecoratorFactoryPort
+
 from .chainable_expression import ChainableExpression
 
 
 class ChainedExpressionFactory(ChainableDecoratorFactoryPort):
-  """
-  Factory for creating chained expression decorators and utilities.
+  """Factory for creating chained expression decorators and utilities.
+
   Provides a clean interface for functional programming patterns.
   """
 
   def create_decorator(self) -> Callable[[Callable], Callable]:
-    """
-    Create a new chained expression decorator function.
+    """Create a new chained expression decorator function.
 
     Returns:
         Callable: A decorator for creating chainable functions
@@ -22,8 +24,7 @@ class ChainedExpressionFactory(ChainableDecoratorFactoryPort):
     """
 
     def pipeable_decorator(func: Callable) -> Callable:
-      """
-      Decorator that makes a function return ChainableExpression for piping.
+      """Make a function return ChainableExpression for piping.
 
       Args:
           func: Function to decorate
@@ -47,8 +48,7 @@ class ChainedExpressionFactory(ChainableDecoratorFactoryPort):
     return pipeable_decorator
 
   def create_expression(self, value: Any) -> ChainableExpression:
-    """
-    Wrap a name in a ChainableExpression for method chaining.
+    """Wrap a name in a ChainableExpression for method chaining.
 
     Args:
         value: The name to wrap
@@ -60,8 +60,7 @@ class ChainedExpressionFactory(ChainableDecoratorFactoryPort):
     return ChainableExpression(value)
 
   def pipe(self, value: Any, *operations: Callable[[Any], Any]) -> Any:
-    """
-    Apply a series of operations to a name in sequence.
+    """Apply a series of operations to a name in sequence.
 
     Args:
         value: Initial name to transform

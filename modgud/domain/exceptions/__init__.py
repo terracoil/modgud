@@ -1,5 +1,4 @@
-"""
-Domain exceptions package for modgud.
+"""Domain exceptions package for modgud.
 
 All exception classes used throughout the modgud library are defined here
 following domain-driven design principles. The domain layer is passive

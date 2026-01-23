@@ -1,5 +1,4 @@
-"""
-DrawIOManager v2 - Creates draw.io files using polygon shapes.
+"""DrawIOManager v2 - Creates draw.io files using polygon shapes.
 
 This simplified version creates draw.io files that work with standard
 polygon shapes rather than complex stencils.
@@ -10,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 
-from ..domain.ports.vector_port import VectorPort
+from modgud.domain.ports import VectorPort
 
 
 class DrawIOManager:
@@ -24,8 +23,7 @@ class DrawIOManager:
   def vectors_to_drawio(
     self, vectors: Sequence[VectorPort], metadata: dict[str, Any] | None = None
   ) -> str:
-    """
-    Convert vectors to draw.io XML format.
+    """Convert vectors to draw.io XML format.
 
     Creates a draw.io file with the shape as a polygon using point coordinates.
     """
@@ -49,7 +47,7 @@ class DrawIOManager:
 
     # Add the shape as a polygon
     shape_id = str(uuid.uuid4())
-    points_str = self._create_points_string(vectors, bbox)
+    self._create_points_string(vectors, bbox)
 
     style = self._generate_polygon_style(metadata)
 

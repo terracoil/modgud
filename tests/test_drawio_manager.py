@@ -9,8 +9,8 @@ import xml.etree.ElementTree as ET
 from unittest.mock import Mock, patch
 
 import pytest
-from modgud.api.geometry import Vector
 from modgud.infrastructure.drawio_manager import DrawIOManager
+from modgud.util.geo import Vector
 
 
 class TestDrawIOManager:

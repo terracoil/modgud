@@ -2,12 +2,11 @@
 
 import ast
 
-from ...domain import MissingImplicitReturnError, UnsupportedConstructError
+from modgud.domain import MissingImplicitReturnError, UnsupportedConstructError
 
 
 class _TailRewriter:
-  """
-  Rewrite tail positions to assign to implicit result variable.
+  """Rewrite tail positions to assign to implicit result variable.
 
   Rewrites *tail positions* (the final statement of a block that determines the
   branch's return name) by replacing a final expression with an assignment to a
@@ -28,8 +27,7 @@ class _TailRewriter:
     return ast.Assign(targets=[ast.Name(id=self.result_name, ctx=ast.Store())], value=value)
 
   def rewrite_tail_stmt(self, stmt: ast.stmt) -> list[ast.stmt]:
-    """
-    Rewrite tail statement to assign to result variable.
+    """Rewrite tail statement to assign to result variable.
 
     Return a list of statements that replace the given tail statement,
     ensuring the result variable is set on all runtime paths.

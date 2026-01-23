@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import ast
 
-from ...domain import (
-  ExplicitReturnDisallowedError,
-)
+from modgud.domain import ExplicitReturnDisallowedError
 
 
 class ImplicitReturnTransformer:
@@ -14,8 +12,7 @@ class ImplicitReturnTransformer:
 
   @classmethod
   def transform_function_ast(cls, fn_node: ast.AST, func_name: str) -> ast.AST:
-    """
-    Transform function AST to enforce implicit return semantics.
+    """Transform function AST to enforce implicit return semantics.
 
     Transforms a FunctionDef/AsyncFunctionDef AST node to enforce
     implicit return semantics.
@@ -93,8 +90,7 @@ class ImplicitReturnTransformer:
   def apply_implicit_return_transform(
     cls, func_source: str, func_name: str
   ) -> tuple[ast.Module, str]:
-    """
-    Apply implicit return transformation to function source code.
+    """Apply implicit return transformation to function source code.
 
     Args:
         func_source: The source code of the function (dedented)

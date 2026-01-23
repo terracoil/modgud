@@ -1,8 +1,8 @@
 """Tests for Quadrilateral torn notch functionality."""
 
 import pytest
-from modgud.api.geometry import Quadrilateral, SimplexNoise
 from modgud.domain.enums import OrdinalEnum, QuadShapeEnum
+from modgud.util.geo import Quadrilateral, SimplexNoise
 
 
 class TestQuadrilateralTornNotch:

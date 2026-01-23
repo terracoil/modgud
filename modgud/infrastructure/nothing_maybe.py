@@ -1,5 +1,4 @@
-"""
-Nothing maybe type for absent values.
+"""Nothing maybe type for absent values.
 
 This module provides the Nothing class representing Maybe values that contain no data,
 following the single class per file principle.
@@ -7,7 +6,7 @@ following the single class per file principle.
 
 from typing import Any, Callable, TypeVar
 
-from ..domain.ports.maybe_port import MaybePort
+from modgud.domain.ports import MaybePort
 
 T = TypeVar('T')
 U = TypeVar('U')
