@@ -1,0 +1,762 @@
+#!/usr/bin/env python3
+"""CLI tool for graph and color utilities."""
+from __future__ import annotations
+
+import operator
+import sys
+from dataclasses import dataclass
+from enum import StrEnum, auto
+from typing import Callable
+
+from freyja import FreyjaCLI
+
+
+class GrayscaleAlgorithm(StrEnum):
+  """Algorithm for converting color to grayscale."""
+  LIGHTNESS = auto()
+  AVERAGE = auto()
+  LUMINOSITY = auto()
+
+
+class HarmonyType(StrEnum):
+  """Color harmony scheme type."""
+  COMPLEMENTARY = auto()        # 2 colors: 0°, 180°
+  SPLIT_COMPLEMENTARY = auto()  # 3 colors: 0°, 150°, 210°
+  ANALOGOUS = auto()            # 3 colors: -30°, 0°, +30°
+  TRIADIC = auto()              # 3 colors: 0°, 120°, 240°
+  TETRADIC_SQUARE = auto()      # 4 colors: 0°, 90°, 180°, 270°
+  TETRADIC_RECTANGULAR = auto() # 4 colors: 0°, 60°, 180°, 240°
+
+
+class HarmonyMethod(StrEnum):
+  """Algorithm for calculating color harmonies."""
+  STANDARD = auto()    # Simple hue rotation, preserve S/L
+  PERCEPTUAL = auto()  # Adjust S/L based on hue perception (Itten's theory)
+
+
+@dataclass(frozen=True)
+class HexMetadata:
+  """Preserved metadata from hex string parsing for output format consistency."""
+  prefix: str = "#"
+  short_form: bool = False
+  uppercase: bool = False
+
+
+type SimpleNum = float | int
+
+
+class Color:
+  """Immutable color representation with RGBA float components (0.0-1.0)."""
+
+  GAMMA = 2.2
+  ANSI_RESET = "\033[0m"
+  ALL_INCLUSIVE: tuple[bool, bool] = (True, True)
+
+  @classmethod
+  def _check_num_range(
+    cls,
+    arg: SimpleNum,
+    valid_range: tuple[SimpleNum, SimpleNum],
+    label: str,
+    inclusive: tuple[bool, bool] = (True, True),
+  ) -> float:
+    """
+    Validate that arg is within valid_range.
+
+    :param arg: Value to check
+    :param valid_range: (min, max) tuple
+    :param label: Label for error message
+    :param inclusive: (include_min, include_max) - True means <=, False means <
+    :return: The validated arg as float
+    """
+    lo_op: Callable = operator.ge if inclusive[0] else operator.gt
+    hi_op: Callable = operator.le if inclusive[1] else operator.lt
+    lo_bracket = "[" if inclusive[0] else "("
+    hi_bracket = "]" if inclusive[1] else ")"
+    assert lo_op(arg, valid_range[0]) and hi_op(arg, valid_range[1]), \
+      f"{label} must be in {lo_bracket}{valid_range[0]}..{valid_range[1]}{hi_bracket}, got {arg}"
+    return float(arg)
+
+  @classmethod
+  def _check_pct_arg(cls, arg: float, label: str) -> float:
+    """Validate arg is in [0.0, 1.0]."""
+    return cls._check_num_range(arg, (0.0, 1.0), label)
+
+  @classmethod
+  def _check_int_arg(cls, arg: int, label: str) -> int:
+    """Validate arg is in [0, 255]."""
+    cls._check_num_range(arg, (0, 255), label)
+    return arg
+
+  def __init__(
+    self,
+    r: float,
+    g: float,
+    b: float,
+    a: float = 1.0,
+    _hex_meta: HexMetadata | None = None,
+  ) -> None:
+    """
+    Initialize color with float components.
+
+    :param r: Red component (0.0-1.0)
+    :param g: Green component (0.0-1.0)
+    :param b: Blue component (0.0-1.0)
+    :param a: Alpha component (0.0-1.0)
+    :param _hex_meta: Preserved hex parsing metadata
+    """
+    self._r = self._check_pct_arg(r, "Red")
+    self._g = self._check_pct_arg(g, "Green")
+    self._b = self._check_pct_arg(b, "Blue")
+    self._a = self._check_pct_arg(a, "Alpha")
+    self._hex_meta = _hex_meta or HexMetadata()
+
+  @property
+  def r(self) -> float:
+    """Red component (0.0-1.0)."""
+    return self._r
+
+  @property
+  def g(self) -> float:
+    """Green component (0.0-1.0)."""
+    return self._g
+
+  @property
+  def b(self) -> float:
+    """Blue component (0.0-1.0)."""
+    return self._b
+
+  @property
+  def a(self) -> float:
+    """Alpha component (0.0-1.0)."""
+    return self._a
+
+  @classmethod
+  def from_hex_str(cls, hex_str: str) -> Color:
+    """
+    Parse hex color string into Color.
+
+    :param hex_str: Hex string like "#FF5733", "0xAABBCC", "#FFF", etc.
+    :return: Color instance
+    """
+    hex_str = hex_str.strip()
+    prefix = "#"
+
+    if hex_str.startswith("0x") or hex_str.startswith("0X"):
+      prefix = hex_str[:2]
+      hex_digits = hex_str[2:]
+    elif hex_str.startswith("#"):
+      prefix = "#"
+      hex_digits = hex_str[1:]
+    else:
+      hex_digits = hex_str
+
+    # Detect case from hex digits (use first alpha char found)
+    alpha_chars = [c for c in hex_digits if c.isalpha()]
+    is_uppercase = any(c.isupper() for c in alpha_chars) if alpha_chars else False
+
+    hex_digits = hex_digits.upper()
+    length = len(hex_digits)
+    r, g, b, a = 0, 0, 0, 255
+    is_short_form = length in (3, 4)
+
+    if length == 3:
+      r = int(hex_digits[0] * 2, 16)
+      g = int(hex_digits[1] * 2, 16)
+      b = int(hex_digits[2] * 2, 16)
+    elif length == 4:
+      r = int(hex_digits[0] * 2, 16)
+      g = int(hex_digits[1] * 2, 16)
+      b = int(hex_digits[2] * 2, 16)
+      a = int(hex_digits[3] * 2, 16)
+    elif length == 6:
+      r = int(hex_digits[0:2], 16)
+      g = int(hex_digits[2:4], 16)
+      b = int(hex_digits[4:6], 16)
+    elif length == 8:
+      r = int(hex_digits[0:2], 16)
+      g = int(hex_digits[2:4], 16)
+      b = int(hex_digits[4:6], 16)
+      a = int(hex_digits[6:8], 16)
+    else:
+      raise ValueError(f"Invalid hex color format: {hex_str}")
+
+    hex_meta = HexMetadata(prefix=prefix, short_form=is_short_form, uppercase=is_uppercase)
+    return cls(r / 255.0, g / 255.0, b / 255.0, a / 255.0, hex_meta)
+
+  @classmethod
+  def from_int_values(cls, r: int, g: int, b: int, a: int = 255) -> Color:
+    """
+    Create Color from integer RGB(A) values (0-255).
+
+    :param r: Red component (0-255)
+    :param g: Green component (0-255)
+    :param b: Blue component (0-255)
+    :param a: Alpha component (0-255)
+    :return: Color instance
+    """
+    cls._check_int_arg(r, "Red")
+    cls._check_int_arg(g, "Green")
+    cls._check_int_arg(b, "Blue")
+    cls._check_int_arg(a, "Alpha")
+    return cls(r / 255.0, g / 255.0, b / 255.0, a / 255.0)
+
+  def luminosity(self) -> float:
+    """Calculate luminosity using weighted RGB (standard luminosity coefficients)."""
+    return 0.21 * self._r + 0.72 * self._g + 0.07 * self._b
+
+  def as_grayscale(self, algorithm: GrayscaleAlgorithm) -> Color:
+    """
+    Convert to grayscale using specified algorithm.
+
+    :param algorithm: The grayscale algorithm to use
+    :return: New grayscale Color
+    """
+    gray: float
+    if algorithm == GrayscaleAlgorithm.LIGHTNESS:
+      gray = (max(self._r, self._g, self._b) + min(self._r, self._g, self._b)) / 2
+    elif algorithm == GrayscaleAlgorithm.AVERAGE:
+      gray = (self._r + self._g + self._b) / 3
+    else:  # LUMINOSITY
+      gray = self.luminosity()
+    return Color(gray, gray, gray, self._a, self._hex_meta)
+
+  def _srgb_to_linear(self, value: float) -> float:
+    """Convert sRGB component to linear space."""
+    return value ** self.GAMMA
+
+  def _linear_to_srgb(self, value: float) -> float:
+    """Convert linear component back to sRGB."""
+    return value ** (1.0 / self.GAMMA)
+
+  def mix(self, other: Color | list[Color], weight: float | list[float] = 0.5) -> Color:
+    """
+    Mix this color with other color(s) using gamma-correct blending.
+
+    :param other: Color or list of Colors to mix with
+    :param weight: Total weight for other colors, or list of weights per color.
+                   If single weight with multiple colors, weight is divided equally.
+                   If list of weights, they must sum to <= 0.95 (leaving 5% for self).
+    :return: New blended Color
+    """
+    # Normalize other to list
+    others = other if isinstance(other, list) else [other]
+    assert len(others) > 0, "Must provide at least one color to mix"
+
+    # Normalize weights to list
+    weights: list[float]
+    if isinstance(weight, list):
+      weights = weight
+      assert len(weights) == len(others), \
+        f"Weight list length ({len(weights)}) must match color list length ({len(others)})"
+      total_weight = sum(weights)
+      assert total_weight <= 0.95, \
+        f"Sum of weights must be <= 0.95 to leave room for self, got {total_weight}"
+    else:
+      # Single weight: divide equally among all others
+      self._check_num_range(weight, (0.01, 0.99), "weight")
+      per_color_weight = weight / len(others)
+      weights = [per_color_weight] * len(others)
+
+    # Validate individual weights
+    for i, w in enumerate(weights):
+      self._check_num_range(w, (0.0, 1.0), f"weight[{i}]")
+
+    total_other_weight = sum(weights)
+    w1 = 1.0 - total_other_weight
+
+    # Start with self's contribution in linear space
+    r_linear = self._srgb_to_linear(self._r) * w1
+    g_linear = self._srgb_to_linear(self._g) * w1
+    b_linear = self._srgb_to_linear(self._b) * w1
+    a_linear = self._a * w1
+
+    # Add each other color's contribution
+    for c, w in zip(others, weights):
+      r_linear += self._srgb_to_linear(c.r) * w
+      g_linear += self._srgb_to_linear(c.g) * w
+      b_linear += self._srgb_to_linear(c.b) * w
+      a_linear += c.a * w
+
+    # Convert back to sRGB
+    return Color(
+      self._linear_to_srgb(r_linear),
+      self._linear_to_srgb(g_linear),
+      self._linear_to_srgb(b_linear),
+      a_linear,
+      self._hex_meta,
+    )
+
+  def _can_use_short_form(self, value: int) -> bool:
+    """Check if an int value (0-255) can be represented as short form."""
+    high = value >> 4
+    low = value & 0x0F
+    return high == low
+
+  def to_int_tuple(self) -> tuple[int, int, int, int]:
+    """Return RGBA as integer tuple (0-255 each)."""
+    return (
+      round(self._r * 255),
+      round(self._g * 255),
+      round(self._b * 255),
+      round(self._a * 255),
+    )
+
+  def to_hex_str(
+    self,
+    prefix: str | None = None,
+    short_form: bool | None = None,
+    uppercase: bool | None = None,
+  ) -> str:
+    """
+    Convert to hex string.
+
+    :param prefix: Override prefix ("#" or "0x"). None uses original.
+    :param short_form: Override short form preference. None uses original.
+    :param uppercase: Override case. None uses original.
+    :return: Hex string representation
+    """
+    meta = self._hex_meta
+    use_prefix = prefix if prefix is not None else meta.prefix
+    prefer_short = short_form if short_form is not None else meta.short_form
+    use_upper = uppercase if uppercase is not None else meta.uppercase
+
+    r_int, g_int, b_int, a_int = self.to_int_tuple()
+    has_alpha = a_int < 255
+
+    # Determine if we can use short form
+    use_short = (
+      prefer_short
+      and self._can_use_short_form(r_int)
+      and self._can_use_short_form(g_int)
+      and self._can_use_short_form(b_int)
+      and (not has_alpha or self._can_use_short_form(a_int))
+    )
+
+    hex_str: str
+    if use_short:
+      r_s, g_s, b_s = r_int >> 4, g_int >> 4, b_int >> 4
+      rgb_str = f"{use_prefix}{r_s:X}{g_s:X}{b_s:X}"
+      hex_str = f"{rgb_str}{a_int >> 4:X}" if has_alpha else rgb_str
+    else:
+      rgb_str = f"{use_prefix}{r_int:02X}{g_int:02X}{b_int:02X}"
+      hex_str = f"{rgb_str}{a_int:02X}" if has_alpha else rgb_str
+
+    # Apply case: for # prefix, lowercase all; for 0x, keep prefix, lowercase hex digits
+    if not use_upper:
+      if use_prefix == "#":
+        hex_str = hex_str.lower()
+      else:
+        hex_str = use_prefix + hex_str[len(use_prefix):].lower()
+    return hex_str
+
+  def to_ansi_bg(self) -> str:
+    """Return ANSI escape code for background color (24-bit true color)."""
+    r, g, b, _ = self.to_int_tuple()
+    return f"\033[48;2;{r};{g};{b}m"
+
+  def to_ansi_fg(self) -> str:
+    """Return ANSI escape code for foreground color (24-bit true color)."""
+    r, g, b, _ = self.to_int_tuple()
+    return f"\033[38;2;{r};{g};{b}m"
+
+  def contrast_color(self) -> Color:
+    """Return black or white Color for text contrast based on luminosity."""
+    return Color.from_int_values(0, 0, 0) if self.luminosity() >= 0.5 else Color.from_int_values(255, 255, 255)
+
+  def to_hsl(self) -> tuple[float, float, float]:
+    """
+    Convert RGB to HSL.
+
+    :return: (hue 0-360, saturation 0-1, lightness 0-1)
+    """
+    r, g, b = self._r, self._g, self._b
+    max_c = max(r, g, b)
+    min_c = min(r, g, b)
+    delta = max_c - min_c
+
+    # Lightness
+    l = (max_c + min_c) / 2
+
+    # Saturation
+    s = 0.0
+    if delta != 0 and l != 0 and l != 1:
+      s = delta / (1 - abs(2 * l - 1))
+
+    # Hue
+    h = 0.0
+    if delta != 0:
+      if max_c == r:
+        h = 60 * (((g - b) / delta) % 6)
+      elif max_c == g:
+        h = 60 * (((b - r) / delta) + 2)
+      else:  # max_c == b
+        h = 60 * (((r - g) / delta) + 4)
+
+    return (h, s, l)
+
+  @classmethod
+  def from_hsl(
+    cls,
+    h: float,
+    s: float,
+    l: float,
+    a: float = 1.0,
+    _hex_meta: HexMetadata | None = None,
+  ) -> Color:
+    """
+    Create Color from HSL values.
+
+    :param h: Hue (0-360, wraps automatically)
+    :param s: Saturation (0.0-1.0)
+    :param l: Lightness (0.0-1.0)
+    :param a: Alpha (0.0-1.0)
+    :param _hex_meta: Preserved hex metadata
+    :return: Color instance
+    """
+    # Normalize hue to 0-360
+    h = h % 360
+    if h < 0:
+      h += 360
+
+    # Clamp s and l
+    s = max(0.0, min(1.0, s))
+    l = max(0.0, min(1.0, l))
+
+    c = (1 - abs(2 * l - 1)) * s  # Chroma
+    x = c * (1 - abs((h / 60) % 2 - 1))
+    m = l - c / 2
+
+    r1, g1, b1 = 0.0, 0.0, 0.0
+    if 0 <= h < 60:
+      r1, g1, b1 = c, x, 0
+    elif 60 <= h < 120:
+      r1, g1, b1 = x, c, 0
+    elif 120 <= h < 180:
+      r1, g1, b1 = 0, c, x
+    elif 180 <= h < 240:
+      r1, g1, b1 = 0, x, c
+    elif 240 <= h < 300:
+      r1, g1, b1 = x, 0, c
+    else:  # 300 <= h < 360
+      r1, g1, b1 = c, 0, x
+
+    return cls(r1 + m, g1 + m, b1 + m, a, _hex_meta)
+
+  def rotate_hue(self, degrees: float) -> Color:
+    """
+    Create new Color with hue rotated by specified degrees.
+
+    Preserves saturation, lightness, alpha, and hex metadata.
+
+    :param degrees: Degrees to rotate (can be negative, wraps at 360)
+    :return: New Color with rotated hue
+    """
+    h, s, l = self.to_hsl()
+    return Color.from_hsl(h + degrees, s, l, self._a, self._hex_meta)
+
+  # Itten's contrast of extension - relative perceived brightness by hue
+  # Yellow (60°) perceived brightest, violet (270°) darkest
+  # Values normalized: yellow=1.0 (brightest), violet=0.44 (darkest)
+  ITTEN_HUE_WEIGHTS: dict[int, float] = {
+    0: 0.67,    # Red
+    30: 0.78,   # Orange
+    60: 1.0,    # Yellow (brightest)
+    90: 0.89,   # Yellow-Green
+    120: 0.78,  # Green
+    150: 0.67,  # Blue-Green
+    180: 0.56,  # Cyan
+    210: 0.50,  # Blue
+    240: 0.44,  # Violet (darkest)
+    270: 0.44,  # Purple
+    300: 0.56,  # Magenta
+    330: 0.61,  # Red-Magenta
+  }
+
+  def _perceptual_adjust(self, target_hue: float) -> tuple[float, float]:
+    """
+    Adjust saturation/lightness for perceptual balance based on target hue.
+
+    Uses Itten's contrast of extension theory - colors perceived as brighter
+    (yellow) get slightly reduced lightness, darker colors (violet) get
+    increased lightness to achieve perceptual balance.
+
+    :param target_hue: The hue we're rotating to (0-360)
+    :return: (adjusted_saturation, adjusted_lightness)
+    """
+    _, s, l = self.to_hsl()
+    target_hue = target_hue % 360
+
+    # Find nearest hue weights and interpolate
+    hue_keys = sorted(self.ITTEN_HUE_WEIGHTS.keys())
+    lower_hue = max([h for h in hue_keys if h <= target_hue], default=330)
+    upper_hue = min([h for h in hue_keys if h >= target_hue], default=0)
+
+    # Handle wraparound
+    if upper_hue < lower_hue:
+      upper_hue = hue_keys[0]
+      lower_hue = hue_keys[-1]
+
+    lower_weight = self.ITTEN_HUE_WEIGHTS.get(lower_hue, 0.67)
+    upper_weight = self.ITTEN_HUE_WEIGHTS.get(upper_hue, 0.67)
+
+    # Interpolate weight
+    weight_range = (upper_hue - lower_hue) % 360 if upper_hue != lower_hue else 1
+    position = (target_hue - lower_hue) % 360
+    t = position / weight_range if weight_range > 0 else 0
+    target_weight = lower_weight + (upper_weight - lower_weight) * t
+
+    # Adjust lightness - bring toward middle based on weight difference
+    # Brighter hues (weight > 0.7) get darkened slightly
+    # Darker hues (weight < 0.7) get lightened slightly
+    reference_weight = 0.67  # Red as reference
+    weight_diff = target_weight - reference_weight
+    l_adjust = -weight_diff * 0.15  # Scale adjustment
+
+    adjusted_l = max(0.1, min(0.9, l + l_adjust))
+    adjusted_s = s  # Keep saturation unchanged for now
+
+    return (adjusted_s, adjusted_l)
+
+  def harmony(
+    self,
+    harmony_type: HarmonyType,
+    method: HarmonyMethod = HarmonyMethod.STANDARD,
+  ) -> list[Color]:
+    """
+    Generate a color harmony palette based on this color.
+
+    :param harmony_type: The type of harmony to generate
+    :param method: Calculation method (standard or perceptual)
+    :return: List of Colors including self as first element
+    """
+    # Define rotation angles for each harmony type
+    rotations: dict[HarmonyType, list[float]] = {
+      HarmonyType.COMPLEMENTARY: [0, 180],
+      HarmonyType.SPLIT_COMPLEMENTARY: [0, 150, 210],
+      HarmonyType.ANALOGOUS: [-30, 0, 30],
+      HarmonyType.TRIADIC: [0, 120, 240],
+      HarmonyType.TETRADIC_SQUARE: [0, 90, 180, 270],
+      HarmonyType.TETRADIC_RECTANGULAR: [0, 60, 180, 240],
+    }
+
+    angles = rotations[harmony_type]
+    h, s, l = self.to_hsl()
+
+    # Handle edge cases: grayscale (s=0) or pure black/white
+    if s < 0.01 or l < 0.01 or l > 0.99:
+      # Return self for all positions - no meaningful hue rotation
+      return [Color(self._r, self._g, self._b, self._a, self._hex_meta) for _ in angles]
+
+    colors: list[Color] = []
+    for angle in angles:
+      target_hue = h + angle
+      if method == HarmonyMethod.PERCEPTUAL:
+        adj_s, adj_l = self._perceptual_adjust(target_hue)
+        colors.append(Color.from_hsl(target_hue, adj_s, adj_l, self._a, self._hex_meta))
+      else:
+        colors.append(Color.from_hsl(target_hue, s, l, self._a, self._hex_meta))
+
+    return colors
+
+
+class StrUtil:
+  """String formatting utilities."""
+
+  @classmethod
+  def to_pct_str(cls, n: float, p: int = 1, pad: int = 0) -> str:
+    """
+    Return a percentage string.
+
+    :param n: Percentage value where (0.0 <= n <= 1.0)
+    :param p: Precision - number of decimal points
+    :param pad: Additional padding to add to minimum length
+    :return: Formatted percentage string
+    """
+    pct_str = f"{n * 100:.{p}f}%"
+    if pad:
+      min_len = 4 + (p + 1 if p else 0)  # for "100.99%" or "100%"
+      pct_str = f"{pct_str:>{min_len + pad}}"
+    return pct_str
+
+
+class GraphUtil:
+  """Graph and color output utilities."""
+
+  @classmethod
+  def format_colorized_output(
+    cls,
+    input_color: Color,
+    algorithm: GrayscaleAlgorithm,
+    mix_pct: float,
+    output_color: Color,
+  ) -> str:
+    """
+    Format colorized output line for grayscale conversion.
+
+    Format: Grayscale of color [#FF5733] using [luminosity] algorithm at [0.0%]: [#787878]
+    Where bracketed values are colorized with appropriate backgrounds.
+
+    :param input_color: Original input color
+    :param algorithm: Algorithm used
+    :param mix_pct: Mix percentage (0.0-0.99)
+    :param output_color: Resulting grayscale/mixed color
+    :return: ANSI-formatted output string
+    """
+    orig_hex = input_color.to_hex_str()
+    result_hex = output_color.to_hex_str()
+    orig_contrast = input_color.contrast_color()
+    result_contrast = output_color.contrast_color()
+
+    # Build colorized segments
+    # "color" word: inverted (input_color as fg, contrast as bg)
+    color_word = f"{orig_contrast.to_ansi_bg()}{input_color.to_ansi_fg()}color{Color.ANSI_RESET}"
+
+    # [#FF5733]: input_color as bg, contrast as fg
+    orig_block = f"{input_color.to_ansi_bg()}{orig_contrast.to_ansi_fg()}[{orig_hex}]{Color.ANSI_RESET}"
+
+    # "algorithm" word: inverted (output_color as fg, contrast as bg)
+    algo_word = f"{result_contrast.to_ansi_bg()}{output_color.to_ansi_fg()}algorithm{Color.ANSI_RESET}"
+
+    # [luminosity]: output_color as bg, contrast as fg
+    algo_block = f"{output_color.to_ansi_bg()}{result_contrast.to_ansi_fg()}[{algorithm}]{Color.ANSI_RESET}"
+
+    # [#787878]: output_color as bg, contrast as fg
+    result_block = f"{output_color.to_ansi_bg()}{result_contrast.to_ansi_fg()}[{result_hex}]{Color.ANSI_RESET}"
+
+    return f"Grayscale of {color_word} {orig_block} using {algo_word} {algo_block} at [{StrUtil.to_pct_str(mix_pct)}]: {result_block}"
+
+  @classmethod
+  def format_harmony_output(
+    cls,
+    base_color: Color,
+    harmony_type: HarmonyType,
+    method: HarmonyMethod,
+    colors: list[Color],
+  ) -> str:
+    """
+    Format colorized output for harmony palette.
+
+    :param base_color: Original base color
+    :param harmony_type: Type of harmony generated
+    :param method: Method used for calculation
+    :param colors: List of harmony colors
+    :return: ANSI-formatted output string
+    """
+    base_hex = base_color.to_hex_str()
+    base_contrast = base_color.contrast_color()
+
+    # Header: Harmony [triadic] of [#FF5733]:
+    harmony_name = harmony_type.value.replace("_", " ")
+    base_block = f"{base_color.to_ansi_bg()}{base_contrast.to_ansi_fg()}[{base_hex}]{Color.ANSI_RESET}"
+
+    lines = [f"Harmony [{harmony_name}] of {base_block} (method: {method.value}):"]
+
+    # Each color on its own line
+    for i, color in enumerate(colors):
+      hex_str = color.to_hex_str()
+      contrast = color.contrast_color()
+      color_block = f"{color.to_ansi_bg()}{contrast.to_ansi_fg()}[{hex_str}]{Color.ANSI_RESET}"
+      label = "(base)" if i == 0 else ""
+      lines.append(f"  {i + 1}. {color_block} {label}".rstrip())
+
+    return "\n".join(lines)
+
+
+class GraphTool:
+  """CLI tool for graph and color utilities."""
+
+  class Colors:
+    """Color manipulation commands."""
+
+    def __init__(self, parent: GraphTool = None) -> None:
+      """
+      Initialize color operations.
+
+      :param parent: Parent GraphTool instance
+      """
+      self.parent = parent
+
+    def grayscale(
+      self,
+      hex_colors: str,
+      algorithm: str = "luminosity",
+      mix: float = 0.0,
+    ) -> None:
+      """
+      Convert hex colors to grayscale with colorized output.
+
+      :param hex_colors: Space-separated hex colors (e.g., "#FF5733 0xAABBCC")
+      :param algorithm: Grayscale algorithm: lightness, average, or luminosity (default)
+      :param mix: Blend ratio (0.01-0.99). 0.0=pure grayscale, higher=more original color
+      """
+      # Validate algorithm
+      try:
+        algo = GrayscaleAlgorithm(algorithm)
+      except ValueError:
+        print(f"Error: Invalid algorithm '{algorithm}'. Use: lightness, average, luminosity")
+        return
+
+      # Ensure mix is float (CLI may pass as string)
+      mix_val = float(mix)
+
+      # Validate mix
+      if mix_val != 0.0 and not (0.01 <= mix_val <= 0.99):
+        print(f"Error: mix must be 0.0 or between 0.01 and 0.99, got {mix_val}")
+        return
+
+      colors = hex_colors.split()
+
+      for color_str in colors:
+        try:
+          original = Color.from_hex_str(color_str)
+          grayscale = original.as_grayscale(algo)
+
+          result = grayscale.mix(original, mix_val) if mix_val > 0.0 else grayscale
+
+          print(GraphUtil.format_colorized_output(original, algo, mix_val, result))
+        except (ValueError, AssertionError) as e:
+          print(f"Error: {e}")
+
+    def harmony(
+      self,
+      hex_color: str,
+      type: str = "triadic",
+      method: str = "standard",
+    ) -> None:
+      """
+      Generate color harmony palette from a base color.
+
+      :param hex_color: Base hex color (e.g., "#FF5733")
+      :param type: Harmony type: complementary, split_complementary, analogous,
+                   triadic, tetradic_square, tetradic_rectangular
+      :param method: Calculation method: standard or perceptual
+      """
+      # Validate harmony type
+      try:
+        harmony_type = HarmonyType(type)
+      except ValueError:
+        valid_types = ", ".join(t.value for t in HarmonyType)
+        print(f"Error: Invalid harmony type '{type}'. Use: {valid_types}")
+        return
+
+      # Validate method
+      try:
+        harmony_method = HarmonyMethod(method)
+      except ValueError:
+        valid_methods = ", ".join(m.value for m in HarmonyMethod)
+        print(f"Error: Invalid method '{method}'. Use: {valid_methods}")
+        return
+
+      try:
+        base_color = Color.from_hex_str(hex_color)
+        colors = base_color.harmony(harmony_type, harmony_method)
+        print(GraphUtil.format_harmony_output(base_color, harmony_type, harmony_method, colors))
+      except (ValueError, AssertionError) as e:
+        print(f"Error: {e}")
+
+
+if __name__ == "__main__":
+  cli = FreyjaCLI(GraphTool, title="colortool")
+  result = cli.run()
+  sys.exit(result if isinstance(result, int) else 0)

@@ -1,5 +1,4 @@
-"""
-Integration tests for draw.io generation in shapetools CLI.
+"""Integration tests for draw.io generation in shapetool CLI.
 
 Tests the end-to-end functionality of generating draw.io files
 from various shape commands.
@@ -14,7 +13,7 @@ import pytest
 
 
 class TestShapeToolsDrawIO:
-  """Test draw.io generation via shapetools CLI."""
+  """Test draw.io generation via shapetool CLI."""
 
   @pytest.fixture
   def project_root(self):
@@ -41,8 +40,8 @@ class TestShapeToolsDrawIO:
       test_output.rmdir()
 
   def run_shapetools(self, args: list[str], cwd: Path) -> subprocess.CompletedProcess:
-    """Run shapetools command with given arguments."""
-    cmd = [sys.executable, 'bin/shapetools'] + args
+    """Run shapetool command with given arguments."""
+    cmd = [sys.executable, 'bin/shapetool'] + args
     return subprocess.run(cmd, capture_output=True, text=True, cwd=cwd)
 
   def validate_drawio_file(self, filepath: Path) -> bool:

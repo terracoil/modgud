@@ -320,7 +320,7 @@ class FreyjaDevTools:
           parent._print('Development environment setup complete!', 'success')
           print()
           print('Available commands:')
-          parent._run_command('poetry run bin/devtools')
+          parent._run_command('poetry run bin/devtool')
         else:
           parent._print('Failed to install pre-commit hooks', 'error')
       else:
@@ -476,7 +476,7 @@ class FreyjaDevTools:
       """Initialize with parent FreyjaDevTools instance."""
       self.parent: 'FreyjaDevTools' = parent
 
-    # Note: dovetail method has been moved to bin/shapetools and is no longer needed here
+    # Note: dovetail method has been moved to bin/shapetool and is no longer needed here
 
     def info(self) -> None:
       """Display project environment information."""

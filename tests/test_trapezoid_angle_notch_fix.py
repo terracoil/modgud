@@ -1,5 +1,4 @@
-"""
-Test suite for trapezoid notch angle fix.
+"""Test suite for trapezoid notch angle fix.
 
 This module tests the critical fix where notches on trapezoid edges now align
 with the edge angle instead of being perpendicular, addressing the user's
