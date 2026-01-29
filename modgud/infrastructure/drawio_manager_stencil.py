@@ -49,7 +49,7 @@ class DrawIOManager:
     root = ET.Element(
       'mxfile',
       {
-        'host': 'modgud.shapetools',
+        'host': 'modgud.shapetool',
         'modified': datetime.now().isoformat(),
         'agent': 'modgud DrawIOManager v1.0',
         'version': '24.8.6',

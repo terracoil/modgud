@@ -1,5 +1,4 @@
-"""
-Test decorator composition patterns with @implicit_return and @guarded_expression.
+"""Test decorator composition patterns with @implicit_return and @guarded_expression.
 
 Tests various composition patterns to ensure decorators work together correctly
 without interference.

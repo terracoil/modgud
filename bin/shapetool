@@ -3,12 +3,16 @@
 Shape Tools CLI - Refactored with individual shape commands
 Focused CLI tool for shape generation with individual shape-specific subcommands.
 """
+import sys
+from pathlib import Path
+
+# Add the project root to the Python path BEFORE importing from modgud
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import json
 import math
-import sys
 import tomllib
 from enum import StrEnum, auto
-from pathlib import Path
 from typing import Any, Dict, Sequence
 
 from modgud.util.geo import Joinery, Line, SimplexNoise, StackableTrapezoid, TornPaper, Vector, VectorPath, VectorPort
@@ -16,9 +20,6 @@ from modgud.util.geo.shapes import ShapeFactory, Square, Rectangle, Parallelogra
 from modgud.domain.enums import OrdinalEnum, QuadShapeEnum
 from modgud.infrastructure.drawio_manager import DrawIOManager
 from modgud.util import MathUtil
-
-# Add the project root to the Python path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from freyja import FreyjaCLI
 

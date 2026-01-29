@@ -1,4 +1,4 @@
-"""Tests for TornPaper CLI integration via shapetools."""
+"""Tests for TornPaper CLI integration via shapetool."""
 
 import subprocess
 import sys
@@ -11,7 +11,7 @@ class TestTornPaperCLI:
   def test_torn_box_help(self):
     """Test that torn-box command shows help information."""
     result = subprocess.run(
-      [sys.executable, 'bin/shapetools', 'shape', 'torn-box', '--help'],
+      [sys.executable, 'bin/shapetool', 'shape', 'torn-box', '--help'],
       capture_output=True,
       text=True,
       cwd=Path(__file__).parent.parent,
@@ -29,7 +29,7 @@ class TestTornPaperCLI:
     result = subprocess.run(
       [
         sys.executable,
-        'bin/shapetools',
+        'bin/shapetool',
         'shape',
         'torn-box',
       ],
@@ -52,7 +52,7 @@ class TestTornPaperCLI:
       result = subprocess.run(
         [
           sys.executable,
-          'bin/shapetools',
+          'bin/shapetool',
           'shape',
           'torn-box',
           '--torn-sides',
@@ -73,7 +73,7 @@ class TestTornPaperCLI:
     result = subprocess.run(
       [
         sys.executable,
-        'bin/shapetools',
+        'bin/shapetool',
         'shape',
         'torn-box',
         '--width',
@@ -98,7 +98,7 @@ class TestTornPaperCLI:
     result = subprocess.run(
       [
         sys.executable,
-        'bin/shapetools',
+        'bin/shapetool',
         'shape',
         'torn-box',
         '--invalid-param',
@@ -120,7 +120,7 @@ class TestTornPaperCLI:
     result = subprocess.run(
       [
         sys.executable,
-        'bin/shapetools',
+        'bin/shapetool',
         'shape',
         'torn-box',
         '--torn-sides',
@@ -140,7 +140,7 @@ class TestTornPaperCLI:
     """Test that same seed produces consistent output."""
     cmd = [
       sys.executable,
-      'bin/shapetools',
+      'bin/shapetool',
       'shape',
       'torn-box',
       '--torn-sides',
@@ -161,7 +161,7 @@ class TestTornPaperCLI:
     """Test that different seeds produce different output."""
     cmd_base = [
       sys.executable,
-      'bin/shapetools',
+      'bin/shapetool',
       'shape',
       'torn-box',
       '--torn-sides',

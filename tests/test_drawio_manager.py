@@ -1,5 +1,4 @@
-"""
-Tests for DrawIOManager functionality.
+"""Tests for DrawIOManager functionality.
 
 Validates vector to draw.io conversion, coordinate transformation,
 file generation, and filename creation.
