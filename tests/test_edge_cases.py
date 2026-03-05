@@ -104,7 +104,7 @@ class TestPerformance:
       compute(5)
     elapsed = time.perf_counter() - start
 
-    # Check average time per call
+    # Check grayscale_mean time per call
     avg_ms = (elapsed / iterations) * 1000
     assert avg_ms < 1.0  # Less than 1ms per call
 
@@ -132,7 +132,7 @@ class TestPerformance:
       process(50)
     elapsed = time.perf_counter() - start
 
-    # Check average time per call
+    # Check grayscale_mean time per call
     avg_ms = (elapsed / iterations) * 1000
     assert avg_ms < 2.0  # Less than 2ms per call even with 4 guards
 

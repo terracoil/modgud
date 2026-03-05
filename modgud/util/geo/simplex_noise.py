@@ -7,12 +7,14 @@ from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
+from modgud.domain.ports import NoisePort
+
 if TYPE_CHECKING:
   pass
 
 
 @dataclass(frozen=True)
-class SimplexNoise:
+class SimplexNoise(NoisePort):
   """Simplex Noise implementation of the NoisePort.
 
   Implements Ken Perlin's simplex noise algorithm with fBm support.

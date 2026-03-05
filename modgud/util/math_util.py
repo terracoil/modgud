@@ -1,5 +1,7 @@
 """Mathematical utility functions."""
 
+from collections.abc import Sequence
+
 
 class MathUtil:
   """Mathematical utility functions for clamping, min/max, and percentage calculations."""
@@ -141,6 +143,34 @@ class MathUtil:
     :rtype: bool
     """
     return v >= (value - cls.EPSILON)
+
+  @classmethod
+  def mean(cls, *args: Numeric) -> float:
+    """Calculate arithmetic mean of arguments.
+
+    :param args: Variable number of numeric arguments
+    :raises ValueError: If no arguments provided
+    """
+    if not args:
+      raise ValueError('mean() requires at least one argument')
+    return sum(args) / len(args)
+
+  @classmethod
+  def weighted_mean(cls, *args: Numeric, weights: Sequence[Numeric]) -> float:
+    """Calculate weighted mean of arguments.
+
+    :param args: Variable number of numeric arguments
+    :param weights: Sequence of weights corresponding to each argument
+    :raises ValueError: If no arguments, mismatched lengths, or zero weight sum
+    """
+    if not args:
+      raise ValueError('weighted_mean() requires at least one argument')
+    if len(weights) != len(args):
+      raise ValueError('weights must have the same length as arguments')
+    weight_sum = sum(weights)
+    if weight_sum < cls.EPSILON:
+      raise ValueError('sum of weights must be greater than zero')
+    return sum(v * w for v, w in zip(args, weights, strict=True)) / weight_sum
 
   @classmethod
   def pct(cls, n: float | int, precision: int = 2) -> str:

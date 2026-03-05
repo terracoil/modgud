@@ -16,8 +16,6 @@ only data structures and interface definitions.
 from .enums import FailureStrategy, GuardStrategy, InfoMessageEnum, ServiceLifetime
 
 # Message templates
-from .error_messages import ErrorMessages
-
 # Domain exceptions
 from .exceptions import (
   DependencyInjectionError,
@@ -30,6 +28,7 @@ from .exceptions import (
 )
 
 # Domain protocols (ports)
+from .error_messages import ErrorMessages
 from .protocols import MaybePort, PipeablePort, ResultPort
 from .types import FailureBehavior, FailureTypes, GuardFunction
 
@@ -38,6 +37,8 @@ __all__ = [
   'GuardFunction',
   'FailureTypes',
   'FailureBehavior',
+  # Error messages
+  'ErrorMessages',
   # Exceptions
   'GuardClauseError',
   'ImplicitReturnError',

@@ -109,3 +109,17 @@ class StrUtils:
     if text.endswith(suffix):
       return text[: -len(suffix)]
     return text
+
+  @classmethod
+  def to_pct_str(cls, n: float, p: int = 1, pad: int = 0) -> str:
+    """Return a percentage string.
+
+    :param n: Percentage value where (0.0 <= n <= 1.0)
+    :param p: Precision - number of decimal points
+    :param pad: Additional padding to add to minimum length
+    """
+    pct_str = f'{n * 100:.{p}f}%'
+    if pad:
+      min_len = 4 + (p + 1 if p else 0)
+      pct_str = f'{pct_str:>{min_len + pad}}'
+    return pct_str

@@ -11,6 +11,7 @@ This module provides geometry-related functionality including:
 
 from modgud.domain.ports import NoisePort, VectorPort
 
+from .color import Color, GrayscaleAlgorithm, HarmonyMethod, HarmonyType
 from .geo_util import GeoUtil
 from .interpolation import Lerper, LerpStrategy
 from .joinery import Joinery
@@ -20,11 +21,17 @@ from .simplex_noise import SimplexNoise
 from .stackable_trapezoid import StackableTrapezoid
 from .svg import JoineryResult, SVGConverter
 from .torn_paper import TornPaper
+from .types import HexMetadata
 from .vector import Vector
 from .vector_path import VectorPath
 
 __all__ = [
+  'Color',
   'GeoUtil',
+  'GrayscaleAlgorithm',
+  'HarmonyMethod',
+  'HarmonyType',
+  'HexMetadata',
   'JoineryResult',
   'Joinery',
   'Lerper',

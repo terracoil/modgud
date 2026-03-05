@@ -147,7 +147,7 @@ Use for: change, churn, “winds of requirements”, variable traffic
 
 **Suggested meanings (optional):**
 - 🛰️ = external system / third-party / remote dependency  
-- 🏔️ = immovable constraint (legal, physics, compliance)  
+  - 🏔️ = i  mmovable constraint (legal, physics, compliance)  
 - 🏝️ = isolated subsystem / “island architecture”  
 
 ---

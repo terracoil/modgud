@@ -2,13 +2,18 @@
 """CLI tool for graph and color utilities."""
 from __future__ import annotations
 
+import math
 import operator
 import sys
 from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Callable
 
+import numpy as np
 from freyja import FreyjaCLI
+from PIL import Image
+
+from modgud.util.geo import Color as GeoColor, SimplexNoise
 
 
 class GrayscaleAlgorithm(StrEnum):
@@ -754,6 +759,209 @@ class GraphTool:
         print(GraphUtil.format_harmony_output(base_color, harmony_type, harmony_method, colors))
       except (ValueError, AssertionError) as e:
         print(f"Error: {e}")
+
+  class Noise:
+    """Noise-based image generation commands."""
+
+    BIAS_DIRECTIONS = {
+      'N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW', 'INWARD', 'OUTWARD',
+    }
+
+    def __init__(self, parent: GraphTool = None) -> None:
+      """Initialize noise operations.
+
+      :param parent: Parent GraphTool instance
+      """
+      self.parent = parent
+
+    @staticmethod
+    def _parse_colors(colors_str: str) -> list[tuple[float, GeoColor]]:
+      """Parse color band string into (threshold, Color) tuples.
+
+      :param colors_str: Space-separated "threshold:hex" entries, last entry has no threshold
+      :return: Sorted list of (upper_threshold, Color) tuples
+      """
+      tokens = colors_str.strip().split()
+      bands: list[tuple[float, GeoColor]] = []
+      for token in tokens:
+        if ':' in token:
+          threshold_str, hex_str = token.split(':', 1)
+          bands.append((float(threshold_str), GeoColor.from_hex_str(hex_str)))
+        else:
+          bands.append((1.0, GeoColor.from_hex_str(token)))
+      return bands
+
+    @staticmethod
+    def _bias_factor(direction: str, x: int, y: int, w: int, h: int) -> float:
+      """Compute directional bias factor for a pixel position.
+
+      :param direction: Bias direction (N, S, E, W, NE, NW, SE, SW, INWARD, OUTWARD)
+      :param x: Pixel x coordinate
+      :param y: Pixel y coordinate
+      :param w: Image width
+      :param h: Image height
+      :return: Bias factor in [0.0, 1.0]
+      """
+      nx = x / w if w > 0 else 0.0
+      ny = y / h if h > 0 else 0.0
+      direction = direction.upper()
+      factor = 0.0
+      if direction == 'N':
+        factor = 1.0 - ny
+      elif direction == 'S':
+        factor = ny
+      elif direction == 'E':
+        factor = nx
+      elif direction == 'W':
+        factor = 1.0 - nx
+      elif direction == 'NE':
+        factor = (nx + (1.0 - ny)) / 2.0
+      elif direction == 'SE':
+        factor = (nx + ny) / 2.0
+      elif direction == 'NW':
+        factor = ((1.0 - nx) + (1.0 - ny)) / 2.0
+      elif direction == 'SW':
+        factor = ((1.0 - nx) + ny) / 2.0
+      elif direction == 'INWARD':
+        cx, cy = w / 2.0, h / 2.0
+        max_dist = math.hypot(cx, cy)
+        factor = 1.0 - math.hypot(x - cx, y - cy) / max_dist if max_dist > 0 else 0.0
+      elif direction == 'OUTWARD':
+        cx, cy = w / 2.0, h / 2.0
+        max_dist = math.hypot(cx, cy)
+        factor = math.hypot(x - cx, y - cy) / max_dist if max_dist > 0 else 0.0
+      return factor
+
+    @staticmethod
+    def _map_to_band(
+      noise_val: float,
+      bands: list[tuple[float, GeoColor]],
+      spread: float,
+    ) -> tuple[int, int, int]:
+      """Map a noise value to an RGB tuple via color bands with darkening.
+
+      :param noise_val: Effective noise value in [0.0, 1.0]
+      :param bands: Sorted (threshold, Color) list
+      :param spread: Darkening spread factor
+      :return: (r, g, b) integer tuple 0-255
+      """
+      lo = 0.0
+      chosen = bands[0][1]
+      band_lo = 0.0
+      band_hi = bands[0][0]
+      for threshold, color in bands:
+        if noise_val < threshold:
+          chosen = color
+          band_lo = lo
+          band_hi = threshold
+          break
+        lo = threshold
+      else:
+        # Noise >= last threshold — use final band
+        chosen = bands[-1][1]
+        band_lo = lo
+        band_hi = 1.0
+
+      # Darkening within band
+      band_width = band_hi - band_lo
+      t = (noise_val - band_lo) / band_width if band_width > 0 else 0.0
+      headroom = chosen.darkening_headroom()
+      darken_amount = t * spread * headroom
+      darkened = chosen.darken(darken_amount)
+      r, g, b, _ = darkened.to_int_tuple()
+      return (r, g, b)
+
+    def image(
+      self,
+      colors: str,
+      output: str = 'noise.png',
+      width: int = 512,
+      height: int = 512,
+      seed: int = 0,
+      scale: float = 0.02,
+      octaves: int = 4,
+      persistence: float = 0.5,
+      lacunarity: float = 2.0,
+      spread: float = 0.5,
+      bias: str = '',
+      bias_strength: float = 0.5,
+    ) -> None:
+      """Generate a noise-based color-banded PNG image.
+
+      :param colors: Color bands as "threshold:hex ..." (e.g. "0.7:#111 0.85:#8B0000 #FFD700")
+      :param output: Output PNG file path
+      :param width: Image width in pixels
+      :param height: Image height in pixels
+      :param seed: Random seed for noise
+      :param scale: Noise coordinate scale (smaller = smoother)
+      :param octaves: Number of fBm octaves
+      :param persistence: Amplitude decay between octaves
+      :param lacunarity: Frequency multiplier between octaves
+      :param spread: Darkening spread within bands (0.0-1.0)
+      :param bias: Directional bias (N, S, E, W, NE, NW, SE, SW, INWARD, OUTWARD)
+      :param bias_strength: Strength of directional bias (0.0-1.0)
+      """
+      # Coerce CLI string args to proper types
+      width = int(width)
+      height = int(height)
+      seed = int(seed)
+      scale = float(scale)
+      octaves = int(octaves)
+      persistence = float(persistence)
+      lacunarity = float(lacunarity)
+      spread = float(spread)
+      bias_strength = float(bias_strength)
+
+      # Parse color bands
+      bands = self._parse_colors(colors)
+      if len(bands) < 2:
+        print('Error: Need at least 2 color bands')
+        return
+
+      # Warn about low darkening headroom
+      for threshold, color in bands:
+        headroom = color.darkening_headroom()
+        if headroom < spread and headroom > 0:
+          hex_str = color.to_hex_str()
+          print(f'Warning: {hex_str} has low headroom ({headroom:.2f}), spread may be limited')
+
+      # Validate bias direction
+      use_bias = bias.strip().upper()
+      if use_bias and use_bias not in self.BIAS_DIRECTIONS:
+        valid = ', '.join(sorted(self.BIAS_DIRECTIONS))
+        print(f'Error: Invalid bias direction "{bias}". Use: {valid}')
+        return
+
+      # Create noise generator and generate map
+      noise = SimplexNoise(
+        seed=seed,
+        scale=scale,
+        octaves=octaves,
+        persistence=persistence,
+        lacunarity=lacunarity,
+      )
+      noise_map = noise.generate_noise_map(width, height)
+
+      # Normalize from [-1, 1] to [0, 1]
+      nmin = noise_map.min()
+      nmax = noise_map.max()
+      nrange = nmax - nmin
+      normalized = (noise_map - nmin) / nrange if nrange > 0 else np.zeros_like(noise_map)
+
+      # Build image pixel array
+      pixels = np.zeros((height, width, 3), dtype=np.uint8)
+      for y in range(height):
+        for x in range(width):
+          val = float(normalized[y, x])
+          # Apply directional bias
+          if use_bias:
+            factor = self._bias_factor(use_bias, x, y, width, height)
+            val = max(0.0, min(1.0, val + bias_strength * factor))
+          pixels[y, x] = self._map_to_band(val, bands, spread)
+
+      img = Image.fromarray(pixels)
+      img.save(output)
+      print(f'Saved {width}x{height} noise image to {output}')
 
 
 if __name__ == "__main__":
