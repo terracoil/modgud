@@ -1,19 +1,13 @@
 """Bootstrap configuration for dependency injection."""
 
-from modgud.domain.ports import (
-  DependencyResolverPort,
-  DIContainerPort,
-  GuardRuntimePort,
-  GuardWrapperPort,
-  ImplicitReturnTransformerPort,
-  InjectableDetectorPort,
-)
-from modgud.infrastructure import EnergyInverter, ServiceLocator
-from modgud.infrastructure.di_adapters import (
+from gleipnyr import (
   DependencyResolverService,
   DIContainerAdapter,
+  EnergyInverter,
   InjectableDetectorService,
+  ServiceLocator,
 )
+
 from modgud.infrastructure.guard import GuardRuntimeAdapter, GuardWrapperService
 from modgud.infrastructure.transform import ImplicitReturnAdapter
 
@@ -22,7 +16,7 @@ def configure_dependencies() -> ServiceLocator:
   """Configure all dependencies for the application.
 
   This function sets up the service locator with all necessary
-  infrastructure implementations for the ports defined in the domain.
+  infrastructure implementations.
 
   :return: Configured service locator
   """
@@ -32,27 +26,27 @@ def configure_dependencies() -> ServiceLocator:
   locator.clear()
 
   # Register guard-related services
-  locator.register_factory(GuardRuntimePort, lambda: GuardRuntimeAdapter())
+  locator.register_factory(GuardRuntimeAdapter, lambda: GuardRuntimeAdapter())
 
   locator.register_factory(
-    GuardWrapperPort,
-    lambda: GuardWrapperService(locator.resolve(GuardRuntimePort)),
+    GuardWrapperService,
+    lambda: GuardWrapperService(locator.resolve(GuardRuntimeAdapter)),
   )
 
   # Register transformation services
-  locator.register_factory(ImplicitReturnTransformerPort, lambda: ImplicitReturnAdapter())
+  locator.register_factory(ImplicitReturnAdapter, lambda: ImplicitReturnAdapter())
 
   # Register DI services
   locator.register_factory(
-    DIContainerPort,
+    DIContainerAdapter,
     lambda: DIContainerAdapter(EnergyInverter.instance()),
   )
 
-  locator.register_factory(InjectableDetectorPort, lambda: InjectableDetectorService())
+  locator.register_factory(InjectableDetectorService, lambda: InjectableDetectorService())
 
   locator.register_factory(
-    DependencyResolverPort,
-    lambda: DependencyResolverService(locator.resolve(InjectableDetectorPort)),
+    DependencyResolverService,
+    lambda: DependencyResolverService(locator.resolve(InjectableDetectorService)),
   )
 
   return locator

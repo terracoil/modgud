@@ -4,15 +4,18 @@ This module provides the Nothing class representing Maybe values that contain no
 following the single class per file principle.
 """
 
-from typing import Any, Callable, TypeVar
+from __future__ import annotations
 
-from modgud.domain.ports import MaybePort
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+
+if TYPE_CHECKING:
+  from .some_maybe import Some
 
 T = TypeVar('T')
 U = TypeVar('U')
 
 
-class Nothing(MaybePort[T]):
+class Nothing(Generic[T]):
   """Represents a Maybe that contains no name."""
 
   def __init__(self) -> None:
@@ -35,11 +38,11 @@ class Nothing(MaybePort[T]):
     """Return the default name since there is no wrapped name."""
     return default
 
-  def map(self, func: Callable[[T], U]) -> MaybePort[U]:
+  def map(self, func: Callable[[T], U]) -> Nothing[U]:
     """Return Nothing unchanged."""
     return Nothing()
 
-  def and_then(self, func: Callable[[T], MaybePort[U]]) -> MaybePort[U]:
+  def and_then(self, func: Callable[[T], Some[U] | Nothing[U]]) -> Nothing[U]:
     """Return Nothing unchanged."""
     return Nothing()
 

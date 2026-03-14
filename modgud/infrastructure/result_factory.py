@@ -6,8 +6,6 @@ and performing Result operations, following the single class per file principle.
 
 from typing import Callable, TypeVar
 
-from modgud.domain.ports import ResultPort as Result
-
 from .err_result import ErrResult
 from .ok_result import Ok
 
@@ -23,7 +21,7 @@ class ResultFactory:
   """
 
   @staticmethod
-  def ok(value: T) -> Result[T, E]:
+  def ok(value: T) -> Ok[T, E] | ErrResult[T, E]:
     """Create an Ok result with the given name.
 
     Args:
@@ -36,7 +34,7 @@ class ResultFactory:
     return Ok(value)
 
   @staticmethod
-  def err(error: E) -> Result[T, E]:
+  def err(error: E) -> Ok[T, E] | ErrResult[T, E]:
     """Create an Err result with the given error.
 
     Args:
@@ -49,7 +47,7 @@ class ResultFactory:
     return ErrResult(error)
 
   @staticmethod
-  def from_exception(func: Callable[[], T]) -> Result[T, Exception]:
+  def from_exception(func: Callable[[], T]) -> Ok[T, Exception] | ErrResult[T, Exception]:
     """Execute a function and wrap the result in a Result type.
 
     Args:
@@ -68,7 +66,9 @@ class ResultFactory:
     return result
 
   @staticmethod
-  def from_optional(value: T | None, error_message: str = 'Value is None') -> Result[T, str]:
+  def from_optional(
+    value: T | None, error_message: str = 'Value is None'
+  ) -> Ok[T, str] | ErrResult[T, str]:
     """Create a Result from an optional name.
 
     Args:

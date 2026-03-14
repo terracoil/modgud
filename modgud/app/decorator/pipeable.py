@@ -8,17 +8,16 @@ from __future__ import annotations
 
 from typing import Any, Callable, TypeVar
 
-from modgud.domain.ports import PipeableFactoryPort, PipeablePort
 from modgud.infrastructure.pipeable_factory import PipeableFactory
 from modgud.infrastructure.pipeable_wrapper import Pipeable
 
 T = TypeVar('T')
 
-# Create factory instance (in production this would come from DI container)
-_pipeable_factory: PipeableFactoryPort = PipeableFactory()
+# Create factory instance
+_pipeable_factory = PipeableFactory()
 
 
-def pipeable(func: Callable[..., T]) -> PipeablePort:
+def pipeable(func: Callable[..., T]) -> Pipeable:
   """Make a function pipeable via the | operator.
 
   Wraps a function in a Pipeable instance, enabling it to be used
@@ -55,14 +54,14 @@ def pipeable(func: Callable[..., T]) -> PipeablePort:
 
 
 # For compatibility with the infrastructure, also provide the factory
-def create_pipeable(func: Callable[..., Any]) -> PipeablePort:
+def create_pipeable(func: Callable[..., Any]) -> Pipeable:
   """Create a pipeable wrapper around a function.
 
   Args:
       func: The function to make pipeable
 
   Returns:
-      PipeablePort: Pipeable wrapper around the function
+      Pipeable wrapper around the function
 
   """
   return _pipeable_factory.create_pipeable(func)

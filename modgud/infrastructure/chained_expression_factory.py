@@ -4,12 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from modgud.domain.ports import ChainableDecoratorFactoryPort
-
 from .chainable_expression import ChainableExpression
 
 
-class ChainedExpressionFactory(ChainableDecoratorFactoryPort):
+class ChainedExpressionFactory:
   """Factory for creating chained expression decorators and utilities.
 
   Provides a clean interface for functional programming patterns.

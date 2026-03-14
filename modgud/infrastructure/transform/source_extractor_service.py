@@ -1,4 +1,4 @@
-"""Service implementing SourceExtractorPort for source code extraction."""
+"""Service for source code extraction."""
 
 import ast
 import inspect

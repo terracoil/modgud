@@ -1,4 +1,4 @@
-"""Service implementing GuardValidatorPort for guard validation."""
+"""Service for guard validation."""
 
 from typing import Any, Callable
 

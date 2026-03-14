@@ -7,7 +7,6 @@ in Result types, following the single class per file principle.
 import functools
 from typing import Any, Callable, TypeVar
 
-from modgud.domain.ports.result_port import ResultPort as Result
 from modgud.infrastructure.err_result import ErrResult
 from modgud.infrastructure.ok_result import Ok
 
@@ -19,7 +18,7 @@ class SafeExpressionDecorator:
   """Decorator that wraps function results in Result types for safe error handling.
 
   Functions decorated with this class automatically catch exceptions
-  and return Result[T, Exception] instead of raising exceptions.
+  and return Ok[T, Exception] | ErrResult[T, Exception] instead of raising exceptions.
   """
 
   def __init__(
@@ -35,19 +34,21 @@ class SafeExpressionDecorator:
     self.catch_exceptions = catch_exceptions
     self.convert_none = convert_none
 
-  def __call__(self, func: Callable[..., T]) -> Callable[..., Result[T, Exception]]:
+  def __call__(
+    self, func: Callable[..., T]
+  ) -> Callable[..., Ok[T, Exception] | ErrResult[T, Exception]]:
     """Decorate a function to return Result types.
 
     Args:
         func: Function to decorate
 
     Returns:
-        Decorated function that returns Result[T, Exception]
+        Decorated function that returns Ok[T, Exception] | ErrResult[T, Exception]
 
     """
 
     @functools.wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Result[T, Exception]:
+    def wrapper(*args: Any, **kwargs: Any) -> Ok[T, Exception] | ErrResult[T, Exception]:
       """Execute function and wrap result in Result type."""
       result = None
       try:

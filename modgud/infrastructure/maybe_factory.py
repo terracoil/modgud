@@ -6,8 +6,6 @@ and performing Maybe operations, following the single class per file principle.
 
 from typing import TypeVar
 
-from modgud.domain.ports import MaybePort as Maybe
-
 from .nothing_maybe import Nothing
 from .some_maybe import Some
 
@@ -22,7 +20,7 @@ class MaybeFactory:
   """
 
   @staticmethod
-  def some(value: T) -> Maybe[T]:
+  def some(value: T) -> Some[T] | Nothing[T]:
     """Create a Some maybe with the given name.
 
     Args:
@@ -38,7 +36,7 @@ class MaybeFactory:
     return Some(value)
 
   @staticmethod
-  def nothing() -> Maybe[T]:
+  def nothing() -> Some[T] | Nothing[T]:
     """Create a Nothing maybe.
 
     Returns:
@@ -48,7 +46,7 @@ class MaybeFactory:
     return Nothing()
 
   @staticmethod
-  def from_value(value: T | None) -> Maybe[T]:
+  def from_value(value: T | None) -> Some[T] | Nothing[T]:
     """Create a Maybe from a potentially None name.
 
     Args:

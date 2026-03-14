@@ -8,27 +8,25 @@ from __future__ import annotations
 
 from typing import Any, Callable, TypeVar
 
-from modgud.domain.ports import PipeableFactoryPort, PipeablePort
-
 from .pipeable_wrapper import Pipeable
 
 T = TypeVar('T')
 
 
-class PipeableFactory(PipeableFactoryPort):
+class PipeableFactory:
   """Factory for creating pipeable decorators and utilities.
 
   Provides clean interface for functional programming patterns.
   """
 
-  def create_pipeable(self, func: Callable[..., Any]) -> PipeablePort:
+  def create_pipeable(self, func: Callable[..., Any]) -> Pipeable:
     """Create a pipeable wrapper around a function.
 
     Args:
         func: The function to make pipeable
 
     Returns:
-        PipeablePort: Pipeable wrapper around the function
+        Pipeable: Pipeable wrapper around the function
 
     """
     # Handle built-in types that need special treatment
@@ -43,7 +41,7 @@ class PipeableFactory(PipeableFactoryPort):
 
     return Pipeable(func)
 
-  def pipeable_decorator(self, func: Callable[..., T]) -> PipeablePort:
+  def pipeable_decorator(self, func: Callable[..., T]) -> Pipeable:
     """Make a function pipeable via the | operator.
 
     Wraps a function in a Pipeable instance, enabling it to be used

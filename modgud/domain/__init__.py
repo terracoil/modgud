@@ -3,7 +3,6 @@
 This package contains the core domain concepts for modgud including:
 - Types and type definitions
 - Domain exceptions
-- Domain protocols (interfaces)
 - Domain enums and constants
 - Message templates
 
@@ -13,23 +12,19 @@ only data structures and interface definitions.
 
 # Core types
 # Domain enums (from enums package)
-from .enums import FailureStrategy, GuardStrategy, InfoMessageEnum, ServiceLifetime
+from .enums import FailureStrategy, GuardStrategy, InfoMessageEnum
 
 # Message templates
+from .error_messages import ErrorMessages
+
 # Domain exceptions
 from .exceptions import (
-  DependencyInjectionError,
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
   MissingImplicitReturnError,
-  ServiceNotFoundError,
   UnsupportedConstructError,
 )
-
-# Domain protocols (ports)
-from .error_messages import ErrorMessages
-from .protocols import MaybePort, PipeablePort, ResultPort
 from .types import FailureBehavior, FailureTypes, GuardFunction
 
 __all__ = [
@@ -45,16 +40,9 @@ __all__ = [
   'ExplicitReturnDisallowedError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
-  'DependencyInjectionError',
-  'ServiceNotFoundError',
-  # Ports
-  'MaybePort',
-  'PipeablePort',
-  'ResultPort',
   # Enums
   'GuardStrategy',
   'FailureStrategy',
-  'ServiceLifetime',
   # Messages
   'ErrorMessages',
   'InfoMessageEnum',

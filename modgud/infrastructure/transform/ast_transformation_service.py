@@ -1,4 +1,4 @@
-"""Service implementing ASTTransformationPort for AST manipulation."""
+"""Service for AST manipulation."""
 
 import ast
 from typing import Any

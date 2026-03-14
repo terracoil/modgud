@@ -9,14 +9,16 @@ of guard_clause and implicit_return into a single, composable decorator.
 
 from typing import Any, Callable
 
+from gleipnyr import get_service_locator
+
 from modgud.domain import (
   FailureBehavior,
   GuardClauseError,
   GuardFunction,
   UnsupportedConstructError,
 )
-from modgud.domain.ports import GuardWrapperPort, ImplicitReturnTransformerPort
-from modgud.infrastructure.service_locator import get_service_locator
+from modgud.infrastructure.guard import GuardWrapperService
+from modgud.infrastructure.transform import ImplicitReturnAdapter
 
 
 class guarded_expression:
@@ -82,8 +84,8 @@ class guarded_expression:
 
     # Get services from service locator
     locator = get_service_locator()
-    self._guard_wrapper = locator.resolve(GuardWrapperPort)
-    self._implicit_transformer = locator.resolve(ImplicitReturnTransformerPort)
+    self._guard_wrapper = locator.resolve(GuardWrapperService)
+    self._implicit_transformer = locator.resolve(ImplicitReturnAdapter)
 
     # Removed deprecation warning - implicit_return parameter is now a supported feature
 

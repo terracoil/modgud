@@ -1,4 +1,4 @@
-"""Adapter implementing GuardRuntimePort using existing GuardRuntime."""
+"""Adapter wrapping GuardRuntime for service locator usage."""
 
 from typing import Any, Dict, Optional, Tuple
 
@@ -7,7 +7,7 @@ from modgud.infrastructure import GuardRuntime
 
 
 class GuardRuntimeAdapter:
-  """Adapter that implements GuardRuntimePort using GuardRuntime."""
+  """Adapter wrapping GuardRuntime."""
 
   def __init__(self) -> None:
     """Initialize the adapter."""

@@ -4,15 +4,18 @@ This module provides the Some class representing Maybe values that contain data,
 following the single class per file principle.
 """
 
-from typing import Any, Callable, TypeVar
+from __future__ import annotations
 
-from modgud.domain.ports import MaybePort
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+
+if TYPE_CHECKING:
+  from .nothing_maybe import Nothing
 
 T = TypeVar('T')
 U = TypeVar('U')
 
 
-class Some(MaybePort[T]):
+class Some(Generic[T]):
   """Represents a Maybe that contains a name."""
 
   def __init__(self, value: T) -> None:
@@ -45,11 +48,11 @@ class Some(MaybePort[T]):
     """Return the wrapped name, ignoring the default."""
     return self._value
 
-  def map(self, func: Callable[[T], U]) -> MaybePort[U]:
+  def map(self, func: Callable[[T], U]) -> Some[U]:
     """Apply the function to the wrapped name."""
     return Some(func(self._value))
 
-  def and_then(self, func: Callable[[T], MaybePort[U]]) -> MaybePort[U]:
+  def and_then(self, func: Callable[[T], Some[U] | Nothing[U]]) -> Some[U] | Nothing[U]:
     """Apply the function to the wrapped name."""
     return func(self._value)
 

@@ -4,16 +4,19 @@ This module provides the ErrResult class representing failed Result values,
 following the single class per file principle.
 """
 
-from typing import Any, Callable, TypeVar
+from __future__ import annotations
 
-from modgud.domain.ports import ResultPort
+from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+
+if TYPE_CHECKING:
+  from .ok_result import Ok
 
 T = TypeVar('T')
 U = TypeVar('U')
 E = TypeVar('E')
 
 
-class ErrResult(ResultPort[T, E]):
+class ErrResult(Generic[T, E]):
   """Represents a failed result containing an error name."""
 
   def __init__(self, error: E) -> None:
@@ -41,11 +44,11 @@ class ErrResult(ResultPort[T, E]):
     """Return the default name since this is an error."""
     return default
 
-  def map(self, func: Callable[[T], U]) -> ResultPort[U, E]:
+  def map(self, func: Callable[[T], U]) -> ErrResult[U, E]:
     """Return self unchanged since this is an error."""
     return ErrResult(self._error)
 
-  def and_then(self, func: Callable[[T], ResultPort[U, E]]) -> ResultPort[U, E]:
+  def and_then(self, func: Callable[[T], Ok[U, E] | ErrResult[U, E]]) -> ErrResult[U, E]:
     """Return self unchanged since this is an error."""
     return ErrResult(self._error)
 

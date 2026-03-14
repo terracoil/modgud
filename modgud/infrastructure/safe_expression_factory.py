@@ -4,13 +4,11 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from modgud.domain.ports import ResultPort, SafeDecoratorFactoryPort
-
 from .err_result import ErrResult
 from .ok_result import Ok
 
 
-class SafeExpressionFactory(SafeDecoratorFactoryPort):
+class SafeExpressionFactory:
   """Factory for creating safe expression decorators and utilities.
 
   Provides error-safe functional programming patterns.
@@ -41,7 +39,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryPort):
 
       """
 
-      def wrapper(*args, **kwargs) -> ResultPort:
+      def wrapper(*args, **kwargs) -> Ok | ErrResult:
         try:
           result = func(*args, **kwargs)
           if convert_none and result is None:
@@ -59,7 +57,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryPort):
 
     return safe_decorator
 
-  def create_result(self, value: Any, is_success: bool = True) -> ResultPort:
+  def create_result(self, value: Any, is_success: bool = True) -> Ok | ErrResult:
     """Create a Result instance (Ok or Err).
 
     Args:
@@ -67,7 +65,7 @@ class SafeExpressionFactory(SafeDecoratorFactoryPort):
         is_success: True for Ok, False for Err
 
     Returns:
-        ResultPort: Ok or Err instance
+        Ok | ErrResult: Ok or Err instance
 
     """
     return Ok(value) if is_success else ErrResult(value)

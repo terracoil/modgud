@@ -10,9 +10,10 @@ like @guarded_expression.
 
 from typing import Any, Callable, TypeVar, cast
 
+from gleipnyr import get_service_locator
+
 from modgud.domain import UnsupportedConstructError
-from modgud.domain.ports import ImplicitReturnTransformerPort
-from modgud.infrastructure.service_locator import get_service_locator
+from modgud.infrastructure.transform import ImplicitReturnAdapter
 
 # Type variable for generic function signatures
 F = TypeVar('F', bound=Callable[..., Any])
@@ -57,7 +58,7 @@ class implicit_return:
   def __init__(self) -> None:
     """Initialize the decorator with transformer service."""
     locator = get_service_locator()
-    self._transformer = locator.resolve(ImplicitReturnTransformerPort)
+    self._transformer = locator.resolve(ImplicitReturnAdapter)
 
   def __call__(self, func: F) -> F:
     """Transform the function to use implicit returns.

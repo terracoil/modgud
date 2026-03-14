@@ -1,4 +1,4 @@
-"""Adapter implementing ImplicitReturnTransformerPort using existing transformer."""
+"""Adapter wrapping ImplicitReturnTransformer for service locator usage."""
 
 import inspect
 from typing import Callable, TypeVar
@@ -9,7 +9,7 @@ T = TypeVar('T')
 
 
 class ImplicitReturnAdapter:
-  """Adapter that implements ImplicitReturnTransformerPort."""
+  """Adapter wrapping ImplicitReturnTransformer."""
 
   def __init__(self) -> None:
     """Initialize the adapter."""

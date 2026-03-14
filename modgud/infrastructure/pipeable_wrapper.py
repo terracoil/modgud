@@ -9,13 +9,11 @@ import functools
 import inspect
 from typing import Any, Callable, TypeVar, Union
 
-from modgud.domain.ports import PipeablePort
-
 T = TypeVar('T')
 R = TypeVar('R')
 
 
-class Pipeable(PipeablePort):
+class Pipeable:
   """Wrapper that enables pipeline operations via __or__ overloading.
 
   This class wraps functions to make them work with the | operator for
