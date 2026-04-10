@@ -24,7 +24,6 @@
 - **`@safe_expression` decorator**: ✅ Automatic Result wrapping for exception handling
 - **`@chained_expression` decorator**: ✅ Fluent interfaces with method chaining
 - **`Maybe`/`Result` types**: ✅ Full monadic operations with `Some`/`Nothing`, `Ok`/`ErrResult`
-- **`@Inject` decorator**: ✅ Automatic dependency injection
 - **`@implicit_return` decorator**: ✅ Standalone implicit return transformation
 - **`@pipeable` decorator**: ✅ Functional pipeline composition with `|` operator
 - **`ChainableExpression`**: ✅ Method chaining for any value with `chain()` helper
@@ -826,7 +825,7 @@ Rather than forcing Haskell or Scala idioms into Python, modgud enhances Python'
 Many FP libraries introduce abstraction penalties through wrapper objects and indirection. modgud's AST transformation approach operates at the function level with minimal runtime overhead, making it suitable for performance-sensitive code where other FP solutions might be rejected.
 
 ### 5. **Clean Architecture Focus**
-modgud already demonstrates clean architecture principles with dependency injection and separation of concerns (AST transformation, guard runtime, decorator modules). This makes it an excellent foundation for additional functional features.
+modgud already demonstrates clean architecture principles with separation of concerns (AST transformation, guard runtime, decorator modules). This makes it an excellent foundation for additional functional features.
 
 ## Additional Features to Complement modgud's Existing Capabilities
 
@@ -1070,7 +1069,6 @@ The combination of guard clauses, implicit returns, and AST transformation makes
 | **Chainable Expressions** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@chained_expression`, `chain()`, fluent interfaces |
 | **Monadic Operations** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `Maybe`/`Result` types, `Some`/`Nothing`, `Ok`/`ErrResult` |
 | **Safe Error Handling** | ✅ **IMPLEMENTED** | HIGH | 3.13+ | `@safe_expression` decorator with Result wrapping |
-| **Dependency Injection** | ✅ **IMPLEMENTED** | MEDIUM | 3.13+ | `@Inject` decorator for automatic resolution |
 | **Pattern Matching** | ❌ **NOT IMPLEMENTED** | HIGH | 3.6+ / 3.10+ | Enhanced destructuring and pattern matching |
 | **Function Composition** | 🚧 **PARTIAL** | MEDIUM | 3.6+ | Currying, compose/flow utilities, point-free style |
 | **Lazy Evaluation** | ❌ **NOT IMPLEMENTED** | MEDIUM | 3.6+ | LazySeq, memoization, stream processing |
@@ -1134,7 +1132,7 @@ Rather than forcing Haskell idioms, modgud enhances Python's decorator pattern. 
 AST transformation operates at function level with minimal runtime overhead, suitable for performance-sensitive code where other FP solutions might be rejected.
 
 ### **🏗️ Clean Architecture Foundation**
-Already demonstrates clean architecture with dependency injection and separation of concerns, making it an excellent foundation for additional functional features.
+Already demonstrates clean architecture with separation of concerns, making it an excellent foundation for additional functional features.
 
 ---
 

@@ -31,7 +31,6 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.13.7"
-gleipnyr = { path = "../gleipnyr", develop = true }
 
 [dependency-groups]
 test = [

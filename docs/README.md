@@ -1456,9 +1456,8 @@ def implicit_return(func):
 modgud follows clean architecture with clear separation of concerns:
 
 1. **Pure Functions**: Core logic uses pure, composable functions
-2. **Dependency Injection**: Decorators compose functions rather than creating dependencies
-3. **Immutability**: Transformed functions preserve original metadata
-4. **Functional Composition**: Guards are composable pure functions
+2. **Immutability**: Transformed functions preserve original metadata
+3. **Functional Composition**: Guards are composable pure functions
 
 ### Module Structure
 

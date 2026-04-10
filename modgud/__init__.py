@@ -53,7 +53,6 @@ Usage Examples:
 
 from .app.decorator.guarded_expression import guarded_expression
 from .app.decorator.implicit_return_decorator import implicit_return
-from .app.decorator.inject_decorator import Inject
 from .app.decorator.pipeable import pipeable
 from .domain import (
   ExplicitReturnDisallowedError,
@@ -107,7 +106,6 @@ __all__ = [
   'pipeable',
   'safe_expression',
   'chained_expression',
-  'Inject',
   # Monadic types and factories
   'Maybe',
   'Some',

@@ -1,7 +1,7 @@
 """Pipeable decorator for the app layer.
 
-This module provides the @pipeable decorator that uses dependency injection
-to get the infrastructure implementation, maintaining clean architecture.
+This module provides the @pipeable decorator that delegates to the
+infrastructure implementation, maintaining clean architecture.
 """
 
 from __future__ import annotations

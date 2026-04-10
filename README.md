@@ -105,7 +105,7 @@ Multiple return points everywhere. Business logic buried at the bottom. Error ha
 **modgud** gives you guard clauses and expression-oriented programming in Python:
 
 ```python
-from modgud import guarded_expression, implicit_return, positive, type_check, in_range, not_empty, Inject, GuardRegistry
+from modgud import guarded_expression, implicit_return, positive, type_check, in_range, not_empty, GuardRegistry
 
 @guarded_expression(
     positive("user_id"),
@@ -360,7 +360,7 @@ Features:
 
 - Full mypy type checking support
 - Comprehensive test suite with 92% coverage
-- Clean architecture with dependency injection
+- Clean architecture with separation of concerns
 - Thread-safe decorators
 - Preserves all function metadata for debugging
 
@@ -430,52 +430,6 @@ final_price = 100 | add_tax(0.08) | apply_discount(0.15)
 print(final_price)  # 91.8 (100 * 1.08 * 0.85)
 ```
 
-### 8. 🔧 Dependency Injection with @Inject
-
-Automatically inject dependencies into decorated functions without manual wiring:
-
-```python
-from modgud import Inject, guarded_expression, implicit_return, not_empty, positive
-
-# Define your services
-class DatabaseService:
-    def get_user(self, user_id: int) -> dict:
-        # Simulate database fetch
-        return {"id": user_id, "name": "Alice", "active": True}
-
-class EmailService:
-    def send_welcome(self, email: str, name: str) -> bool:
-        print(f"Sending welcome email to {name} at {email}")
-        return True
-
-# Use @Inject to automatically provide dependencies
-@Inject(db=DatabaseService, email=EmailService)
-@guarded_expression(
-    not_empty("user_email"),
-    positive("user_id"),
-    implicit_return=True  # Works seamlessly with dependency injection!
-)
-def register_user(user_id: int, user_email: str, db: DatabaseService, email: EmailService):
-    # Services are automatically injected - no manual creation needed!
-    user = db.get_user(user_id)
-    if user["active"]:
-        email.send_welcome(user_email, user["name"])
-        {"status": "registered", "user": user}
-    else:
-        {"status": "inactive", "user": user}
-
-# Call without creating services - they're injected automatically
-result = register_user(123, "alice@example.com")
-# Output: Sending welcome email to Alice at alice@example.com
-# Returns: {"status": "registered", "user": {"id": 123, "name": "Alice", "active": True}}
-```
-
-**Features:**
-- **Automatic instantiation** - Services created as needed
-- **Type-based injection** - Can also use type hints for injection
-- **Testable** - Easy to mock dependencies in tests
-- **Composable** - Works seamlessly with other modgud decorators
-
 **That's it.** You're writing cleaner Python.
 
 ---
@@ -487,7 +441,6 @@ result = register_user(123, "alice@example.com")
 - **🎯 Single Return Point** - One logical exit point per function
 - **🧩 Pre-Built Guards** - Standard validations ready to use (not_none, positive, in_range, type_check, etc.)
 - **🚀 Functional Pipelines** - Use `|` operator for functional composition with @pipeable decorator
-- **🔧 Dependency Injection** - Automatic dependency resolution with @Inject decorator
 - **📝 Custom Guard Registry** - Create and register reusable validation guards
 - **🎛️ Configurable Failure Behaviors** - Return values, raise exceptions, or call custom handlers
 - **🏛️ Clean Architecture** - KLA layered design with pure functions and immutable transforms

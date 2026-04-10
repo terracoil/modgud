@@ -9,7 +9,6 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 **Core Architecture (v1.2.6):**
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
 - **Expression decorators**: `implicit_return` (standalone), `pipeable` (functional pipes)
-- **Dependency injection**: `@Inject` decorator for automatic dependency resolution
 - **Guard system**: Pre-built guards + `GuardRegistry` for custom validators
 - **Error handling**: Configurable via `on_error` parameter (exception classes, custom values, callables)
 - **Architecture**: Clean separation with KLA (app/infrastructure/domain/util layers)
@@ -102,7 +101,6 @@ _Top-level layers (and directories/packages). Dependencies flow downward:_
 - `app/decorator/guarded_expression.py` - Main decorator implementation
 - `app/decorator/implicit_return_decorator.py` - Standalone implicit return
 - `app/decorator/pipeable.py` - Functional pipeline decorator
-- `app/decorator/inject_decorator.py` - Dependency injection decorator
 
 **infrastructure/** - Core logic and implementation details
 - `infrastructure/guard_runtime.py` - Guard checking and failure handling
@@ -112,15 +110,11 @@ _Top-level layers (and directories/packages). Dependencies flow downward:_
 
 **domain/** - Passive domain objects
 - `domain/exceptions/` - All exception classes
-- `domain/enums/` - Enum definitions (OrdinalEnum, QuadShapeEnum, etc.)
-- `domain/ports/` - Protocol/interface definitions (VectorPort, ShapePort, etc.)
+- `domain/enums/` - Enum definitions
+- `domain/ports/` - Protocol/interface definitions
 - `domain/types.py` - Type definitions
 
 **util/** - Generic utilities
-- `util/di/` - Dependency injection system
-- `util/geo/` - Geometry utilities (vectors, shapes, joinery, SVG conversion)
-  - `util/geo/shapes/` - Shape classes (Square, Rectangle, Trapezoid, etc.)
-  - `util/geo/svg/` - SVG conversion utilities
 - `util/tools/` - API tools (Ranger, TextUtil)
 - `util/logging/` - Logging utilities
 
@@ -197,9 +191,8 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 The v0.2.0 refactoring implements clean architecture with clear separation of concerns:
 
 1. **Pure Functions**: AST transformation (`ast_transform.py`) and guard checking (`guard_runtime.py`) are pure, composable functions with no decorator-specific logic
-2. **Dependency Injection**: The decorator composes pure functions rather than creating its own dependencies
-3. **Immutability**: All transformed functions preserve original function metadata
-4. **Functional Composition**: Guard functions are composable - they're pure functions returning True or error messages
+2. **Immutability**: All transformed functions preserve original function metadata
+3. **Functional Composition**: Guard functions are composable - they're pure functions returning True or error messages
 
 ### Import Examples
 
