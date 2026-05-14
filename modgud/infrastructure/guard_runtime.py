@@ -4,8 +4,9 @@ Provides the GuardRuntime class that encapsulates guard evaluation and
 failure handling logic.
 """
 
+import functools
 import logging
-from typing import Any, Optional, Tuple
+from typing import Any, Callable
 
 from modgud.domain import FailureBehavior, GuardFunction
 
@@ -16,9 +17,47 @@ class GuardRuntime:
   _logger: logging.Logger = logging.getLogger(__name__)
 
   @classmethod
+  def wrap_function(
+    cls,
+    func: Callable[..., Any],
+    guards: tuple[GuardFunction, ...],
+    on_error: FailureBehavior,
+    log: bool,
+  ) -> Callable[..., Any]:
+    """Wrap a function with guard checking.
+
+    Args:
+        func: Function to wrap
+        guards: Guards to evaluate before calling func
+        on_error: Failure behavior (exception class, callable, or value)
+        log: If True, log guard failures at INFO level
+
+    Returns:
+        Wrapped function that evaluates guards before calling func
+
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+      error_msg = cls.check_guards(guards, args, kwargs)
+      if error_msg is None:
+        result = func(*args, **kwargs)
+      else:
+        return_value, exception = cls.handle_failure(
+          error_msg, on_error, func.__name__, args, kwargs, log
+        )
+        if exception is not None:
+          raise exception
+        result = return_value
+      return result
+
+    wrapper.__dict__.update(func.__dict__)
+    return wrapper
+
+  @classmethod
   def check_guards(
-    cls, guards: Tuple[GuardFunction, ...], args: Tuple[Any, ...], kwargs: dict[str, Any]
-  ) -> Optional[str]:
+    cls, guards: tuple[GuardFunction, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
+  ) -> str | None:
     """Evaluate all guards sequentially.
 
     Args:
@@ -45,10 +84,10 @@ class GuardRuntime:
     error_msg: str,
     on_error: FailureBehavior,
     func_name: str,
-    args: Tuple[Any, ...],
+    args: tuple[Any, ...],
     kwargs: dict[str, Any],
     log_enabled: bool,
-  ) -> Tuple[Any, Optional[BaseException]]:
+  ) -> tuple[Any, BaseException | None]:
     """Handle guard failure based on on_error configuration.
 
     Args:

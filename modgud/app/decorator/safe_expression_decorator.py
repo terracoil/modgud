@@ -5,15 +5,16 @@ in Result types, following the single class per file principle.
 """
 
 import functools
+from dataclasses import dataclass
 from typing import Any, Callable, TypeVar
 
-from modgud.infrastructure.err_result import ErrResult
-from modgud.infrastructure.ok_result import Ok
+from modgud.infrastructure import ErrResult, Ok
 
 T = TypeVar('T')
 R = TypeVar('R')
 
 
+@dataclass(frozen=True)
 class SafeExpressionDecorator:
   """Decorator that wraps function results in Result types for safe error handling.
 
@@ -21,18 +22,8 @@ class SafeExpressionDecorator:
   and return Ok[T, Exception] | ErrResult[T, Exception] instead of raising exceptions.
   """
 
-  def __init__(
-    self, catch_exceptions: tuple[type[Exception], ...] = (Exception,), convert_none: bool = False
-  ) -> None:
-    """Initialize the safe expression decorator.
-
-    Args:
-        catch_exceptions: Tuple of exception types to catch (default: all exceptions)
-        convert_none: If True, convert None results to Err (default: False)
-
-    """
-    self.catch_exceptions = catch_exceptions
-    self.convert_none = convert_none
+  catch_exceptions: tuple[type[Exception], ...] = (Exception,)
+  convert_none: bool = False
 
   def __call__(
     self, func: Callable[..., T]
@@ -50,13 +41,13 @@ class SafeExpressionDecorator:
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Ok[T, Exception] | ErrResult[T, Exception]:
       """Execute function and wrap result in Result type."""
-      result = None
+      result: Ok[T, Exception] | ErrResult[T, Exception]
       try:
         value = func(*args, **kwargs)
 
         # Convert None to Err if requested
         if self.convert_none and value is None:
-          error = ValueError(f'Function {func.__name__} returned None')
+          error: Exception = ValueError(f'Function {func.__name__} returned None')
           result = ErrResult(error)
         else:
           result = Ok(value)
@@ -72,6 +63,6 @@ class SafeExpressionDecorator:
     wrapper.__annotations__ = func.__annotations__
 
     # Mark as safe expression
-    wrapper.__safe_expression__ = True
+    wrapper.__safe_expression__ = True  # type: ignore[attr-defined]
 
     return wrapper

@@ -7,7 +7,7 @@ languages like F#/Elixir.
 
 import functools
 import inspect
-from typing import Any, Callable, TypeVar, Union
+from typing import Any, Callable, TypeVar
 
 T = TypeVar('T')
 R = TypeVar('R')
@@ -52,7 +52,7 @@ class Pipeable:
     if hasattr(func, '__module__'):
       self.__module__ = func.__module__
 
-  def __or__(self, other: Union['Pipeable', Any]) -> Any:
+  def __or__(self, other: 'Pipeable | Any') -> Any:
     """Enable x | func syntax for pipeline operations.
 
     When used with the | operator, this method applies the wrapped function
@@ -156,7 +156,7 @@ class Pipeable:
           return result
         raise te
 
-  def __call__(self, *args: Any, **kwargs: Any) -> Union['Pipeable', Any]:
+  def __call__(self, *args: Any, **kwargs: Any) -> 'Pipeable | Any':
     """Execute the wrapped function or create a partial application.
 
     This method tries to execute the function with the provided arguments.

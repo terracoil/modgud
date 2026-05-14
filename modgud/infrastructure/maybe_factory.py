@@ -56,7 +56,7 @@ class MaybeFactory:
         Some(name) if name is not None, otherwise Nothing()
 
     """
-    result = None
+    result: Some[T] | Nothing[T]
     if value is not None:
       result = Some(value)
     else:

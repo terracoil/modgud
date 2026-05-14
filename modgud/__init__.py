@@ -51,9 +51,7 @@ Usage Examples:
         GuardRegistry.register("valid_email", valid_email, namespace="validators")
 """
 
-from .app.decorator.guarded_expression import guarded_expression
-from .app.decorator.implicit_return_decorator import implicit_return
-from .app.decorator.pipeable import pipeable
+from .app.decorator import guarded_expression, implicit_return, pipeable
 from .domain import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
@@ -61,17 +59,19 @@ from .domain import (
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .infrastructure.chainable_expression import ChainableExpression
-from .infrastructure.chained_expression_factory import ChainedExpressionFactory
-from .infrastructure.common_guards import CommonGuards
-from .infrastructure.err_result import ErrResult
-from .infrastructure.guard_registry import GuardRegistry
-from .infrastructure.maybe_factory import MaybeFactory
-from .infrastructure.nothing_maybe import Nothing
-from .infrastructure.ok_result import Ok
-from .infrastructure.result_factory import ResultFactory
-from .infrastructure.safe_expression_factory import SafeExpressionFactory
-from .infrastructure.some_maybe import Some
+from .infrastructure import (
+  ChainableExpression,
+  ChainedExpressionFactory,
+  CommonGuards,
+  ErrResult,
+  GuardRegistry,
+  MaybeFactory,
+  Nothing,
+  Ok,
+  ResultFactory,
+  SafeExpressionFactory,
+  Some,
+)
 
 # Export guards as module-level functions for convenient direct import
 not_empty = CommonGuards.not_empty

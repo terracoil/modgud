@@ -5,7 +5,7 @@ are defined here following domain-driven design principles. The domain
 layer is passive and contains no business logic - only type definitions.
 """
 
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 __all__ = [
   'GuardFunction',
@@ -15,10 +15,10 @@ __all__ = [
 
 # Guard function signature: (*args, **kwargs) -> True | str
 # Guards return True for success, or an error message string for failure
-GuardFunction = Callable[..., Union[bool, str]]
+GuardFunction = Callable[..., bool | str]
 
 # Primitive failure return types
-FailureTypes = Union[bool, str, int, float, None, dict[str, Any], list[Any], tuple[Any, ...]]
+FailureTypes = bool | str | int | float | None | dict[str, Any] | list[Any] | tuple[Any, ...]
 
 # Complete failure behavior types including callables and exception classes
-FailureBehavior = Union[FailureTypes, Callable[..., Any], type]
+FailureBehavior = FailureTypes | Callable[..., Any] | type

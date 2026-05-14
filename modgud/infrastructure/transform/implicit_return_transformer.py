@@ -3,12 +3,52 @@
 from __future__ import annotations
 
 import ast
+import inspect
+import textwrap
+from typing import Any, Callable, TypeVar
 
 from modgud.domain import ExplicitReturnDisallowedError
+
+T = TypeVar('T')
 
 
 class ImplicitReturnTransformer:
   """AST transformation for implicit return functionality."""
+
+  @classmethod
+  def transform_function(cls, func: Callable[..., T]) -> Callable[..., T]:
+    """Transform a function to use implicit returns.
+
+    Extracts source, applies the implicit-return AST rewrite, recompiles
+    in the function's original global namespace, and preserves metadata.
+
+    Args:
+        func: Function to transform
+
+    Returns:
+        Transformed function with implicit return semantics
+
+    Raises:
+        ValueError: If source cannot be extracted
+        ImplicitReturnError: If transformation fails
+
+    """
+    try:
+      source = inspect.getsource(func)
+    except (TypeError, OSError) as e:
+      raise ValueError(f'Cannot extract source from {func.__name__}: {str(e)}') from e
+
+    dedented_source = textwrap.dedent(source)
+    transformed_ast, _ = cls.apply_implicit_return_transform(dedented_source, func.__name__)
+    code = compile(transformed_ast, f'<implicit_return:{func.__name__}>', 'exec')
+    namespace: dict[str, Any] = func.__globals__.copy()
+    exec(code, namespace)
+    transformed_func: Callable[..., T] = namespace[func.__name__]
+    transformed_func.__name__ = func.__name__
+    transformed_func.__doc__ = func.__doc__
+    transformed_func.__dict__.update(func.__dict__)
+    transformed_func.__annotations__ = func.__annotations__
+    return transformed_func
 
   @classmethod
   def transform_function_ast(cls, fn_node: ast.AST, func_name: str) -> ast.AST:

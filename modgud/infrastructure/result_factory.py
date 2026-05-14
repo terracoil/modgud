@@ -57,7 +57,7 @@ class ResultFactory:
         Ok with the result if successful, Err with the exception if it fails
 
     """
-    result = None
+    result: Ok[T, Exception] | ErrResult[T, Exception]
     try:
       value = func()
       result = Ok(value)
@@ -79,7 +79,7 @@ class ResultFactory:
         Ok with name if not None, otherwise Err with error message
 
     """
-    result = None
+    result: Ok[T, str] | ErrResult[T, str]
     if value is not None:
       result = Ok(value)
     else:

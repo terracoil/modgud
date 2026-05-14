@@ -11,13 +11,13 @@ like @guarded_expression.
 from typing import Any, Callable, TypeVar, cast
 
 from modgud.domain import UnsupportedConstructError
-from modgud.infrastructure.transform import ImplicitReturnAdapter
+from modgud.infrastructure.transform import ImplicitReturnTransformer
 
 # Type variable for generic function signatures
 F = TypeVar('F', bound=Callable[..., Any])
 
 
-class implicit_return:
+class _ImplicitReturn:
   """Decorator that enables implicit returns for functions.
 
   Transforms a function to automatically return the last expression in each
@@ -53,10 +53,6 @@ class implicit_return:
 
   """
 
-  def __init__(self) -> None:
-    """Initialize the decorator with transformer service."""
-    self._transformer = ImplicitReturnAdapter()
-
   def __call__(self, func: F) -> F:
     """Transform the function to use implicit returns.
 
@@ -68,17 +64,11 @@ class implicit_return:
 
     """
     try:
-      # Use the transformer service
-      transformed = self._transformer.transform_function(func)
-
-      # Mark as transformed for debugging/introspection
-      transformed.__implicit_return__ = True  # type: ignore[attr-defined]
-
-      return cast(F, transformed)
+      transformed = ImplicitReturnTransformer.transform_function(func)
     except ValueError as e:
-      # Convert to UnsupportedConstructError for backward compatibility
       raise UnsupportedConstructError(str(e)) from e
+    transformed.__implicit_return__ = True  # type: ignore[attr-defined]
+    return cast(F, transformed)
 
 
-# Convenience: Allow using @implicit_return without parentheses
-implicit_return = implicit_return()
+implicit_return: _ImplicitReturn = _ImplicitReturn()

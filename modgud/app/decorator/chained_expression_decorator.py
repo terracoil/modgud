@@ -8,25 +8,19 @@ from __future__ import annotations
 
 import functools
 import inspect
+from dataclasses import dataclass
 from typing import Any, Callable, TypeVar
 
-# if TYPE_CHECKING:
 from modgud.infrastructure import ChainableExpression
 
 T = TypeVar('T')
 
 
+@dataclass(frozen=True)
 class ChainedExpressionDecorator:
   """Decorator that wraps function results in ChainableExpression for method chaining."""
 
-  def __init__(self, auto_unwrap: bool = False) -> None:
-    """Initialize the chained expression decorator.
-
-    Args:
-        auto_unwrap: If True, automatically unwrap single ChainableExpression arguments
-
-    """
-    self.auto_unwrap = auto_unwrap
+  auto_unwrap: bool = False
 
   def __call__(self, func: Callable[..., T]) -> Callable[..., ChainableExpression[T]]:
     """Decorate a function to return ChainableExpression.
@@ -76,6 +70,6 @@ class ChainedExpressionDecorator:
     wrapper.__annotations__ = inspect.signature(func).__annotations__
 
     # Mark as chained expression
-    wrapper.__chained_expression__ = True
+    wrapper.__chained_expression__ = True  # type: ignore[attr-defined]
 
     return wrapper

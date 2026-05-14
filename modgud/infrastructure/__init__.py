@@ -13,7 +13,6 @@ from .guard_runtime import GuardRuntime
 from .maybe_factory import MaybeFactory
 from .nothing_maybe import Nothing
 from .ok_result import Ok
-from .pipeable_factory import PipeableFactory
 from .pipeable_wrapper import Pipeable
 from .result_factory import ResultFactory
 from .safe_expression_factory import SafeExpressionFactory
@@ -31,7 +30,6 @@ __all__ = [
   'MaybeFactory',
   'Nothing',
   'Ok',
-  'PipeableFactory',
   'Pipeable',
   'ResultFactory',
   'SafeExpressionFactory',

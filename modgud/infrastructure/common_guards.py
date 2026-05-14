@@ -7,7 +7,7 @@ common validation patterns like not_none, positive, in_range, etc.
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable
 from urllib.parse import urlparse
 
 from modgud.domain import ErrorMessages, GuardFunction
@@ -28,7 +28,7 @@ class CommonGuards:
   @staticmethod
   def _extract_param(
     param_name: str,
-    position: Optional[int],
+    position: int | None,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
     default: Any = None,
@@ -59,7 +59,7 @@ class CommonGuards:
   @staticmethod
   def _make_guard(
     param_name: str,
-    position: Optional[int],
+    position: int | None,
     validator: Callable[[Any], bool],
     error_template: str,
     default: Any = None,
@@ -78,10 +78,10 @@ class CommonGuards:
 
     """
 
-    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+    def check(*args: Any, **kwargs: Any) -> bool | str:
       value = CommonGuards._extract_param(param_name, position, args, kwargs, default)
       # Single return point
-      result: Union[bool, str] = True
+      result: bool | str = True
       if not validator(value):
         result = error_template.format(param_name=param_name, value=value)
       return result
@@ -89,7 +89,7 @@ class CommonGuards:
     return check
 
   @staticmethod
-  def not_empty(param_name: str = 'parameter', position: Optional[int] = None) -> GuardFunction:
+  def not_empty(param_name: str = 'parameter', position: int | None = None) -> GuardFunction:
     """Guard ensuring collection parameter is not empty.
 
     Args:
@@ -98,7 +98,7 @@ class CommonGuards:
 
     """
 
-    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+    def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
       return CommonGuards._check_not_empty(param_name, position, args, kwargs)
 
@@ -144,7 +144,7 @@ class CommonGuards:
 
     """
 
-    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+    def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
       return CommonGuards._check_in_range(min_val, max_val, param_name, position, args, kwargs)
 
@@ -163,7 +163,7 @@ class CommonGuards:
 
     """
 
-    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+    def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
       return CommonGuards._check_type(expected_type, param_name, position, args, kwargs)
 
@@ -182,7 +182,7 @@ class CommonGuards:
 
     """
 
-    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+    def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
       return CommonGuards._check_pattern(pattern, param_name, position, args, kwargs)
 
@@ -207,7 +207,7 @@ class CommonGuards:
 
     """
 
-    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+    def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
       return CommonGuards._check_file_path(
         param_name, position, must_exist, must_be_file, must_be_dir, args, kwargs
@@ -228,7 +228,7 @@ class CommonGuards:
 
     """
 
-    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+    def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
       return CommonGuards._check_url(param_name, position, require_scheme, args, kwargs)
 
@@ -247,7 +247,7 @@ class CommonGuards:
 
     """
 
-    def check(*args: Any, **kwargs: Any) -> Union[bool, str]:
+    def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
       return CommonGuards._check_enum(enum_class, param_name, position, args, kwargs)
 
@@ -259,13 +259,13 @@ class CommonGuards:
   @staticmethod
   def _check_not_empty(
     param_name: str,
-    position: Optional[int],
+    position: int | None,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-  ) -> Union[bool, str]:
+  ) -> bool | str:
     """Check if parameter is not empty (single return point)."""
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default='')
-    result: Union[bool, str] = True
+    result: bool | str = True
 
     # Check if name is empty (works for strings and collections)
     if hasattr(value, '__len__'):
@@ -284,10 +284,10 @@ class CommonGuards:
     position: int,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-  ) -> Union[bool, str]:
+  ) -> bool | str:
     """Check if parameter is within range (single return point)."""
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default=min_val - 1)
-    result: Union[bool, str] = True
+    result: bool | str = True
 
     if not (min_val <= value <= max_val):
       result = f'{param_name} must be between {min_val} and {max_val}'
@@ -301,10 +301,10 @@ class CommonGuards:
     position: int,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-  ) -> Union[bool, str]:
+  ) -> bool | str:
     """Check if parameter matches expected type (single return point)."""
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
-    result: Union[bool, str] = True
+    result: bool | str = True
 
     if not isinstance(value, expected_type):
       result = f'{param_name} must be of type {expected_type.__name__}'
@@ -318,10 +318,10 @@ class CommonGuards:
     position: int,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-  ) -> Union[bool, str]:
+  ) -> bool | str:
     """Check if parameter matches regex pattern (single return point)."""
     value = str(CommonGuards._extract_param(param_name, position, args, kwargs, default=''))
-    result: Union[bool, str] = True
+    result: bool | str = True
 
     if re.match(pattern, value) is None:
       result = f'{param_name} must match pattern {pattern}'
@@ -337,10 +337,10 @@ class CommonGuards:
     must_be_dir: bool,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-  ) -> Union[bool, str]:
+  ) -> bool | str:
     """Check if parameter is a valid file path (single return point)."""
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
-    result: Union[bool, str] = True
+    result: bool | str = True
 
     if value is None:
       result = f'{param_name} is required'
@@ -362,10 +362,10 @@ class CommonGuards:
     require_scheme: bool,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-  ) -> Union[bool, str]:
+  ) -> bool | str:
     """Check if parameter is a valid URL (single return point)."""
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
-    result: Union[bool, str] = True
+    result: bool | str = True
 
     if value is None:
       result = f'{param_name} is required'
@@ -385,10 +385,10 @@ class CommonGuards:
     position: int,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-  ) -> Union[bool, str]:
+  ) -> bool | str:
     """Check if parameter is a valid enum name (single return point)."""
     value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
-    result: Union[bool, str] = True
+    result: bool | str = True
 
     if value is None:
       result = f'{param_name} is required'

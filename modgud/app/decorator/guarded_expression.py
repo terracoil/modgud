@@ -15,8 +15,8 @@ from modgud.domain import (
   GuardFunction,
   UnsupportedConstructError,
 )
-from modgud.infrastructure.guard import GuardRuntimeAdapter, GuardWrapperService
-from modgud.infrastructure.transform import ImplicitReturnAdapter
+from modgud.infrastructure import GuardRuntime
+from modgud.infrastructure.transform import ImplicitReturnTransformer
 
 
 class guarded_expression:
@@ -80,29 +80,15 @@ class guarded_expression:
     self.on_error = on_error
     self.log = log
 
-    # Create services directly
-    self._guard_wrapper = GuardWrapperService(GuardRuntimeAdapter())
-    self._implicit_transformer = ImplicitReturnAdapter()
-
   def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
     """Apply guard wrapping and optional implicit return transformation."""
-    # Apply implicit return first if enabled, then wrap with guards
+    target = func
     if self.implicit_return_enabled:
       try:
-        # Try to apply implicit return transformation
-        transformed = self._implicit_transformer.transform_function(func)
-        wrapped = self._guard_wrapper.wrap_function(
-          transformed, self.guards, self.on_error, self.log
-        )
-        # Mark as implicit return for compatibility
-        wrapped.__implicit_return__ = True  # type: ignore[attr-defined]
-        return wrapped
+        target = ImplicitReturnTransformer.transform_function(func)
       except (UnsupportedConstructError, ValueError, OSError):
-        # Function may have already been transformed or source is unavailable
-        # In either case, just wrap with guards
-        wrapped = self._guard_wrapper.wrap_function(func, self.guards, self.on_error, self.log)
-        # Still mark as implicit return enabled even if transformation failed
-        wrapped.__implicit_return__ = True  # type: ignore[attr-defined]
-        return wrapped
-    else:
-      return self._guard_wrapper.wrap_function(func, self.guards, self.on_error, self.log)
+        pass
+    wrapped = GuardRuntime.wrap_function(target, self.guards, self.on_error, self.log)
+    if self.implicit_return_enabled:
+      wrapped.__implicit_return__ = True  # type: ignore[attr-defined]
+    return wrapped

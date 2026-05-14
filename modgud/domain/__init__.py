@@ -43,7 +43,5 @@ __all__ = [
   # Enums
   'GuardStrategy',
   'FailureStrategy',
-  # Messages
-  'ErrorMessages',
   'InfoMessageEnum',
 ]
