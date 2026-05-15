@@ -1,54 +1,45 @@
 """Guard checking logic for runtime validation.
 
-Provides the GuardRuntime class that encapsulates guard evaluation and
-failure handling logic.
+GuardRuntime encapsulates guard evaluation (with optional `continuance`
+budget for collecting additional failures) and dispatches the collected
+failures through the chosen `GuardFailureStrategy`.
 """
 
 import functools
-import logging
 from typing import Any, Callable
 
-from modgud.domain import FailureBehavior, GuardFunction
+from modgud.domain import GuardClauseError, GuardFailureStrategy, GuardFunction
 
 
 class GuardRuntime:
   """Runtime guard checking and failure handling."""
-
-  _logger: logging.Logger = logging.getLogger(__name__)
 
   @classmethod
   def wrap_function(
     cls,
     func: Callable[..., Any],
     guards: tuple[GuardFunction, ...],
-    on_error: FailureBehavior,
-    log: bool,
+    strategy: GuardFailureStrategy,
+    on_failure: Any,
+    continuance: int,
   ) -> Callable[..., Any]:
     """Wrap a function with guard checking.
 
-    Args:
-        func: Function to wrap
-        guards: Guards to evaluate before calling func
-        on_error: Failure behavior (exception class, callable, or value)
-        log: If True, log guard failures at INFO level
-
-    Returns:
-        Wrapped function that evaluates guards before calling func
-
+    :param func: Function to wrap.
+    :param guards: Guards evaluated before each call.
+    :param strategy: How to dispatch collected failures.
+    :param on_failure: Exception class / value / handler paired with strategy.
+    :param continuance: Max additional guards to evaluate past the first failure.
+    :returns: Wrapped function.
     """
 
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-      error_msg = cls.check_guards(guards, args, kwargs)
-      if error_msg is None:
+      errors = cls.check_guards(guards, args, kwargs, continuance)
+      if not errors:
         result = func(*args, **kwargs)
       else:
-        return_value, exception = cls.handle_failure(
-          error_msg, on_error, func.__name__, args, kwargs, log
-        )
-        if exception is not None:
-          raise exception
-        result = return_value
+        result = cls.handle_failure(errors, strategy, on_failure, args, kwargs)
       return result
 
     wrapper.__dict__.update(func.__dict__)
@@ -56,60 +47,63 @@ class GuardRuntime:
 
   @classmethod
   def check_guards(
-    cls, guards: tuple[GuardFunction, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
-  ) -> str | None:
-    """Evaluate all guards sequentially.
+    cls,
+    guards: tuple[GuardFunction, ...],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    continuance: int,
+  ) -> list[str]:
+    """Evaluate guards, collecting up to (1 + continuance) failures.
 
-    Args:
-        guards: Tuple of guard functions to evaluate
-        args: Positional arguments passed to the decorated function
-        kwargs: Keyword arguments passed to the decorated function
+    A guard that *raises* (rather than returning True/str) terminates the
+    sweep: if no failures have been recorded yet, the exception propagates
+    (it's a programming error in the guard itself); otherwise we treat it
+    as cascade fallout from already-invalid input and stop collecting.
 
-    Returns:
-        None if all guards pass, or error message string if any guard fails
-
+    :returns: List of error message strings; empty when all guards pass.
     """
-    result = None
+    errors: list[str] = []
     for guard in guards:
-      guard_result = guard(*args, **kwargs)
-      # Fail fast principle
-      if guard_result is not True:  # Must be exact True, not just truthy
-        result = guard_result if isinstance(guard_result, str) else 'Guard clause failed'
+      if len(errors) > continuance:
         break
-    return result
+      try:
+        result = guard(*args, **kwargs)
+      except Exception:
+        if not errors:
+          raise
+        break
+      if result is not True:
+        errors.append(result if isinstance(result, str) else 'Guard clause failed')
+    return errors
 
   @classmethod
   def handle_failure(
     cls,
-    error_msg: str,
-    on_error: FailureBehavior,
-    func_name: str,
+    errors: list[str],
+    strategy: GuardFailureStrategy,
+    on_failure: Any,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
-    log_enabled: bool,
-  ) -> tuple[Any, BaseException | None]:
-    """Handle guard failure based on on_error configuration.
+  ) -> Any:
+    """Dispatch collected failures per strategy.
 
-    Args:
-        error_msg: The error message from the failed guard
-        on_error: The failure behavior configuration
-        func_name: Name of the decorated function (for logging)
-        args: Positional arguments passed to the decorated function
-        kwargs: Keyword arguments passed to the decorated function
-        log_enabled: Whether to log the failure
-
-    Returns:
-        Tuple of (return_value, exception_to_raise)
-        - If exception should be raised: (None, exception_instance)
-        - If name should be returned: (name, None)
-
+    :returns: Whatever the strategy yields (for RETURN_VALUE / ERROR_RETURN /
+              CALL_HANDLER). ERROR_RAISE never returns - it raises.
     """
-    # Log before handling - capture failure regardless of handler outcome
-    if log_enabled:
-      cls._logger.info(f'Guard clause failed in {func_name}: {error_msg}')
+    if strategy is GuardFailureStrategy.ERROR_RAISE:
+      raise cls._build_exception(errors, on_failure)
+    if strategy is GuardFailureStrategy.ERROR_RETURN:
+      result: Any = cls._build_exception(errors, on_failure)
+    elif strategy is GuardFailureStrategy.RETURN_VALUE:
+      result = on_failure
+    else:  # CALL_HANDLER
+      result = on_failure(errors, *args, **kwargs)
+    return result
 
-    # Exception classes raise, callables transform, values pass through
-    if isinstance(on_error, type) and issubclass(on_error, BaseException):
-      return (None, on_error(error_msg))
-    # Callables get full context for recovery logic, values are simple fallbacks
-    return (on_error(error_msg, *args, **kwargs) if callable(on_error) else on_error, None)  # type: ignore[call-arg]
+  @staticmethod
+  def _build_exception(errors: list[str], exc_class: Any) -> BaseException:
+    """Build a single exception or ExceptionGroup from collected errors."""
+    cls_to_use = exc_class if isinstance(exc_class, type) else GuardClauseError
+    if len(errors) == 1:
+      return cls_to_use(errors[0])
+    return ExceptionGroup('Guards failed', [cls_to_use(m) for m in errors])

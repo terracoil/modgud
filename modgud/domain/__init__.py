@@ -3,21 +3,15 @@
 This package contains the core domain concepts for modgud including:
 - Types and type definitions
 - Domain exceptions
-- Domain enums and constants
+- The GuardFailureStrategy enum
 - Message templates
 
 The domain layer is completely passive - it contains no business logic,
 only data structures and interface definitions.
 """
 
-# Core types
-# Domain enums (from enums package)
-from .enums import FailureStrategy, GuardStrategy, InfoMessageEnum
-
-# Message templates
+from .enums import GuardFailureStrategy
 from .error_messages import ErrorMessages
-
-# Domain exceptions
 from .exceptions import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
@@ -25,13 +19,11 @@ from .exceptions import (
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .types import FailureBehavior, FailureTypes, GuardFunction
+from .types import GuardFunction
 
 __all__ = [
   # Types
   'GuardFunction',
-  'FailureTypes',
-  'FailureBehavior',
   # Error messages
   'ErrorMessages',
   # Exceptions
@@ -41,7 +33,5 @@ __all__ = [
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
   # Enums
-  'GuardStrategy',
-  'FailureStrategy',
-  'InfoMessageEnum',
+  'GuardFailureStrategy',
 ]

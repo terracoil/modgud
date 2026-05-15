@@ -1,7 +1,7 @@
 """Tests for basic guard clause functionality."""
 
 import pytest
-from modgud import guarded_expression
+from modgud import GuardFailureStrategy, guarded_expression
 
 from tests.helpers import assert_guard_fails
 
@@ -36,7 +36,8 @@ class TestGuardFailureHandling:
 
     @guarded_expression(
       lambda x: x > 0 or 'Must be positive',
-      on_error={'error': 'Invalid input'},
+      strategy=GuardFailureStrategy.RETURN_VALUE,
+      on_failure={'error': 'Invalid input'},
     )
     def double(x):
       x * 2  # implicit return
@@ -46,7 +47,7 @@ class TestGuardFailureHandling:
   def test_guard_failure_custom_exception(self):
     """Custom exception should be raised on guard failure when configured."""
 
-    @guarded_expression(lambda x: x > 0 or 'Must be positive', on_error=ValueError)
+    @guarded_expression(lambda x: x > 0 or 'Must be positive', on_failure=ValueError)
     def double(x):
       x * 2  # implicit return
 
@@ -57,13 +58,14 @@ class TestGuardFailureHandling:
   def test_guard_failure_custom_handler(self):
     """Custom handler should process guard failures when configured."""
 
-    def custom_handler(error_msg, *args, **kwargs):
-      result = f'Handled: {error_msg}'
+    def custom_handler(errors, *args, **kwargs):
+      result = f'Handled: {errors[0]}'
       return result
 
     @guarded_expression(
       lambda x: x > 0 or 'Must be positive',
-      on_error=custom_handler,
+      strategy=GuardFailureStrategy.CALL_HANDLER,
+      on_failure=custom_handler,
     )
     def double(x):
       x * 2  # implicit return

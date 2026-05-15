@@ -1,6 +1,6 @@
 """Tests for metadata preservation and edge cases."""
 
-from modgud import GuardClauseError, guarded_expression
+from modgud import guarded_expression
 
 
 class TestMetadataPreservation:
@@ -9,7 +9,7 @@ class TestMetadataPreservation:
   def test_metadata_preservation(self):
     """Function metadata should be preserved after decoration."""
 
-    @guarded_expression(implicit_return=False, on_error=GuardClauseError)
+    @guarded_expression(implicit_return=False)
     def documented_function(x: int) -> int:
       """Multiply input by two."""
       return x * 2
@@ -25,7 +25,7 @@ class TestDecoratorWithoutGuards:
   def test_no_guards_implicit_return_false(self):
     """Decorator should work with no guards and implicit_return=False."""
 
-    @guarded_expression(implicit_return=False, on_error=GuardClauseError)
+    @guarded_expression(implicit_return=False)
     def simple(x):
       return x * 2
 

@@ -7,10 +7,7 @@ languages like F#/Elixir.
 
 import functools
 import inspect
-from typing import Any, Callable, TypeVar
-
-T = TypeVar('T')
-R = TypeVar('R')
+from typing import Any, Callable
 
 
 class Pipeable:

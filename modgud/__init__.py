@@ -1,77 +1,63 @@
-"""Modgud - Modern Guard Clauses for Python.
+"""Modgud - guard clauses + implicit returns for Python.
 
-A library for implementing guard clause decorators with single return point architecture.
+Primary surface:
 
-Primary API:
-  - guarded_expression: Unified decorator combining guards + implicit return
-  - implicit_return: Standalone decorator for Ruby-style implicit returns
-  - Pre-built guard validators: positive, not_none, not_empty, type_check, etc.
+- ``guarded_expression`` - unified decorator combining guard validation
+  with optional implicit-return AST rewrite. Failure dispatch is controlled
+  by ``GuardFailureStrategy`` plus a paired ``on_failure`` payload; the
+  ``continuance`` parameter caps how many guards past the first failure
+  are still evaluated.
+- ``implicit_return`` - standalone Ruby-style implicit-return decorator.
+- ``pipeable`` - functional ``|``-operator pipelines.
+- Pre-built guard validators: ``positive``, ``not_none``, ``not_empty``,
+  ``type_check``, ``in_range``, ``matches_pattern``, ``valid_file_path``,
+  ``valid_url``, ``valid_enum``.
+- ``GuardRegistry`` for custom guard registration.
 
-Usage Examples:
+Example::
 
-    Basic guard validation (explicit return):
-        from modgud import guarded_expression, positive, type_check
+    from modgud import (
+      guarded_expression,
+      GuardFailureStrategy,
+      positive,
+      GuardClauseError,
+    )
 
-        @guarded_expression(
-            positive("x"),
-            type_check(int, "x"),
-            implicit_return=False
-        )
-        def calculate(x):
-            return x * 2
 
-    Implicit return with guards (recommended approach):
-        from modgud import implicit_return, guarded_expression, positive
+    @guarded_expression(positive('x'))
+    def double(x):
+      x * 2  # implicit return
 
-        @implicit_return
-        @guarded_expression(positive("x"))
-        def process(x):
-            result = x * 2
-            result  # Implicit return
 
-    Standalone implicit return (Ruby-style):
-        from modgud import implicit_return
+    @guarded_expression(
+      positive('x'),
+      strategy=GuardFailureStrategy.RETURN_VALUE,
+      on_failure=-1,
+    )
+    def safe_square(x):
+      x * x
 
-        @implicit_return
-        def process(x, y):
-            if x > y:
-                x + y  # Implicit return
-            else:
-                x - y  # Implicit return
 
-    Custom guard registration:
-        from modgud import GuardRegistry
-
-        def valid_email(param_name="email", position=0):
-            def check(*args, **kwargs):
-                name = kwargs.get(param_name, args[position] if position < len(args) else None)
-                return "@" in str(name) or f"{param_name} must be a valid email"
-            return check
-
-        GuardRegistry.register("valid_email", valid_email, namespace="validators")
+    # Collect up to two extra failures past the first:
+    @guarded_expression(
+      positive('x'),
+      positive('y'),
+      continuance=2,
+    )
+    def add(x, y):
+      x + y
 """
 
 from .app.decorator import guarded_expression, implicit_return, pipeable
 from .domain import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
+  GuardFailureStrategy,
   ImplicitReturnError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .infrastructure import (
-  ChainableExpression,
-  ChainedExpressionFactory,
-  CommonGuards,
-  ErrResult,
-  GuardRegistry,
-  MaybeFactory,
-  Nothing,
-  Ok,
-  ResultFactory,
-  SafeExpressionFactory,
-  Some,
-)
+from .infrastructure import CommonGuards, GuardRegistry
 
 # Export guards as module-level functions for convenient direct import
 not_empty = CommonGuards.not_empty
@@ -84,37 +70,14 @@ valid_file_path = CommonGuards.valid_file_path
 valid_url = CommonGuards.valid_url
 valid_enum = CommonGuards.valid_enum
 
-# Create factory instances
-_safe_factory = SafeExpressionFactory()
-_chained_factory = ChainedExpressionFactory()
-
-# Export factory functions for convenient direct import
-safe_expression = _safe_factory.create_decorator
-chained_expression = _chained_factory.create_decorator
-# pipeable is already imported from app.decorator.pipeable above
-chain = _chained_factory.create_expression
-
-# Export factory functions for monadic types
-Maybe = MaybeFactory
-Result = ResultFactory
-
-__version__ = '1.2.0'
+__version__ = '2.0.0'
 __all__ = [
   # Primary decorators
   'guarded_expression',
   'implicit_return',
   'pipeable',
-  'safe_expression',
-  'chained_expression',
-  # Monadic types and factories
-  'Maybe',
-  'Some',
-  'Nothing',
-  'Result',
-  'Ok',
-  'ErrResult',
-  'ChainableExpression',
-  'chain',
+  # Strategy enum
+  'GuardFailureStrategy',
   # Classes
   'CommonGuards',
   'GuardRegistry',

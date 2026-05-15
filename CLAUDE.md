@@ -6,12 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is `modgud`, a Python library that provides guard clause decorators for implementing validation checks at function entry points. The library enforces single return point architecture and supports various failure behaviors including custom return values, exception raising, and handler functions.
 
-**Core Architecture (v1.2.6):**
+**Core Architecture (v2.0.0):**
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
 - **Expression decorators**: `implicit_return` (standalone), `pipeable` (functional pipes)
 - **Guard system**: Pre-built guards + `GuardRegistry` for custom validators
-- **Error handling**: Configurable via `on_error` parameter (exception classes, custom values, callables)
-- **Architecture**: Clean separation with KLA (app/infrastructure/domain/util layers)
+- **Failure handling**: Single `GuardFailureStrategy` enum (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload; `continuance: int` caps how many guards past the first failure are evaluated. Multiple collected failures produce an `ExceptionGroup` for the error strategies.
+- **Architecture**: Clean separation across `app/` (decorators), `infrastructure/` (runtime + AST transform), `domain/` (passive types/enums/exceptions).
 
 ## Development Commands
 
@@ -131,12 +131,13 @@ _Top-level layers (and directories/packages). Dependencies flow downward:_
 **Guard Function Signature**: Guards are callables that accept `(*args, **kwargs)` and return either `True` (pass) or a string error message (fail).
 
 **Failure Behavior Chain**:
-1. Guard evaluates to non-True value
-2. Optional logging occurs if `log=True`
-3. Failure handling via `on_error` parameter:
-   - Exception class → instantiate and raise
-   - Callable → invoke with `(error_msg, *args, **kwargs)`, return value used
-   - Any other value → return directly
+1. Guards are evaluated in order. Default `continuance=0` stops at the first failure; `continuance=N` collects up to `1+N` failures. A guard that *raises* propagates if no prior failures were recorded, otherwise it terminates collection (cascade safety).
+2. Collected failure strings (`list[str]`) are dispatched through `GuardFailureStrategy`:
+   - `ERROR_RAISE` (default): raise `on_failure(msg)` for a single error, or `ExceptionGroup('Guards failed', [...])` for multiple.
+   - `ERROR_RETURN`: same instances, but *returned* instead of raised.
+   - `RETURN_VALUE`: return `on_failure` as-is.
+   - `CALL_HANDLER`: return `on_failure(errors, *args, **kwargs)`. `errors` is always a list.
+3. The wrapped function body is never executed when at least one failure was recorded.
 
 **Implicit Return Transformation** (when `implicit_return=True`):
 1. Function source code extracted via `inspect.getsource()`
@@ -165,22 +166,21 @@ _Top-level layers (and directories/packages). Dependencies flow downward:_
 Tests should be placed in `tests/` directory following pytest conventions (`test_*.py` or `*_test.py`). The library uses extensive examples in `modgud/README.md` which can guide test case development.
 
 **Test Files:**
-- `tests/test_guarded_expression.py` - Integration tests for the main decorator (30+ tests)
+- `tests/test_basic_guards.py` - Core guarded_expression behavior
 - `tests/test_ast_transform.py` - Unit tests for AST transformation logic
-- `tests/test_guard_runtime.py` - Unit tests for guard checking and failure handling
+- `tests/test_guard_runtime.py` - Unit tests for `check_guards` / `handle_failure` / `wrap_function`
 - `tests/test_fixtures.py` - Module-level test fixtures for implicit return tests
 
 **IMPORTANT:** Functions decorated with `implicit_return=True` must be defined at module level (not inside test functions) because `inspect.getsource()` cannot extract source from nested functions. Use `tests/test_fixtures.py` for these cases.
 
 **Key test scenarios**:
-- Guard success/failure paths
-- Different `on_error` behaviors (None, values, callables, exceptions, GuardClauseError)
+- Guard success / failure paths
+- Each `GuardFailureStrategy` (ERROR_RAISE / ERROR_RETURN / RETURN_VALUE / CALL_HANDLER) with and without a custom `on_failure`
+- `continuance` budget: collecting multiple failures, ExceptionGroup shape, cascade-safety when a guard raises mid-window
 - Implicit return with various constructs (if/else, try/except, match/case)
 - Explicit return disallowed with implicit_return=True
-- Missing else clause detection
-- Empty block detection
+- Missing else clause / empty block detection
 - Nested function handling (nested functions can use explicit returns)
-- Logging functionality
 - Guard parameter handling (positional vs named)
 - Metadata preservation (__name__, __doc__, __signature__, __annotations__)
 
@@ -198,42 +198,48 @@ The v0.2.0 refactoring implements clean architecture with clear separation of co
 
 **Primary API:**
 ```python
-from modgud import guarded_expression, positive, not_none, type_check, GuardClauseError
-
-# With guards and implicit return (default behavior)
-@guarded_expression(
-    positive("x"),
-    implicit_return=True,  # default
-    on_error=GuardClauseError  # default
+from modgud import (
+    guarded_expression, positive, not_none, type_check,
+    GuardFailureStrategy, GuardClauseError,
 )
+
+# Defaults: ERROR_RAISE, on_failure=GuardClauseError, continuance=0, implicit_return=True
+@guarded_expression(positive("x"))
 def process(x):
     result = x * 2
     result  # implicit return
 
-# Multiple guards with different validators
+# Multiple guards, collect up to 3 failures total (1 + continuance=2)
 @guarded_expression(
     not_none("user"),
     type_check(str, "name"),
-    positive("amount")
+    positive("amount"),
+    continuance=2,
 )
 def create_transaction(user, name, amount):
-    transaction = Transaction(user, name, amount)
-    transaction.id
+    Transaction(user, name, amount).id  # implicit return
 
-# Guards only, explicit return
+# Return a fallback value instead of raising
 @guarded_expression(
     positive("x"),
     implicit_return=False,
-    on_error=None
+    strategy=GuardFailureStrategy.RETURN_VALUE,
+    on_failure=None,
 )
 def calculate(x):
     return x * 2
 
-# Implicit return only, no guards
-@guarded_expression()
-def compute(x):
-    result = x * 2
-    result  # implicit return
+# Custom handler that sees the full errors list
+def explain(errors, *args, **kwargs):
+    return {"errors": errors, "args": args}
+
+@guarded_expression(
+    positive("x"),
+    strategy=GuardFailureStrategy.CALL_HANDLER,
+    on_failure=explain,
+)
+def report(x):
+    x * 2
 ```
 
 ### Error Hierarchy

@@ -146,11 +146,11 @@ class TestErrorConditions:
     def bad_guard(*args, **kwargs):
       raise RuntimeError('Guard evaluation failed')
 
-    @guarded_expression(bad_guard, implicit_return=False, on_error=None)
+    @guarded_expression(bad_guard, implicit_return=False)
     def process(x):
       return x * 2
 
-    # Should return None (on_error=None) when guard raises
+    # A raising guard with no prior failures propagates as-is.
     with pytest.raises(RuntimeError, match='Guard evaluation failed'):
       process(5)
 

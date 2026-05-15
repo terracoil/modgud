@@ -32,7 +32,7 @@ After all, what are expression-oriented guard clauses if not *genuinely good mod
 - [⚠️ The Problem](#the-problem) - Why defensive programming gets messy
 - [💡 The Solution](#the-solution) - How modgud changes everything
 - [🔑 Features](#features) - Six compelling features
-- [💡 Quick Start](#quick-start) - Get started in 60 seconds
+- [🌀 Quick Start](#quick-start) - Get started in 60 seconds
 - [🔑 Key Features at a Glance](#key-features-at-a-glance) - What makes modgud special
 - [🌍 Real-World Example](#real-world-example-api-endpoint) - See it in action
 - [📚 Documentation](#documentation) - Complete guides and references
@@ -366,7 +366,7 @@ Features:
 
 ---
 
-## 💡 Quick Start
+## 🌀 Quick Start
 
 ### 📦 Installation
 

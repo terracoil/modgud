@@ -17,12 +17,9 @@ class CommonGuards:
   """Pre-defined common guard clauses.
 
   Usage:
-      @guarded_expression(
-          CommonGuards.not_empty("username"),
-          log=True
-      )
+      @guarded_expression(CommonGuards.not_empty("username"))
       def create_user(username):
-          return {"username": username}
+          {"username": username}
   """
 
   @staticmethod

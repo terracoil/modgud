@@ -17,7 +17,7 @@ from modgud.infrastructure.transform import ImplicitReturnTransformer
 F = TypeVar('F', bound=Callable[..., Any])
 
 
-class _ImplicitReturn:
+class _ImplicitReturnDecorator:
   """Decorator that enables implicit returns for functions.
 
   Transforms a function to automatically return the last expression in each
@@ -71,4 +71,4 @@ class _ImplicitReturn:
     return cast(F, transformed)
 
 
-implicit_return: _ImplicitReturn = _ImplicitReturn()
+implicit_return: _ImplicitReturnDecorator = _ImplicitReturnDecorator()

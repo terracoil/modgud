@@ -34,7 +34,7 @@ class TestImplicitReturnBasics:
     """Explicit return should raise error when implicit_return=True."""
     with pytest.raises(ExplicitReturnDisallowedError):
 
-      @guarded_expression(implicit_return=True, on_error=GuardClauseError)
+      @guarded_expression(implicit_return=True)
       def bad_function():
         x = 10
         return x  # Should raise error

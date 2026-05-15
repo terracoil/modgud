@@ -4,11 +4,11 @@ These functions are defined at module level so their source can be inspected
 by the implicit_return transformer.
 """
 
-from modgud import GuardClauseError, guarded_expression, not_none, positive
+from modgud import GuardFailureStrategy, guarded_expression, not_none, positive
 
 
 # Simple implicit return
-@guarded_expression(implicit_return=True, on_error=GuardClauseError)
+@guarded_expression(implicit_return=True)
 def calculate():
   x = 10
   y = 20
@@ -16,7 +16,7 @@ def calculate():
 
 
 # Implicit return with if/else
-@guarded_expression(implicit_return=True, on_error=GuardClauseError)
+@guarded_expression(implicit_return=True)
 def classify(x):
   if x > 0:
     'positive'
@@ -25,7 +25,7 @@ def classify(x):
 
 
 # Implicit return with try/except
-@guarded_expression(implicit_return=True, on_error=GuardClauseError)
+@guarded_expression(implicit_return=True)
 def safe_divide(x, y):
   try:
     x / y
@@ -47,7 +47,7 @@ def double_with_guards(x):
 
 
 # No guards, implicit return true
-@guarded_expression(implicit_return=True, on_error=GuardClauseError)
+@guarded_expression(implicit_return=True)
 def simple_implicit(x):
   x * 2
 
@@ -71,7 +71,11 @@ async def async_classify(x):
     'non-positive'
 
 
-@guarded_expression(implicit_return=False, on_error=None)
+@guarded_expression(
+  implicit_return=False,
+  strategy=GuardFailureStrategy.RETURN_VALUE,
+  on_failure=None,
+)
 async def async_explicit_return(x):
   await asyncio.sleep(0)
   return x * 3

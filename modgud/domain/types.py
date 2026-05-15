@@ -1,24 +1,13 @@
 """Domain type definitions for modgud.
 
-All type aliases and type definitions used throughout the modgud library
-are defined here following domain-driven design principles. The domain
-layer is passive and contains no business logic - only type definitions.
+The domain layer is passive and contains no business logic - only type
+definitions and protocols used across the library.
 """
 
-from typing import Any, Callable
+from typing import Callable
 
-__all__ = [
-  'GuardFunction',
-  'FailureTypes',
-  'FailureBehavior',
-]
+__all__ = ['GuardFunction']
 
 # Guard function signature: (*args, **kwargs) -> True | str
-# Guards return True for success, or an error message string for failure
+# Guards return True for success, or an error message string for failure.
 GuardFunction = Callable[..., bool | str]
-
-# Primitive failure return types
-FailureTypes = bool | str | int | float | None | dict[str, Any] | list[Any] | tuple[Any, ...]
-
-# Complete failure behavior types including callables and exception classes
-FailureBehavior = FailureTypes | Callable[..., Any] | type
