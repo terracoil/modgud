@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlparse
 
-from modgud.domain import ErrorMessages, GuardFunction
+from modgud.shared import GuardFunction
+
+from .guard_registry import GuardRegistry
 
 
 class CommonGuards:
@@ -124,7 +126,7 @@ class CommonGuards:
 
     """
     return CommonGuards._make_guard(
-      param_name, position, lambda v: v > 0, ErrorMessages.PARAM_MUST_BE_POSITIVE, default=0
+      param_name, position, lambda v: v > 0, '{param_name} must be positive', default=0
     )
 
   @staticmethod
@@ -411,8 +413,6 @@ class CommonGuards:
     This method is called once on module import to make all common guards
     available through the GuardRegistry.
     """
-    from .guard_registry import GuardRegistry
-
     # List of guard methods to register (excluding private methods)
     guards_to_register = [
       'not_empty',

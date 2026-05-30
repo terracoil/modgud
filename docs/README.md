@@ -1,5 +1,9 @@
 **Parent**: [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md) | [⚙️ How It Works](how-it-works.md)
 
+> ⚠️ **v2 API note.** Many examples below predate the v2 surface. The current decorator signature is
+> `guarded_expression(*guards, implicit_return=True, strategy=GuardFailureStrategy.ERROR_RAISE, on_failure=GuardClauseError, continuance=0)`.
+> `on_error` / `log` were removed. See `modgud/__init__.py` docstring and `api-reference.md` for the up-to-date contract.
+
 # MODGUD Technical Documentation Hub
 
 <img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
@@ -33,7 +37,7 @@ This document contains:
 
 ## 🗺️ Overview
 
-**modgud** is a Python library that brings expression-oriented programming, single return point architecture, and guard clause decorators to Python 3.13+. It provides a clean, functional approach to validation and control flow that eliminates defensive coding clutter while maintaining code clarity and maintainability.
+**modgud** is a Python library that brings expression-oriented programming, single return point architecture, and guard clause decorators to Python 3.11+. It provides a clean, functional approach to validation and control flow that eliminates defensive coding clutter while maintaining code clarity and maintainability.
 
 ### What is modgud?
 
@@ -90,7 +94,7 @@ pip install -e ".[dev]"
 
 ### Requirements
 
-- Python 3.13 or higher
+- Python 3.11 or higher
 - No external runtime dependencies (uses only Python standard library)
 
 

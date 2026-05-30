@@ -2,7 +2,7 @@
 
 import pytest
 from modgud import GuardClauseError, GuardFailureStrategy
-from modgud.infrastructure.guard_runtime import GuardRuntime
+from modgud.infrastructure import GuardRuntime
 
 
 class TestCheckGuards:

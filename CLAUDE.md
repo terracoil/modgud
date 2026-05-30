@@ -8,7 +8,7 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 
 **Core Architecture (v2.0.0):**
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
-- **Expression decorators**: `implicit_return` (standalone), `pipeable` (functional pipes)
+- **Expression decorator**: `implicit_return` (standalone)
 - **Guard system**: Pre-built guards + `GuardRegistry` for custom validators
 - **Failure handling**: Single `GuardFailureStrategy` enum (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload; `continuance: int` caps how many guards past the first failure are evaluated. Multiple collected failures produce an `ExceptionGroup` for the error strategies.
 - **Architecture**: Clean separation across `app/` (decorators), `infrastructure/` (runtime + AST transform), `domain/` (passive types/enums/exceptions).
@@ -44,7 +44,7 @@ If linting fails after auto-fix, you MUST resolve all errors before proceeding. 
 **This is a Poetry project** - use Poetry for all dependency management:
 
 ```bash
-# Install dependencies (Python 3.13+ required)
+# Install dependencies (Python 3.11+ required)
 poetry install
 
 # Install with test dependencies
@@ -92,34 +92,40 @@ poetry run twine check dist/*
 ```
 
 ## Code Architecture
-Loosely based on KLA (Kinetic Layer Architecture) [docs/architecture/kla-architecture-v4.6.6.md]
 
-### Core Module Structure (v0.2.0)
-_Top-level layers (and directories/packages). Dependencies flow downward:_
+Per-feature decomposition (see `project.md` at the repo root). Dependencies flow downward only: `app → domain`, `infrastructure.<feature> → domain.<feature>`, `domain.<feature> → shared, util`, `shared → util`.
 
-**app/** - Presentation layer (decorators, public APIs)
-- `app/decorator/guarded_expression.py` - Main decorator implementation
-- `app/decorator/implicit_return_decorator.py` - Standalone implicit return
-- `app/decorator/pipeable.py` - Functional pipeline decorator
+```
+modgud/
+  app/                                # public decorators (entry points)
+    guarded_expression.py             # @guarded_expression — plain function
+    implicit_return.py                # @implicit_return — plain function
+  domain/
+    guarded_expr/
+      enums.py                        # GuardFailureStrategy (IntEnum)
+      errors.py                       # GuardClauseError
+      ports/guard_runtime_port.py     # Protocol describing GuardRuntime
+    implicit_ret/
+      errors.py                       # ImplicitReturnError + 3 children
+      ports/implicit_return_transformer_port.py
+  infrastructure/
+    guarded_expr/
+      guard_runtime.py                # GuardRuntime — guard eval + dispatch
+      common_guards.py                # CommonGuards (pre-built validators)
+      guard_registry.py               # GuardRegistry (custom guard registration)
+    implicit_ret/
+      implicit_return_transformer.py  # AST rewriter (public)
+      _no_explicit_return_checker.py  # private helper
+      _tail_rewriter.py               # private helper
+      _top_level_transformer.py       # private helper
+  shared/
+    types.py                          # GuardFunction (used by app + infra)
+  util/                               # placeholder; no contents yet
+```
 
-**infrastructure/** - Core logic and implementation details
-- `infrastructure/guard_runtime.py` - Guard checking and failure handling
-- `infrastructure/implicit_return.py` - AST transformation for implicit returns
-- `infrastructure/common_guards.py` - Pre-built guard validators
-- `infrastructure/guard_registry.py` - Custom guard registration system
+**Ports**: `GuardRuntimePort` and `ImplicitReturnTransformerPort` document the contract the app decorators consume. The decorators currently import the concrete classes directly; the ports exist so the wiring can flip to IoC injection (via `gleipnyr`) without surface changes.
 
-**domain/** - Passive domain objects
-- `domain/exceptions/` - All exception classes
-- `domain/enums/` - Enum definitions
-- `domain/ports/` - Protocol/interface definitions
-- `domain/types.py` - Type definitions
-
-**util/** - Generic utilities
-- `util/tools/` - API tools (Ranger, TextUtil)
-- `util/logging/` - Logging utilities
-
-**Public API Exports:**
-- `modgud/__init__.py` - Primary exports (decorators, guards, errors)
+**Public API**: `modgud/__init__.py` re-exports the two decorators, `GuardFailureStrategy`, the guard validators, `CommonGuards`, `GuardRegistry`, and the error classes.
 
 ### Key Design Patterns
 
@@ -150,7 +156,7 @@ _Top-level layers (and directories/packages). Dependencies flow downward:_
 ### Configuration Files
 
 **ruff.toml**: Standalone ruff configuration
-- Targets Python 3.13
+- Targets Python 3.11
 - 2-space indentation, 100-character line length
 - Single quote style for consistency
 - Includes `modgud/` and `tests/` directories
@@ -159,7 +165,7 @@ _Top-level layers (and directories/packages). Dependencies flow downward:_
 - Uses PEP 621 project format with Poetry dependencies
 - pytest configured for `tests/` directory with coverage for `modgud/`
 - mypy configured with reports output to `reports/mypy/`
-- Requires Python >=3.13
+- Requires Python >=3.11
 
 ## Testing Strategy
 

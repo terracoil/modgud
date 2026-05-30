@@ -1,37 +1,22 @@
-"""Domain layer for modgud - passive domain objects.
+"""Domain layer aggregator.
 
-This package contains the core domain concepts for modgud including:
-- Types and type definitions
-- Domain exceptions
-- The GuardFailureStrategy enum
-- Message templates
-
-The domain layer is completely passive - it contains no business logic,
-only data structures and interface definitions.
+Re-exports the public-facing types from each feature subpackage so callers
+can use the shortest absolute path (`from modgud.domain import X`).
 """
 
-from .enums import GuardFailureStrategy
-from .error_messages import ErrorMessages
-from .exceptions import (
+from .guarded_expr import GuardClauseError, GuardFailureStrategy
+from .implicit_ret import (
   ExplicitReturnDisallowedError,
-  GuardClauseError,
   ImplicitReturnError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .types import GuardFunction
 
 __all__ = [
-  # Types
-  'GuardFunction',
-  # Error messages
-  'ErrorMessages',
-  # Exceptions
-  'GuardClauseError',
-  'ImplicitReturnError',
   'ExplicitReturnDisallowedError',
+  'GuardClauseError',
+  'GuardFailureStrategy',
+  'ImplicitReturnError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
-  # Enums
-  'GuardFailureStrategy',
 ]

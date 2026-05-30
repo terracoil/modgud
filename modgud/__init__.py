@@ -8,7 +8,6 @@ Primary surface:
   ``continuance`` parameter caps how many guards past the first failure
   are still evaluated.
 - ``implicit_return`` - standalone Ruby-style implicit-return decorator.
-- ``pipeable`` - functional ``|``-operator pipelines.
 - Pre-built guard validators: ``positive``, ``not_none``, ``not_empty``,
   ``type_check``, ``in_range``, ``matches_pattern``, ``valid_file_path``,
   ``valid_url``, ``valid_enum``.
@@ -48,7 +47,7 @@ Example::
       x + y
 """
 
-from .app.decorator import guarded_expression, implicit_return, pipeable
+from .app import guarded_expression, implicit_return
 from .domain import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
@@ -75,7 +74,6 @@ __all__ = [
   # Primary decorators
   'guarded_expression',
   'implicit_return',
-  'pipeable',
   # Strategy enum
   'GuardFailureStrategy',
   # Classes

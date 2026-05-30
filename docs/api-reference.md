@@ -60,7 +60,7 @@ from modgud import (
 ```
 
 **Version**: 0.2.0
-**Python**: 3.13+
+**Python**: 3.11+
 **Zero Runtime Dependencies**: Uses only Python standard library
 
 ---
@@ -77,8 +77,9 @@ Unified decorator combining guard clauses with optional implicit return transfor
 guarded_expression(
     *guards: GuardFunction,
     implicit_return: bool = True,
-    on_error: FailureBehavior = GuardClauseError,
-    log: bool = False
+    strategy: GuardFailureStrategy = GuardFailureStrategy.ERROR_RAISE,
+    on_failure: Any = GuardClauseError,
+    continuance: int = 0,
 ) -> Callable[[Callable], Callable]
 ```
 
@@ -87,16 +88,21 @@ guarded_expression(
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `*guards` | `GuardFunction` | - | Variable number of guard functions that validate input |
-| `implicit_return` | `bool` | `True` | Enable implicit return transformation (fully supported) |
-| `on_error` | `FailureBehavior` | `GuardClauseError` | Behavior when guard fails (see below) |
-| `log` | `bool` | `False` | Log guard failures at INFO level |
+| `implicit_return` | `bool` | `True` | Enable implicit return AST rewrite |
+| `strategy` | `GuardFailureStrategy` | `ERROR_RAISE` | How collected failures are dispatched (see below) |
+| `on_failure` | `Any` | `GuardClauseError` | Payload paired with `strategy` |
+| `continuance` | `int` | `0` | Extra guards to evaluate past the first failure |
 
-#### on_error Options
+#### GuardFailureStrategy + on_failure pairings
 
-The `on_error` parameter accepts:
-- **Exception class**: Instantiated with error message and raised
-- **Callable**: Called with `(error_msg, *args, **kwargs)`, return value used
-- **Any value**: Returned directly on guard failure (e.g., `None`, `"error"`, `0`)
+| `strategy` | `on_failure` means | Body executed on failure? |
+|-----|-----|-----|
+| `ERROR_RAISE` (default) | Exception class to raise | No |
+| `ERROR_RETURN` | Exception class to instantiate and return | No |
+| `RETURN_VALUE` | Value to return as-is | No |
+| `CALL_HANDLER` | Callable invoked as `on_failure(errors, *args, **kwargs)` | No |
+
+When `continuance > 0` and more than one failure is collected, `ERROR_RAISE` / `ERROR_RETURN` wrap the instances in `ExceptionGroup('Guards failed', [...])`.
 
 #### Returns
 
@@ -104,9 +110,7 @@ Decorated function with guard validation and optional implicit returns.
 
 #### Raises
 
-- `GuardClauseError`: Default exception when guards fail
-- Custom exception if specified via `on_error`
-- `UnsupportedConstructError`: If source unavailable with implicit returns
+Failure mode is strict: if `implicit_return=True` and the AST rewrite refuses (source unavailable, unsupported construct), the underlying exception (`ValueError`, `OSError`, `UnsupportedConstructError`, etc.) propagates from the decoration site.
 
 #### Examples
 
@@ -878,18 +882,17 @@ A guard function:
 
 ---
 
-### FailureBehavior
+### GuardFailureStrategy
 
-Type alias for `on_error` parameter options.
+Enum selecting how collected failures are dispatched. See the `guarded_expression` section above for the strategy × `on_failure` pairing table.
 
 ```python
-FailureBehavior = Union[type[Exception], Callable[..., Any], Any]
+class GuardFailureStrategy(IntEnum):
+  ERROR_RAISE  = auto()
+  ERROR_RETURN = auto()
+  RETURN_VALUE = auto()
+  CALL_HANDLER = auto()
 ```
-
-Can be:
-- Exception class to instantiate and raise
-- Callable to invoke with error details
-- Any other value to return directly
 
 ---
 

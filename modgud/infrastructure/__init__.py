@@ -1,19 +1,15 @@
-"""Core infrastructure for modgud.
+"""Infrastructure aggregator.
 
-Building blocks supporting the public decorators: guard runtime, AST
-transformer, registry, pre-built guards, and the Pipeable wrapper.
+Re-exports the concrete implementations from each feature subpackage so the
+app layer can import them at the shortest absolute path.
 """
 
-from .common_guards import CommonGuards
-from .guard_registry import GuardRegistry
-from .guard_runtime import GuardRuntime
-from .pipeable_wrapper import Pipeable
-from .transform import ImplicitReturnTransformer
+from .guarded_expr import CommonGuards, GuardRegistry, GuardRuntime
+from .implicit_ret import ImplicitReturnTransformer
 
 __all__ = [
   'CommonGuards',
   'GuardRegistry',
   'GuardRuntime',
   'ImplicitReturnTransformer',
-  'Pipeable',
 ]

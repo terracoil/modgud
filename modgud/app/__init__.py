@@ -1,14 +1,9 @@
-"""Application layer for modgud - presentation layer.
+"""Application layer: the two public decorators."""
 
-This package contains the user-facing API including decorators and
-public interface components. This is the presentation layer in KLA
-architecture - what users interact with directly.
+from .guarded_expression import guarded_expression
+from .implicit_return import implicit_return
 
-Layers (dependencies flow downward):
-- app ← YOU ARE HERE (presentation layer)
-- infrastructure (core logic and implementation)
-- domain (passive domain objects)
-- util (generic utilities)
-"""
-
-__all__ = []
+__all__ = [
+  'guarded_expression',
+  'implicit_return',
+]

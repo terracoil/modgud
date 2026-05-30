@@ -4,6 +4,8 @@ These functions are defined at module level so their source can be inspected
 by the implicit_return transformer.
 """
 
+import asyncio
+
 from modgud import GuardFailureStrategy, guarded_expression, not_none, positive
 
 
@@ -30,14 +32,14 @@ def safe_divide(x, y):
   try:
     x / y
   except ZeroDivisionError:
-    0
+    0  # noqa: B018 — implicit return
 
 
 # Combined guard and implicit return
 @guarded_expression(lambda x: x > 0 or 'Must be positive', implicit_return=True)
 def safe_divide_with_guard(x):
   result = 100 / x
-  result
+  result  # noqa: B018 — implicit return
 
 
 # CommonGuards with implicit return
@@ -53,9 +55,6 @@ def simple_implicit(x):
 
 
 # Async functions
-import asyncio
-
-
 @guarded_expression(lambda x: x > 0 or 'Must be positive', implicit_return=True)
 async def async_double(x):
   await asyncio.sleep(0)
@@ -148,4 +147,4 @@ def conditional_noop(x):
   elif x < 0:
     pass
   else:
-    None
+    None  # noqa: B018 — implicit return

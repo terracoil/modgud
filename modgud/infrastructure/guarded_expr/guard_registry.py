@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from modgud.domain import GuardFunction
+from modgud.shared import GuardFunction
 
 
 class GuardRegistry:

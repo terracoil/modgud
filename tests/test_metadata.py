@@ -1,5 +1,6 @@
 """Tests for metadata preservation and edge cases."""
 
+import pytest
 from modgud import guarded_expression
 
 
@@ -41,14 +42,18 @@ class TestDecoratorWithoutGuards:
 class TestDecoratorEdgeCases:
   """Tests for decorator edge cases and error conditions."""
 
-  def test_decorator_source_unavailable(self):
-    """Decorator should fail gracefully when source code is unavailable."""
-    # Create function from compiled code
+  def test_decorator_raises_on_unavailable_source_with_implicit_return(self):
+    """Strict mode: decoration raises when source can't be extracted and implicit_return=True."""
     code = compile('def foo(): return 42', '<string>', 'exec')
-    env = {}
+    env: dict = {}
     exec(code, env)
+    with pytest.raises((ValueError, OSError)):
+      guarded_expression(implicit_return=True)(env['foo'])
 
-    # With new implementation, guarded_expression falls back to guard-only wrapping
-    # when source is unavailable (no implicit return transformation)
-    decorated = guarded_expression(implicit_return=True)(env['foo'])
-    assert decorated() == 42  # Function works, just without implicit return
+  def test_decorator_skips_transform_when_implicit_return_false(self):
+    """Source unavailability is irrelevant when implicit_return is disabled."""
+    code = compile('def foo(): return 42', '<string>', 'exec')
+    env: dict = {}
+    exec(code, env)
+    decorated = guarded_expression(implicit_return=False)(env['foo'])
+    assert decorated() == 42

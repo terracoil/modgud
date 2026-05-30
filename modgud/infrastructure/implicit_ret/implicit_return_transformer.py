@@ -9,6 +9,10 @@ from typing import Any, Callable, TypeVar
 
 from modgud.domain import ExplicitReturnDisallowedError
 
+from ._no_explicit_return_checker import _NoExplicitReturnChecker
+from ._tail_rewriter import _TailRewriter
+from ._top_level_transformer import _TopLevelTransformer
+
 T = TypeVar('T')
 
 
@@ -75,9 +79,6 @@ class ImplicitReturnTransformer:
         UnsupportedConstructError: If an unsupported construct is found
 
     """
-    from ._no_explicit_return_checker import _NoExplicitReturnChecker
-    from ._tail_rewriter import _TailRewriter
-
     assert isinstance(fn_node, (ast.FunctionDef, ast.AsyncFunctionDef))
     body = fn_node.body
 
@@ -145,8 +146,6 @@ class ImplicitReturnTransformer:
         UnsupportedConstructError: If an unsupported construct is found
 
     """
-    from ._top_level_transformer import _TopLevelTransformer
-
     tree = ast.parse(func_source)
     transformer = _TopLevelTransformer(func_name, cls)
     new_tree = transformer.visit(tree)
