@@ -1,16 +1,8 @@
-![Modgud](modgud-github.png)
+**Parent**: [📚 Documentation Hub](README.md) | [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md)
 
 # How It Works: The Magic Behind Expression-Oriented Python
 
----
-
-## 📍 Navigation
-
-**You are here**: How It Works (Technical Deep-Dive)
-
-**Parent**: [📚 Documentation Hub](README.md) - Back to documentation index
-**Grandparent**: [🌉 Main README](../README.md) - Project overview
-**Sibling**: [📖 API Reference](api-reference.md) - Complete API documentation
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
 
 ---
 
@@ -73,9 +65,10 @@ else:
 With modgud, Python joins the expression-oriented revolution:
 
 ```python
-from modgud import guarded_expression
+from modgud import guarded_expression, implicit_return
 
 @guarded_expression()
+@implicit_return
 def get_status(user):
     if user.is_active:
         "premium" if user.is_premium else "standard"
@@ -94,7 +87,7 @@ Modgud follows clean architecture principles with three distinct layers:
 ```
 ┌─────────────────────────────────────┐
 │         API Layer                   │
-│  (guarded_expression decorator)     │
+│ (guarded_expression, implicit_return)│
 ├─────────────────────────────────────┤
 │      Implementation Layer           │
 │  (AST Transform, Guard Runtime)     │
@@ -106,10 +99,10 @@ Modgud follows clean architecture principles with three distinct layers:
 
 ### Layer Responsibilities
 
-**API Layer** (`guarded_expression.py`)
-- Public decorator interface
-- Parameter validation
-- Orchestrates transformation and wrapping
+**API Layer** 
+- `guarded_expression.py`: Guard validation decorator with optional implicit returns
+- `implicit_return_decorator.py`: Standalone expression-oriented transformation 
+- Composable decorator pattern for maximum flexibility
 
 **Implementation Layer**
 - `implicit_return.py`: AST transformation engine
@@ -136,13 +129,14 @@ Modgud follows clean architecture principles with three distinct layers:
 When you decorate a function with `@guarded_expression`, here's what happens at runtime:
 
 ```python
-from modgud import guarded_expression, not_none
+from modgud import guarded_expression, implicit_return, not_none
 
 # User code
 @guarded_expression(
     not_none("x"),
     on_error=ValueError
 )
+@implicit_return
 def divide_100_by(x):
     100 / x
 
@@ -173,7 +167,7 @@ Each guard is a callable that receives `(*args, **kwargs)` and returns:
 - String: Guard failed with this error message
 
 ```python
-def positive_guard(param_name="value", position=0):
+def positive_guard(param_name="vector", position=0):
     def check(*args, **kwargs):
         value = kwargs.get(param_name, args[position] if position < len(args) else None)
         return value > 0 or f"{param_name} must be positive"
@@ -188,7 +182,7 @@ The `on_error` parameter determines what happens when a guard fails:
 # Return None on failure
 @guarded_expression(guard, on_error=None)
 
-# Return custom value
+# Return custom vector
 @guarded_expression(guard, on_error="invalid")
 
 # Call handler function
@@ -422,6 +416,39 @@ Modgud is thread-safe:
 - Guards are pure functions
 - Each decorated function is independent
 
+### The New Composition Pattern (v0.3.0+)
+
+**Separation of Concerns:** modgud now provides separate decorators that can be composed:
+
+```python
+from modgud import guarded_expression, implicit_return
+
+# Recommended pattern: Guard validation + expression transformation
+@guarded_expression(not_none("x"), positive("x"))
+@implicit_return  
+def process(x):
+    result = x * 2
+    result
+
+# Guards only (traditional explicit returns)
+@guarded_expression(not_none("x"))
+def calculate(x):
+    return x * 2
+
+# Expression transformation only
+@implicit_return
+def classify(status):
+    "active" if status else "inactive"
+```
+
+**Decorator Order:** When composing, `@implicit_return` should typically be the innermost decorator (closest to the function) since it performs AST transformation that other decorators might not expect.
+
+**Why Separate?** This composition pattern enables:
+- **Flexibility**: Use guards without expression transformation or vice versa
+- **Future Extensions**: New expression-oriented decorators can compose cleanly
+- **Clarity**: Each decorator has a single, clear responsibility
+- **Testability**: Each transformation can be tested independently
+
 ---
 
 ## 🚨 Error Handling: Graceful Failures
@@ -444,7 +471,7 @@ ImplicitReturnError (base)
     ├── ExplicitReturnDisallowedError
     │   └── "Explicit return not allowed with implicit returns"
     ├── MissingImplicitReturnError
-    │   └── "Not all code paths yield a value"
+    │   └── "Not all code paths yield a vector"
     └── UnsupportedConstructError
         └── "Cannot transform this Python construct"
 ```
@@ -454,7 +481,7 @@ ImplicitReturnError (base)
 You can provide custom error handling logic:
 
 ```python
-from modgud import guarded_expression, positive
+from modgud import guarded_expression, implicit_return, positive
 
 def my_error_handler(error_msg, *args, **kwargs):
     logger.error(f"Guard failed: {error_msg}")
@@ -464,6 +491,7 @@ def my_error_handler(error_msg, *args, **kwargs):
     positive("amount"),
     on_error=my_error_handler
 )
+@implicit_return
 def process_payment(amount):
     # Process payment logic
     amount * 1.1  # With tax
@@ -474,14 +502,16 @@ def process_payment(amount):
 Enable built-in logging with `log=True`:
 
 ```python
-from modgud import guarded_expression, not_none
+from modgud import guarded_expression, implicit_return, not_none
+
 
 @guarded_expression(
-    not_none("user"),
-    log=True  # Logs failures at INFO level
+  not_none("user"),
+  log=True  # Logs failures at INFO level
 )
+@implicit_return
 def greet_user(user):
-    f"Hello, {user.name}!"
+  f"Hello, {user.item_name}!"
 ```
 
 ---

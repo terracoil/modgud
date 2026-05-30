@@ -1,4 +1,9 @@
-# !["Móðguðr"](https://github.com/terracoil/modgud/raw/master/docs/modgud-text-sm.png)
+
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Freyja" title="Freyja" width="300"/>
+    
+[//]: # (https://github.com/terracoil/modgud/blob/8613cce30d374538d80b8e2513096a1336fba437/docs/modgud-github.jpg)
+
+**Parent**: [📚 Documentation Hub](docs/README.md) | [📖 API Reference](docs/api-reference.md) | [⚙️ How It Works](docs/how-it-works.md)
 
 ## Finally. Expression-Oriented Programming for Python.
 
@@ -8,7 +13,7 @@ Tired of functions where 80% of the code is validation boilerplate? Frustrated b
 
 **modgud changes everything.**
 
-![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud-github-md.png)
+
 
 ---
 
@@ -22,27 +27,12 @@ After all, what are expression-oriented guard clauses if not *genuinely good mod
 
 ---
 
-## 📍 Navigation
-
-**You are here**: Main README (Project Overview)
-
-**Children** (Full Documentation):
-- [📚 Documentation Hub](docs/README.md) - Central documentation index
-- [📖 API Reference](docs/api-reference.md) - Complete API documentation
-- [⚙️ How It Works](docs/how-it-works.md) - Technical deep-dive into AST transformation
-
-**External Links**:
-- [🌐 GitHub Repository](https://github.com/terracoil/modgud) - Source code & issues
-- [📦 PyPI Package](https://pypi.org/project/modgud/) - Official releases
-
----
-
 ## 📋 Table of Contents
 - [🔥️ Why Modgud](#the-problem) - Why modgud is essential
 - [⚠️ The Problem](#the-problem) - Why defensive programming gets messy
 - [💡 The Solution](#the-solution) - How modgud changes everything
 - [🔑 Features](#features) - Six compelling features
-- [💡 Quick Start](#quick-start) - Get started in 60 seconds
+- [🌀 Quick Start](#quick-start) - Get started in 60 seconds
 - [🔑 Key Features at a Glance](#key-features-at-a-glance) - What makes modgud special
 - [🌍 Real-World Example](#real-world-example-api-endpoint) - See it in action
 - [📚 Documentation](#documentation) - Complete guides and references
@@ -115,7 +105,7 @@ Multiple return points everywhere. Business logic buried at the bottom. Error ha
 **modgud** gives you guard clauses and expression-oriented programming in Python:
 
 ```python
-from modgud import guarded_expression, positive, type_check, in_range, not_empty
+from modgud import guarded_expression, implicit_return, positive, type_check, in_range, not_empty, GuardRegistry
 
 @guarded_expression(
     positive("user_id"),
@@ -124,6 +114,7 @@ from modgud import guarded_expression, positive, type_check, in_range, not_empty
     in_range(1, 10000, "amount"),
     not_empty("payment_method"),
     lambda pm: pm in ["card", "bank", "crypto"] or "Invalid payment method",
+    implicit_return=True,  # Unified approach - fully supported!
     on_error={"success": False, "error": "Validation failed"}
 )
 def process_payment(user_id, amount, payment_method):
@@ -164,7 +155,8 @@ from modgud import guarded_expression, not_none, positive
 @guarded_expression(
     not_none("account_id"),
     positive("amount"),
-    lambda account_id, amount: amount <= get_balance(account_id) or "Insufficient funds"
+    lambda account_id, amount: amount <= get_balance(account_id) or "Insufficient funds",
+    implicit_return=True  # Unified approach - clean and simple!
 )
 def withdraw(account_id, amount):
     balance = get_balance(account_id) - amount
@@ -191,7 +183,11 @@ def classify_user(age, premium):
 ```python
 from modgud import guarded_expression, positive
 
-@guarded_expression(positive("age"))
+# Using the unified parameter approach
+@guarded_expression(
+    positive("age"),
+    implicit_return=True
+)
 def classify_user(age, premium):
     if age < 18:
         "minor"
@@ -222,7 +218,8 @@ from modgud import guarded_expression, not_none, matches_pattern, positive, in_r
     positive("age"),
     in_range(13, 120, "age"),
     not_empty("username"),
-    type_check(str, "username")
+    type_check(str, "username"),
+    implicit_return=True  # Clean, all-in-one configuration
 )
 def register_user(email, age, username):
     user_id = create_user_record(email, age, username)
@@ -240,6 +237,36 @@ Built-in guards for:
 
 Plus you can write custom guards in seconds.
 
+#### Creating Custom Guards
+
+Register your own reusable guards:
+
+```python
+from modgud import GuardRegistry, guarded_expression
+
+# Define a custom guard factory
+def valid_age(min_age=0, max_age=150, param_name="age"):
+    def check(*args, **kwargs):
+        age = kwargs.get(param_name, args[0] if args else None)
+        if not isinstance(age, int):
+            return f"{param_name} must be an integer"
+        if min_age <= age <= max_age:
+            return True
+        return f"{param_name} must be between {min_age} and {max_age}"
+    return check
+
+# Register it for reuse
+GuardRegistry.register("valid_age", valid_age)
+
+# Use your custom guard with implicit returns
+@guarded_expression(
+    GuardRegistry.get("valid_age")(min_age=18, max_age=120),
+    implicit_return=True  # All configured in one place
+)
+def can_vote(age):
+    age >= 18
+```
+
 ### 5. 🎛️ Flexible Error Handling
 
 Your code, your rules. Choose how guards fail:
@@ -250,6 +277,7 @@ from modgud import guarded_expression, positive
 
 @guarded_expression(
     positive("amount"),
+    implicit_return=True,
     on_error={"error": "Invalid amount", "code": 400}
 )
 def process(amount):
@@ -262,6 +290,7 @@ from modgud import guarded_expression, not_empty
 
 @guarded_expression(
     not_empty("username"),
+    implicit_return=True,
     on_error=ValueError
 )
 def create_account(username):
@@ -270,12 +299,15 @@ def create_account(username):
 
 **Custom handlers:**
 ```python
+from modgud import guarded_expression
+
 def audit_and_return(error_msg, *args, **kwargs):
     log_security_event(error_msg)
     return None
 
 @guarded_expression(
     lambda api_key: validate_key(api_key) or "Invalid key",
+    implicit_return=True,
     on_error=audit_and_return
 )
 def sensitive_operation(api_key):
@@ -290,13 +322,13 @@ Built entirely on Python's standard library. No bloat. No version conflicts. Jus
 
 - Full mypy type checking support
 - Comprehensive test suite with 92% coverage
-- Clean architecture with dependency injection
+- Clean architecture with separation of concerns
 - Thread-safe decorators
 - Preserves all function metadata for debugging
 
 ---
 
-## 💡 Quick Start
+## 🌀 Quick Start
 
 ### 📦 Installation
 
@@ -304,18 +336,34 @@ Built entirely on Python's standard library. No bloat. No version conflicts. Jus
 pip install modgud
 ```
 
-**Requirements:** Python 3.13+
+**Requirements:** Python 3.11+
 
 ### Your First Guarded Function
 
 ```python
 from modgud import guarded_expression, positive, in_range
 
+# Option 1: Unified approach (recommended for simple cases)
+@guarded_expression(
+    positive("x"),
+    in_range(1, 100, "x"),
+    implicit_return=True  # All-in-one configuration
+)
+def calculate_discount(x):
+    if x >= 50:
+        x * 0.2
+    else:
+        x * 0.1
+
+# Option 2: Separate decorators (for complex compositions)
+from modgud import implicit_return
+
 @guarded_expression(
     positive("x"),
     in_range(1, 100, "x")
 )
-def calculate_discount(x):
+@implicit_return
+def calculate_discount_v2(x):
     if x >= 50:
         x * 0.2
     else:
@@ -336,8 +384,9 @@ print(calculate_discount(-10))  # Raises GuardClauseError
 - **🛡️ Guard Clause Decorators** - Validate inputs before function execution
 - **🎯 Single Return Point** - One logical exit point per function
 - **🧩 Pre-Built Guards** - Standard validations ready to use (not_none, positive, in_range, type_check, etc.)
+- **📝 Custom Guard Registry** - Create and register reusable validation guards
 - **🎛️ Configurable Failure Behaviors** - Return values, raise exceptions, or call custom handlers
-- **🏛️ Clean Architecture** - Dependency injection, pure functions, immutable transforms
+- **🏛️ Clean Architecture** - Per-feature decomposition with ports + adapters
 - **📦 Zero Dependencies** - Uses only Python standard library
 - **✅ Type-Safe** - Full mypy support with proper type hints
 - **🔒 Thread-Safe** - No shared mutable state
@@ -391,6 +440,7 @@ from modgud import guarded_expression, not_empty, matches_pattern, type_check, i
     not_empty("username"),
     lambda username: 3 <= len(username) <= 20 or "Username must be 3-20 chars",
     not_empty("password"),
+    implicit_return=True,  # Clean configuration in one place
     on_error={"status": 400, "error": "Validation failed"}
 )
 def create_user(email, age, username, password):
@@ -471,7 +521,7 @@ def get_status(user):
 # Expression-oriented (with modgud)
 from modgud import guarded_expression
 
-@guarded_expression()
+@guarded_expression(implicit_return=True)
 def get_status(user):
     if user.is_active:
         "premium_active" if user.is_premium else "standard_active"
@@ -495,7 +545,8 @@ from modgud import guarded_expression, not_none, positive
 
 @guarded_expression(
     not_none("order"),
-    positive("discount_rate")
+    positive("discount_rate"),
+    implicit_return=True  # Expression-oriented with guards!
 )
 def calculate_final_price(order, discount_rate, is_premium):
     base_price = order.total
@@ -538,6 +589,91 @@ Your functions should focus on *what they do*, not on validating *what they rece
 
 ---
 
+## 🎯 Usage Patterns: Two Equally Valid Approaches
+
+**modgud supports two patterns for combining guards with implicit returns. Choose based on your needs:**
+
+### Pattern 1: Unified Parameter (Simple, All-in-One)
+```python
+from modgud import guarded_expression, positive, not_none
+
+# Everything configured in one decorator
+@guarded_expression(
+    not_none("x"),
+    positive("x"),
+    implicit_return=True  # Fully supported!
+)
+def process(x):
+    result = x * 2
+    result  # Clean implicit return
+```
+
+**Best for:**
+- Simple functions with guards and implicit returns
+- When you want all configuration in one place
+- Teaching/learning scenarios
+- Functions where the transformation is core to the function's identity
+
+### Pattern 2: Separate Decorators (Flexible, Composable)
+```python
+from modgud import guarded_expression, implicit_return, positive, not_none
+
+# Separate concerns with multiple decorators
+@guarded_expression(not_none("x"), positive("x"))
+@implicit_return
+def process(x):
+    result = x * 2
+    result  # Clean implicit return
+```
+
+**Best for:**
+- Complex decorator compositions
+- When implicit return is optional/conditional
+- Reusable decorator stacks
+- Maximum flexibility
+
+### ⚠️ Composition Order Warning
+
+When using separate decorators, **order matters**:
+
+```python
+# ✅ CORRECT: Guards before implicit
+@guarded_expression(positive("x"))
+@implicit_return
+def correct(x):
+    x * 2
+
+# ❌ PROBLEMATIC: Implicit before guards (may bypass guards!)
+@implicit_return
+@guarded_expression(positive("x"))  # Guards may be bypassed!
+def problematic(x):
+    x * 2
+```
+
+### Individual Use Cases
+```python
+# Guards only (traditional explicit returns)
+@guarded_expression(
+    not_none("x"),
+    positive("x"),
+    implicit_return=False  # Explicit returns
+)
+def calculate(x):
+    return x * 2
+
+# Expression-orientation only (no guards)
+@implicit_return
+def classify(status):
+    if status == "active":
+        "user_active"
+    else:
+        "user_inactive"
+```
+
+**Both patterns are first-class citizens in modgud. Choose the one that best fits your use case!**
+
+---
+
 ## 📦 Installation
 
 ```bash
@@ -548,7 +684,7 @@ pip install modgud
 poetry add modgud
 ```
 
-**Requirements:** Python 3.13+
+**Requirements:** Python 3.11+
 
 ---
 

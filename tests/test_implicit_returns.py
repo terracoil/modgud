@@ -1,8 +1,7 @@
 """Tests for implicit return functionality."""
 
 import pytest
-from modgud.guarded_expression import guarded_expression
-from modgud.guarded_expression.errors import ExplicitReturnDisallowedError, GuardClauseError
+from modgud import ExplicitReturnDisallowedError, GuardClauseError, guarded_expression
 
 from tests.helpers import assert_guard_fails
 
@@ -35,7 +34,7 @@ class TestImplicitReturnBasics:
     """Explicit return should raise error when implicit_return=True."""
     with pytest.raises(ExplicitReturnDisallowedError):
 
-      @guarded_expression(implicit_return=True, on_error=GuardClauseError)
+      @guarded_expression(implicit_return=True)
       def bad_function():
         x = 10
         return x  # Should raise error

@@ -1,4 +1,10 @@
+**Parent**: [📋 ADR Index](README.md) | [📖 ADR-001](ADR-001-implicit-return-transformation-approach.md) | [📖 ADR-003](ADR-003-registry-system-architecture.md)
+
 # ADR-002: Guard Pattern Design Rationale
+
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
+
+---
 
 ## Status
 Accepted (2025-10-26)
@@ -51,7 +57,7 @@ def positive(x):
 Return `Result[None, Error]` or similar monadic type.
 ```python
 def positive(x):
-  return Ok(None) if x > 0 else Err("Must be positive")
+  return Ok(None) if x > 0 else ErrResult("Must be positive")
 ```
 - **Rejected**: Adds dependency, verbose for simple validations
 

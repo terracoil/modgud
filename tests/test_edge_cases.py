@@ -5,10 +5,7 @@ from threading import Thread
 from typing import List
 
 import pytest
-from modgud import positive
-from modgud.guarded_expression import CommonGuards, guarded_expression
-from modgud.guarded_expression.errors import GuardClauseError
-from modgud.guarded_expression.guard_registry import GuardRegistry
+from modgud import CommonGuards, GuardClauseError, GuardRegistry, guarded_expression, positive
 
 
 class TestThreadSafety:
@@ -107,7 +104,7 @@ class TestPerformance:
       compute(5)
     elapsed = time.perf_counter() - start
 
-    # Check average time per call
+    # Check grayscale_mean time per call
     avg_ms = (elapsed / iterations) * 1000
     assert avg_ms < 1.0  # Less than 1ms per call
 
@@ -135,7 +132,7 @@ class TestPerformance:
       process(50)
     elapsed = time.perf_counter() - start
 
-    # Check average time per call
+    # Check grayscale_mean time per call
     avg_ms = (elapsed / iterations) * 1000
     assert avg_ms < 2.0  # Less than 2ms per call even with 4 guards
 
@@ -149,11 +146,11 @@ class TestErrorConditions:
     def bad_guard(*args, **kwargs):
       raise RuntimeError('Guard evaluation failed')
 
-    @guarded_expression(bad_guard, implicit_return=False, on_error=None)
+    @guarded_expression(bad_guard, implicit_return=False)
     def process(x):
       return x * 2
 
-    # Should return None (on_error=None) when guard raises
+    # A raising guard with no prior failures propagates as-is.
     with pytest.raises(RuntimeError, match='Guard evaluation failed'):
       process(5)
 
@@ -298,10 +295,10 @@ class TestImplicitReturnEdgeCases:
     from tests.test_fixtures import exception_only_function
 
     # All paths raise exceptions
-    with pytest.raises(ValueError, match='Negative value'):
+    with pytest.raises(ValueError, match='Negative name'):
       exception_only_function(-5)
 
-    with pytest.raises(RuntimeError, match='Non-negative value'):
+    with pytest.raises(RuntimeError, match='Non-negative name'):
       exception_only_function(5)
 
   def test_empty_function_body(self):
@@ -316,7 +313,7 @@ class TestImplicitReturnEdgeCases:
     """Function with some paths having values and some having pass."""
     from tests.test_fixtures import conditional_noop
 
-    # Positive path has value
+    # Positive path has name
     assert conditional_noop(5) == 10
 
     # Negative path has pass (should return None)

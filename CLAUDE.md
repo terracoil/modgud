@@ -6,15 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is `modgud`, a Python library that provides guard clause decorators for implementing validation checks at function entry points. The library enforces single return point architecture and supports various failure behaviors including custom return values, exception raising, and handler functions.
 
-**IMPORTANT: This is a NEW project with NO existing users. No backward compatibility requirements. Breaking changes are acceptable. Clean, simple architecture is prioritized over legacy support.**
-
-**Core Architecture (v0.2.0):**
+**Core Architecture (v2.0.0):**
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
-- **Implicit return by default**: `implicit_return=True` enables Ruby-style expression-oriented code
-- **GuardClauseError by default**: `on_error=GuardClauseError` raises exception on guard failure
-- **Failure handling**: Configurable via `on_error` parameter (exception classes, custom values, callables)
-- **Pre-built guards**: Standard validation patterns available as individual functions (not_none, positive, type_check, etc.)
-- **NO LEGACY SUPPORT NEEDED**: Old `guard_clause` and `implicit_return` packages should be removed, not maintained as wrappers
+- **Expression decorator**: `implicit_return` (standalone)
+- **Guard system**: Pre-built guards + `GuardRegistry` for custom validators
+- **Failure handling**: Single `GuardFailureStrategy` enum (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload; `continuance: int` caps how many guards past the first failure are evaluated. Multiple collected failures produce an `ExceptionGroup` for the error strategies.
+- **Architecture**: Clean separation across `app/` (decorators), `infrastructure/` (runtime + AST transform), `domain/` (passive types/enums/exceptions).
 
 ## Development Commands
 
@@ -22,27 +19,32 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 
 ### 🚨 MANDATORY LINTING REQUIREMENT 🚨
 
-**CRITICAL**: You MUST run `bin/devtools build lint --fix` BEFORE:
+**CRITICAL**: You MUST run linting BEFORE:
 - Making ANY code changes
 - Performing code reviews
-- Starting refactoring work.  If there are linting and/or mypy typing issues found, fix those first before refactoring.  
+- Starting refactoring work. If there are linting and/or mypy typing issues found, fix those first before refactoring.
 - Committing changes
 - Creating pull requests
 
-This command runs:
-1. **Ruff linting** - catches code quality issues
+Run these commands:
+```bash
+poetry run ruff check modgud/ --fix && poetry run ruff format modgud/ && poetry run mypy modgud/
+```
+
+This runs:
+1. **Ruff linting** - catches code quality issues (with auto-fix)
 2. **Ruff formatting** - ensures consistent code style
 3. **MyPy type checking** - validates type annotations with strict settings
 
 **FAILURE TO RUN LINTING = INVALID CODE SUBMISSION**
 
-The `--fix` flag automatically corrects fixable issues. If linting fails after auto-fix, you MUST resolve all errors before proceeding. No exceptions.
+If linting fails after auto-fix, you MUST resolve all errors before proceeding. No exceptions.
 
 ### Package Management
 **This is a Poetry project** - use Poetry for all dependency management:
 
 ```bash
-# Install dependencies (Python 3.13+ required)
+# Install dependencies (Python 3.11+ required)
 poetry install
 
 # Install with test dependencies
@@ -91,23 +93,39 @@ poetry run twine check dist/*
 
 ## Code Architecture
 
-### Core Module Structure (v0.2.0)
+Per-feature decomposition (see `project.md` at the repo root). Dependencies flow downward only: `app → domain`, `infrastructure.<feature> → domain.<feature>`, `domain.<feature> → shared, util`, `shared → util`.
 
-**Primary API:**
-- `modgud/guarded_expression/` - Unified decorator implementation
-  - `decorator.py` - Main `guarded_expression` class
-  - `ast_transform.py` - Pure AST transformation for implicit returns
-  - `guard_runtime.py` - Pure guard checking and failure handling functions
-  - `common_guards.py` - Pre-built guard factory methods (exports individual functions)
-  - `__init__.py` - Package exports
+```
+modgud/
+  app/                                # public decorators (entry points)
+    guarded_expression.py             # @guarded_expression — plain function
+    implicit_return.py                # @implicit_return — plain function
+  domain/
+    guarded_expr/
+      enums.py                        # GuardFailureStrategy (IntEnum)
+      errors.py                       # GuardClauseError
+      ports/guard_runtime_port.py     # Protocol describing GuardRuntime
+    implicit_ret/
+      errors.py                       # ImplicitReturnError + 3 children
+      ports/implicit_return_transformer_port.py
+  infrastructure/
+    guarded_expr/
+      guard_runtime.py                # GuardRuntime — guard eval + dispatch
+      common_guards.py                # CommonGuards (pre-built validators)
+      guard_registry.py               # GuardRegistry (custom guard registration)
+    implicit_ret/
+      implicit_return_transformer.py  # AST rewriter (public)
+      _no_explicit_return_checker.py  # private helper
+      _tail_rewriter.py               # private helper
+      _top_level_transformer.py       # private helper
+  shared/
+    types.py                          # GuardFunction (used by app + infra)
+  util/                               # placeholder; no contents yet
+```
 
-**Shared Infrastructure:**
-- `modgud/shared/` - Common types and errors
-  - `types.py` - Type definitions (`GuardFunction`, `FailureBehavior`)
-  - `errors.py` - All exception classes (`GuardClauseError`, `ImplicitReturnError`, etc.)
+**Ports**: `GuardRuntimePort` and `ImplicitReturnTransformerPort` document the contract the app decorators consume. The decorators currently import the concrete classes directly; the ports exist so the wiring can flip to IoC injection (via `gleipnyr`) without surface changes.
 
-**Public API Exports:**
-- `modgud/__init__.py` - Primary exports (`guarded_expression`, guard functions, error classes)
+**Public API**: `modgud/__init__.py` re-exports the two decorators, `GuardFailureStrategy`, the guard validators, `CommonGuards`, `GuardRegistry`, and the error classes.
 
 ### Key Design Patterns
 
@@ -119,12 +137,13 @@ poetry run twine check dist/*
 **Guard Function Signature**: Guards are callables that accept `(*args, **kwargs)` and return either `True` (pass) or a string error message (fail).
 
 **Failure Behavior Chain**:
-1. Guard evaluates to non-True value
-2. Optional logging occurs if `log=True`
-3. Failure handling via `on_error` parameter:
-   - Exception class → instantiate and raise
-   - Callable → invoke with `(error_msg, *args, **kwargs)`, return value used
-   - Any other value → return directly
+1. Guards are evaluated in order. Default `continuance=0` stops at the first failure; `continuance=N` collects up to `1+N` failures. A guard that *raises* propagates if no prior failures were recorded, otherwise it terminates collection (cascade safety).
+2. Collected failure strings (`list[str]`) are dispatched through `GuardFailureStrategy`:
+   - `ERROR_RAISE` (default): raise `on_failure(msg)` for a single error, or `ExceptionGroup('Guards failed', [...])` for multiple.
+   - `ERROR_RETURN`: same instances, but *returned* instead of raised.
+   - `RETURN_VALUE`: return `on_failure` as-is.
+   - `CALL_HANDLER`: return `on_failure(errors, *args, **kwargs)`. `errors` is always a list.
+3. The wrapped function body is never executed when at least one failure was recorded.
 
 **Implicit Return Transformation** (when `implicit_return=True`):
 1. Function source code extracted via `inspect.getsource()`
@@ -137,7 +156,7 @@ poetry run twine check dist/*
 ### Configuration Files
 
 **ruff.toml**: Standalone ruff configuration
-- Targets Python 3.13
+- Targets Python 3.11
 - 2-space indentation, 100-character line length
 - Single quote style for consistency
 - Includes `modgud/` and `tests/` directories
@@ -146,32 +165,30 @@ poetry run twine check dist/*
 - Uses PEP 621 project format with Poetry dependencies
 - pytest configured for `tests/` directory with coverage for `modgud/`
 - mypy configured with reports output to `reports/mypy/`
-- Requires Python >=3.13
+- Requires Python >=3.11
 
 ## Testing Strategy
 
 Tests should be placed in `tests/` directory following pytest conventions (`test_*.py` or `*_test.py`). The library uses extensive examples in `modgud/README.md` which can guide test case development.
 
 **Test Files:**
-- `tests/test_guarded_expression.py` - Integration tests for the main decorator (30+ tests)
+- `tests/test_basic_guards.py` - Core guarded_expression behavior
 - `tests/test_ast_transform.py` - Unit tests for AST transformation logic
-- `tests/test_guard_runtime.py` - Unit tests for guard checking and failure handling
+- `tests/test_guard_runtime.py` - Unit tests for `check_guards` / `handle_failure` / `wrap_function`
 - `tests/test_fixtures.py` - Module-level test fixtures for implicit return tests
 
 **IMPORTANT:** Functions decorated with `implicit_return=True` must be defined at module level (not inside test functions) because `inspect.getsource()` cannot extract source from nested functions. Use `tests/test_fixtures.py` for these cases.
 
 **Key test scenarios**:
-- Guard success/failure paths
-- Different `on_error` behaviors (None, values, callables, exceptions, GuardClauseError)
+- Guard success / failure paths
+- Each `GuardFailureStrategy` (ERROR_RAISE / ERROR_RETURN / RETURN_VALUE / CALL_HANDLER) with and without a custom `on_failure`
+- `continuance` budget: collecting multiple failures, ExceptionGroup shape, cascade-safety when a guard raises mid-window
 - Implicit return with various constructs (if/else, try/except, match/case)
 - Explicit return disallowed with implicit_return=True
-- Missing else clause detection
-- Empty block detection
+- Missing else clause / empty block detection
 - Nested function handling (nested functions can use explicit returns)
-- Logging functionality
 - Guard parameter handling (positional vs named)
 - Metadata preservation (__name__, __doc__, __signature__, __annotations__)
-- Legacy compatibility (guard_clause and implicit_return wrappers)
 
 ## Architecture Notes
 
@@ -180,50 +197,55 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 The v0.2.0 refactoring implements clean architecture with clear separation of concerns:
 
 1. **Pure Functions**: AST transformation (`ast_transform.py`) and guard checking (`guard_runtime.py`) are pure, composable functions with no decorator-specific logic
-2. **Dependency Injection**: The decorator composes pure functions rather than creating its own dependencies
-3. **Immutability**: All transformed functions preserve original function metadata
-4. **Functional Composition**: Guard functions are composable - they're pure functions returning True or error messages
+2. **Immutability**: All transformed functions preserve original function metadata
+3. **Functional Composition**: Guard functions are composable - they're pure functions returning True or error messages
 
 ### Import Examples
 
 **Primary API:**
 ```python
-from modgud import guarded_expression, positive, not_none, type_check, GuardClauseError
-
-# With guards and implicit return (default behavior)
-@guarded_expression(
-    positive("x"),
-    implicit_return=True,  # default
-    on_error=GuardClauseError  # default
+from modgud import (
+    guarded_expression, positive, not_none, type_check,
+    GuardFailureStrategy, GuardClauseError,
 )
+
+# Defaults: ERROR_RAISE, on_failure=GuardClauseError, continuance=0, implicit_return=True
+@guarded_expression(positive("x"))
 def process(x):
     result = x * 2
     result  # implicit return
 
-# Multiple guards with different validators
+# Multiple guards, collect up to 3 failures total (1 + continuance=2)
 @guarded_expression(
     not_none("user"),
     type_check(str, "name"),
-    positive("amount")
+    positive("amount"),
+    continuance=2,
 )
 def create_transaction(user, name, amount):
-    transaction = Transaction(user, name, amount)
-    transaction.id
+    Transaction(user, name, amount).id  # implicit return
 
-# Guards only, explicit return
+# Return a fallback value instead of raising
 @guarded_expression(
     positive("x"),
     implicit_return=False,
-    on_error=None
+    strategy=GuardFailureStrategy.RETURN_VALUE,
+    on_failure=None,
 )
 def calculate(x):
     return x * 2
 
-# Implicit return only, no guards
-@guarded_expression()
-def compute(x):
-    result = x * 2
-    result  # implicit return
+# Custom handler that sees the full errors list
+def explain(errors, *args, **kwargs):
+    return {"errors": errors, "args": args}
+
+@guarded_expression(
+    positive("x"),
+    strategy=GuardFailureStrategy.CALL_HANDLER,
+    on_failure=explain,
+)
+def report(x):
+    x * 2
 ```
 
 ### Error Hierarchy

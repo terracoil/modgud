@@ -1,27 +1,12 @@
+**Parent**: [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md) | [⚙️ How It Works](how-it-works.md)
+
+> ⚠️ **v2 API note.** Many examples below predate the v2 surface. The current decorator signature is
+> `guarded_expression(*guards, implicit_return=True, strategy=GuardFailureStrategy.ERROR_RAISE, on_failure=GuardClauseError, continuance=0)`.
+> `on_error` / `log` were removed. See `modgud/__init__.py` docstring and `api-reference.md` for the up-to-date contract.
+
 # MODGUD Technical Documentation Hub
 
-# !["Móðguðr"](https://github.com/terracoil/modgud/raw/master/docs/modgud-text-sm.png)
-
----
-
-## 📍 Navigation
-
-**You are here**: Documentation Hub
-
-**Parent**:
-- [🌉 Main README](../README.md) - Project overview and quick start
-
-**Children**:
-- [📖 API Reference](api-reference.md) - Complete API documentation
-- [⚙️ How It Works](how-it-works.md) - Technical deep-dive into AST transformation
-
-**External Links**:
-- [GitHub Repository](https://github.com/terracoil/modgud)
-- [PyPI Package](https://pypi.org/project/modgud/)
-
----
-
-![modgud](https://github.com/terracoil/modgud/raw/master/docs/modgud-thumb.png)
+<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
 
 ---
 
@@ -52,7 +37,7 @@ This document contains:
 
 ## 🗺️ Overview
 
-**modgud** is a Python library that brings expression-oriented programming, single return point architecture, and guard clause decorators to Python 3.13+. It provides a clean, functional approach to validation and control flow that eliminates defensive coding clutter while maintaining code clarity and maintainability.
+**modgud** is a Python library that brings expression-oriented programming, single return point architecture, and guard clause decorators to Python 3.11+. It provides a clean, functional approach to validation and control flow that eliminates defensive coding clutter while maintaining code clarity and maintainability.
 
 ### What is modgud?
 
@@ -109,7 +94,7 @@ pip install -e ".[dev]"
 
 ### Requirements
 
-- Python 3.13 or higher
+- Python 3.11 or higher
 - No external runtime dependencies (uses only Python standard library)
 
 
@@ -359,7 +344,7 @@ def bad_function(x):
 
 ```python
 class MissingImplicitReturnError(ImplicitReturnError):
-    """Raised when code branch doesn't produce a value for implicit return."""
+    """Raised when code branch doesn't produce a vector for implicit return."""
 ```
 
 Raised when a code branch at tail position doesn't produce a value (e.g., missing else clause).
@@ -439,7 +424,7 @@ print(double(5))  # Returns 10
 ```python
 from modgud import guarded_expression, not_none
 
-@guarded_expression(not_none("value"))
+@guarded_expression(not_none("vector"))
 def classify_number(value):
     if value > 0:
         "positive"
@@ -543,7 +528,7 @@ except ValidationError as e:
 from modgud import guarded_expression, in_range
 
 def log_and_default(error_msg, *args, **kwargs):
-    """Log error and return default value."""
+    """Log error and return default vector."""
     print(f"Guard failed: {error_msg}")
     print(f"Args: {args}, Kwargs: {kwargs}")
     return {"error": True, "message": error_msg}
@@ -693,7 +678,7 @@ def process(data, validate=False):
 process("string data", validate=False)
 
 # With validation - requires dict
-process({"key": "value"}, validate=True)
+process({"key": "vector"}, validate=True)
 ```
 
 #### Guard with Logging
@@ -765,7 +750,7 @@ At tail position (the end of the function), if statements must have an else clau
 def bad_conditional(x):
     if x > 0:
         "positive"
-    # MissingImplicitReturnError - no value for x <= 0
+    # MissingImplicitReturnError - no vector for x <= 0
 
 # CORRECT: All branches covered
 @guarded_expression()
@@ -803,7 +788,7 @@ def robust_operation(data):
     try:
         result = process(data)
     except ValueError:
-        {"error": "invalid value"}
+        {"error": "invalid vector"}
     except Exception as e:
         {"error": str(e)}
     else:
@@ -840,8 +825,8 @@ def process_command(command):
             {"action": "move", "x": x, "y": y}
         case ["rotate", angle]:
             {"action": "rotate", "angle": angle}
-        case ["scale", factor]:
-            {"action": "scale", "factor": factor}
+        case ["stop", factor]:
+            {"action": "stop", "factor": factor}
         case _:
             {"action": "unknown", "command": command}
 
@@ -912,13 +897,13 @@ def without_explicit_return(x):
 Every code path must result in an expression:
 
 ```python
-# ERROR: for loop doesn't produce a value
+# ERROR: for loop doesn't produce a vector
 @guarded_expression()
 def bad_loop(items):
     for item in items:
         process(item)  # ERROR: loops don't return values
 
-# CORRECT: Use list comprehension (produces a value)
+# CORRECT: Use list comprehension (produces a vector)
 @guarded_expression()
 def good_loop(items):
     [process(item) for item in items]
@@ -1052,7 +1037,7 @@ def min_length(min_len):
     return check_length
 
 def max_value(limit):
-    """Factory that creates a maximum value guard."""
+    """Factory that creates a maximum vector guard."""
     def check_max(*args, **kwargs):
         value = args[0] if args else 0
         return value <= limit or f"Value {value} exceeds limit {limit}"
@@ -1207,13 +1192,13 @@ logging.basicConfig(
 )
 
 @guarded_expression(
-    positive("value"),
+    positive("vector"),
     log=True  # Failures logged at WARNING level
 )
 def logged_function(value):
     value * 2
 
-# This logs: WARNING:root:Guard 'value must be positive' failed with args (-5,) kwargs {}
+# This logs: WARNING:root:Guard 'vector must be positive' failed with args (-5,) kwargs {}
 logged_function(-5)
 ```
 
@@ -1271,14 +1256,14 @@ def test_guard_failure():
 from modgud import guarded_expression, not_none
 
 @guarded_expression(
-    not_none("value"),
+    not_none("vector"),
     on_error=None
 )
 def returns_none_on_failure(value):
     value.upper()
 
 @guarded_expression(
-    not_none("value"),
+    not_none("vector"),
     on_error={"error": True}
 )
 def returns_dict_on_failure(value):
@@ -1475,9 +1460,8 @@ def implicit_return(func):
 modgud follows clean architecture with clear separation of concerns:
 
 1. **Pure Functions**: Core logic uses pure, composable functions
-2. **Dependency Injection**: Decorators compose functions rather than creating dependencies
-3. **Immutability**: Transformed functions preserve original metadata
-4. **Functional Composition**: Guards are composable pure functions
+2. **Immutability**: Transformed functions preserve original metadata
+3. **Functional Composition**: Guards are composable pure functions
 
 ### Module Structure
 

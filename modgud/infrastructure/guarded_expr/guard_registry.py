@@ -1,18 +1,18 @@
-"""
-Custom guard registration system for extending CommonGuards.
+"""Custom guard registration system for extending CommonGuards.
 
 Allows external packages to register custom guard validators that can be
 accessed through the CommonGuards interface or separately.
 """
 
-from typing import Callable, Dict, Optional
+from __future__ import annotations
 
-from .types import GuardFunction
+from typing import Callable
+
+from modgud.shared import GuardFunction
 
 
 class GuardRegistry:
-  """
-  Singleton registry for custom guard validators.
+  """Singleton registry for custom guard validators.
 
   Allows registration of custom guards that can be used alongside
   CommonGuards. Guards can be registered globally or namespaced
@@ -28,12 +28,11 @@ class GuardRegistry:
       registry.register('another_guard', factory_fn)
   """
 
-  _instance: Optional['GuardRegistry'] = None
+  _instance: GuardRegistry | None = None
   _allow_direct_instantiation: bool = False
 
   def __init__(self) -> None:
-    """
-    Initialize the guard registry.
+    """Initialize the guard registry.
 
     For production code, use GuardRegistry.instance() to get the singleton.
     Direct instantiation is allowed only for testing purposes.
@@ -43,13 +42,12 @@ class GuardRegistry:
         'GuardRegistry is a singleton. Use GuardRegistry.instance() or '
         'GuardRegistry._create_for_testing() for tests.'
       )
-    self._guards: Dict[str, Callable[..., GuardFunction]] = {}
-    self._namespaces: Dict[str, Dict[str, Callable[..., GuardFunction]]] = {}
+    self._guards: dict[str, Callable[..., GuardFunction]] = {}
+    self._namespaces: dict[str, dict[str, Callable[..., GuardFunction]]] = {}
 
   @classmethod
-  def _create_for_testing(cls) -> 'GuardRegistry':
-    """
-    Create a new GuardRegistry instance for testing.
+  def _create_for_testing(cls) -> GuardRegistry:
+    """Create a new GuardRegistry instance for testing.
 
     This bypasses the singleton enforcement to allow isolated test instances.
 
@@ -63,9 +61,8 @@ class GuardRegistry:
     return instance
 
   @classmethod
-  def instance(cls) -> 'GuardRegistry':
-    """
-    Get the singleton GuardRegistry instance.
+  def instance(cls) -> GuardRegistry:
+    """Get the singleton GuardRegistry instance.
 
     Returns:
         Global GuardRegistry singleton instance
@@ -79,10 +76,9 @@ class GuardRegistry:
 
   @classmethod
   def register(
-    cls, name: str, guard_factory: Callable[..., GuardFunction], namespace: Optional[str] = None
+    cls, name: str, guard_factory: Callable[..., GuardFunction], namespace: str | None = None
   ) -> None:
-    """
-    Register a custom guard validator.
+    """Register a custom guard validator.
 
     Args:
         name: Name for the guard (e.g., 'valid_file_path')
@@ -96,11 +92,8 @@ class GuardRegistry:
     cls.instance()._register(name, guard_factory, namespace)
 
   @classmethod
-  def get(
-    cls, name: str, namespace: Optional[str] = None
-  ) -> Optional[Callable[..., GuardFunction]]:
-    """
-    Retrieve a registered guard factory.
+  def get(cls, name: str, namespace: str | None = None) -> Callable[..., GuardFunction] | None:
+    """Retrieve a registered guard factory.
 
     Args:
         name: Name of the guard
@@ -113,9 +106,8 @@ class GuardRegistry:
     return cls.instance()._get(name, namespace)
 
   @classmethod
-  def list_guards(cls, namespace: Optional[str] = None) -> list[str]:
-    """
-    List all registered guard names.
+  def list_guards(cls, namespace: str | None = None) -> list[str]:
+    """List all registered guard names.
 
     Args:
         namespace: Optional namespace to list
@@ -128,8 +120,7 @@ class GuardRegistry:
 
   @classmethod
   def list_namespaces(cls) -> list[str]:
-    """
-    List all registered namespaces.
+    """List all registered namespaces.
 
     Returns:
         List of namespace names
@@ -138,9 +129,8 @@ class GuardRegistry:
     return cls.instance()._list_namespaces()
 
   @classmethod
-  def has_guard(cls, name: str, namespace: Optional[str] = None) -> bool:
-    """
-    Check if a guard is registered.
+  def has_guard(cls, name: str, namespace: str | None = None) -> bool:
+    """Check if a guard is registered.
 
     Args:
         name: Name of the guard
@@ -153,9 +143,8 @@ class GuardRegistry:
     return cls.instance()._has_guard(name, namespace)
 
   @classmethod
-  def unregister(cls, name: str, namespace: Optional[str] = None) -> bool:
-    """
-    Unregister a custom guard.
+  def unregister(cls, name: str, namespace: str | None = None) -> bool:
+    """Unregister a custom guard.
 
     Args:
         name: Name of the guard
@@ -169,7 +158,7 @@ class GuardRegistry:
 
   # Instance methods (prefixed with _ to indicate they're called via class methods)
   def _register(
-    self, name: str, guard_factory: Callable[..., GuardFunction], namespace: Optional[str] = None
+    self, name: str, guard_factory: Callable[..., GuardFunction], namespace: str | None = None
   ) -> None:
     """Instance method for registration logic."""
     if namespace is None:
@@ -183,15 +172,13 @@ class GuardRegistry:
         raise ValueError(f"Guard '{name}' is already registered in namespace '{namespace}'")
       self._namespaces[namespace][name] = guard_factory
 
-  def _get(
-    self, name: str, namespace: Optional[str] = None
-  ) -> Optional[Callable[..., GuardFunction]]:
+  def _get(self, name: str, namespace: str | None = None) -> Callable[..., GuardFunction] | None:
     """Instance method for retrieval logic."""
     return (
       self._guards.get(name) if namespace is None else self._namespaces.get(namespace, {}).get(name)
     )
 
-  def _list_guards(self, namespace: Optional[str] = None) -> list[str]:
+  def _list_guards(self, namespace: str | None = None) -> list[str]:
     """Instance method for listing guards."""
     return (
       list(self._guards.keys())
@@ -203,11 +190,11 @@ class GuardRegistry:
     """Instance method for listing namespaces."""
     return list(self._namespaces.keys())
 
-  def _has_guard(self, name: str, namespace: Optional[str] = None) -> bool:
+  def _has_guard(self, name: str, namespace: str | None = None) -> bool:
     """Instance method for checking guard existence."""
     return self._get(name, namespace) is not None
 
-  def _unregister(self, name: str, namespace: Optional[str] = None) -> bool:
+  def _unregister(self, name: str, namespace: str | None = None) -> bool:
     """Instance method for unregistration logic."""
     removed = False
     if namespace is None:

@@ -1,17 +1,16 @@
-"""
-Test fixtures for guarded_expression tests.
+"""Test fixtures for guarded_expression tests.
 
 These functions are defined at module level so their source can be inspected
 by the implicit_return transformer.
 """
 
-from modgud import not_none, positive
-from modgud.guarded_expression import guarded_expression
-from modgud.guarded_expression.errors import GuardClauseError
+import asyncio
+
+from modgud import GuardFailureStrategy, guarded_expression, not_none, positive
 
 
 # Simple implicit return
-@guarded_expression(implicit_return=True, on_error=GuardClauseError)
+@guarded_expression(implicit_return=True)
 def calculate():
   x = 10
   y = 20
@@ -19,7 +18,7 @@ def calculate():
 
 
 # Implicit return with if/else
-@guarded_expression(implicit_return=True, on_error=GuardClauseError)
+@guarded_expression(implicit_return=True)
 def classify(x):
   if x > 0:
     'positive'
@@ -28,19 +27,19 @@ def classify(x):
 
 
 # Implicit return with try/except
-@guarded_expression(implicit_return=True, on_error=GuardClauseError)
+@guarded_expression(implicit_return=True)
 def safe_divide(x, y):
   try:
     x / y
   except ZeroDivisionError:
-    0
+    0  # noqa: B018 — implicit return
 
 
 # Combined guard and implicit return
 @guarded_expression(lambda x: x > 0 or 'Must be positive', implicit_return=True)
 def safe_divide_with_guard(x):
   result = 100 / x
-  result
+  result  # noqa: B018 — implicit return
 
 
 # CommonGuards with implicit return
@@ -50,15 +49,12 @@ def double_with_guards(x):
 
 
 # No guards, implicit return true
-@guarded_expression(implicit_return=True, on_error=GuardClauseError)
+@guarded_expression(implicit_return=True)
 def simple_implicit(x):
   x * 2
 
 
 # Async functions
-import asyncio
-
-
 @guarded_expression(lambda x: x > 0 or 'Must be positive', implicit_return=True)
 async def async_double(x):
   await asyncio.sleep(0)
@@ -74,7 +70,11 @@ async def async_classify(x):
     'non-positive'
 
 
-@guarded_expression(implicit_return=False, on_error=None)
+@guarded_expression(
+  implicit_return=False,
+  strategy=GuardFailureStrategy.RETURN_VALUE,
+  on_failure=None,
+)
 async def async_explicit_return(x):
   await asyncio.sleep(0)
   return x * 3
@@ -127,9 +127,9 @@ def noop_function(x):
 def exception_only_function(x):
   """Test function that only raises exceptions in all paths."""
   if x < 0:
-    raise ValueError('Negative value')
+    raise ValueError('Negative name')
   else:
-    raise RuntimeError('Non-negative value')
+    raise RuntimeError('Non-negative name')
 
 
 # Edge case: empty function (just docstring)
@@ -138,7 +138,7 @@ def empty_function(x):
   """Test empty function with just docstring."""
 
 
-# Edge case: conditionally no return value
+# Edge case: conditionally no return name
 @guarded_expression(implicit_return=True)
 def conditional_noop(x):
   """Test function where some paths have values, some have pass."""
@@ -147,4 +147,4 @@ def conditional_noop(x):
   elif x < 0:
     pass
   else:
-    None
+    None  # noqa: B018 — implicit return

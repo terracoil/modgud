@@ -1,55 +1,62 @@
+"""Modgud - guard clauses + implicit returns for Python.
+
+Primary surface:
+
+- ``guarded_expression`` - unified decorator combining guard validation
+  with optional implicit-return AST rewrite. Failure dispatch is controlled
+  by ``GuardFailureStrategy`` plus a paired ``on_failure`` payload; the
+  ``continuance`` parameter caps how many guards past the first failure
+  are still evaluated.
+- ``implicit_return`` - standalone Ruby-style implicit-return decorator.
+- Pre-built guard validators: ``positive``, ``not_none``, ``not_empty``,
+  ``type_check``, ``in_range``, ``matches_pattern``, ``valid_file_path``,
+  ``valid_url``, ``valid_enum``.
+- ``GuardRegistry`` for custom guard registration.
+
+Example::
+
+    from modgud import (
+      guarded_expression,
+      GuardFailureStrategy,
+      positive,
+      GuardClauseError,
+    )
+
+
+    @guarded_expression(positive('x'))
+    def double(x):
+      x * 2  # implicit return
+
+
+    @guarded_expression(
+      positive('x'),
+      strategy=GuardFailureStrategy.RETURN_VALUE,
+      on_failure=-1,
+    )
+    def safe_square(x):
+      x * x
+
+
+    # Collect up to two extra failures past the first:
+    @guarded_expression(
+      positive('x'),
+      positive('y'),
+      continuance=2,
+    )
+    def add(x, y):
+      x + y
 """
-Modgud - Modern Guard Clauses for Python.
 
-A library for implementing guard clause decorators with single return point architecture.
-
-Primary API:
-  - guarded_expression: Unified decorator combining guards + implicit return
-  - Pre-built guard validators: positive, not_none, not_empty, type_check, etc.
-
-Usage Examples:
-
-    Basic guard validation:
-        from modgud import guarded_expression, positive, type_check
-
-        @guarded_expression(
-            positive("x"),
-            type_check(int, "x"),
-            implicit_return=False
-        )
-        def calculate(x):
-            return x * 2
-
-    Implicit return (Ruby-style):
-        @guarded_expression()
-        def process(x, y):
-            if x > y:
-                x + y  # Implicit return
-            else:
-                x - y  # Implicit return
-
-    Custom guard registration:
-        from modgud import GuardRegistry
-
-        def valid_email(param_name="email", position=0):
-            def check(*args, **kwargs):
-                value = kwargs.get(param_name, args[position] if position < len(args) else None)
-                return "@" in str(value) or f"{param_name} must be a valid email"
-            return check
-
-        GuardRegistry.register("valid_email", valid_email, namespace="validators")
-"""
-
-from .guarded_expression import guarded_expression
-from .guarded_expression.common_guards import CommonGuards
-from .guarded_expression.errors import (
+from .app import guarded_expression, implicit_return
+from .domain import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
+  GuardFailureStrategy,
   ImplicitReturnError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .guarded_expression.guard_registry import GuardRegistry
+from .infrastructure import CommonGuards, GuardRegistry
 
 # Export guards as module-level functions for convenient direct import
 not_empty = CommonGuards.not_empty
@@ -62,10 +69,13 @@ valid_file_path = CommonGuards.valid_file_path
 valid_url = CommonGuards.valid_url
 valid_enum = CommonGuards.valid_enum
 
-__version__ = '1.1.0'
+__version__ = '2.0.0'
 __all__ = [
-  # Primary decorator
+  # Primary decorators
   'guarded_expression',
+  'implicit_return',
+  # Strategy enum
+  'GuardFailureStrategy',
   # Classes
   'CommonGuards',
   'GuardRegistry',

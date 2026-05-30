@@ -2,6 +2,7 @@
 
 import pytest
 from modgud import (
+  GuardClauseError,
   guarded_expression,
   in_range,
   matches_pattern,
@@ -10,7 +11,6 @@ from modgud import (
   positive,
   type_check,
 )
-from modgud.guarded_expression.errors import GuardClauseError
 
 
 class TestCommonGuardValidation:
@@ -30,18 +30,21 @@ class TestCommonGuardValidation:
   def test_common_guard_validation(self, guard_factory, valid_value, invalid_value, error_message):
     """Common guards should validate parameters correctly."""
 
-    @guarded_expression(guard_factory, implicit_return=False)
+    @guarded_expression(guard_factory)
     def process(x):
-      return x * 2 if isinstance(x, (int, float)) else x + x
+      if isinstance(x, (int, float)):
+        x * 2
+      else:
+        x + x
 
-    # Valid value should pass
+    # Valid name should pass
     result = process(valid_value)
     expected = (
       valid_value * 2 if isinstance(valid_value, (int, float)) else valid_value + valid_value
     )
     assert result == expected
 
-    # Invalid value should fail with proper error message
+    # Invalid name should fail with proper error message
     with pytest.raises(GuardClauseError) as exc_info:
       process(invalid_value)
     assert error_message in str(exc_info.value)
@@ -53,9 +56,9 @@ class TestGuardParameterHandling:
   def test_common_guards_kwargs_precedence(self):
     """Named parameters should take precedence over positional mapping."""
 
-    @guarded_expression(positive('x'), implicit_return=False)
+    @guarded_expression(positive('x'))
     def add(x, y):
-      return x + y
+      x + y
 
     # Named parameter should work
     assert add(x=5, y=3) == 8
@@ -68,9 +71,9 @@ class TestGuardParameterHandling:
   def test_extract_param_out_of_bounds(self):
     """Guard should fail when parameter index is out of bounds and default is invalid."""
 
-    @guarded_expression(positive('y', 1), implicit_return=False)
+    @guarded_expression(positive('y', 1))
     def single_param(x):
-      return x * 2
+      x * 2
 
     # Should fail because position 1 doesn't exist and default (0) is not positive
     with pytest.raises(GuardClauseError) as exc_info:
@@ -78,9 +81,9 @@ class TestGuardParameterHandling:
     assert 'positive' in str(exc_info.value)
 
     # Test with named parameter
-    @guarded_expression(positive('y'), implicit_return=False)
+    @guarded_expression(positive('y'))
     def with_named(x, y=10):
-      return x + y
+      x + y
 
     # Should work when y is positive
     assert with_named(5) == 15  # Uses default y=10
@@ -89,9 +92,9 @@ class TestGuardParameterHandling:
   def test_not_empty_with_object_lacking_len(self):
     """not_empty guard should handle objects without len() gracefully."""
 
-    @guarded_expression(not_empty('x'), implicit_return=False)
+    @guarded_expression(not_empty('x'))
     def process(x):
-      return str(x)
+      str(x)
 
     # Should work with strings and lists
     assert process('hello') == 'hello'
