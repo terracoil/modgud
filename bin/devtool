@@ -3,7 +3,7 @@
 
 Consolidates all development scripts into a single FreyjaCLI implementation.
 """
-
+# deprecated
 import glob
 import os
 import re
@@ -16,14 +16,12 @@ import tomllib
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Dict, List, Optional, Union
+from freyja import FreyjaCLI
+from freyja.help.help_formatter import HierarchicalHelpFormatter
 
 # Add the project root to the Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from freyja import FreyjaCLI
-from freyja.utils.console_formatter import ConsoleFormatter
-from freyja.utils.dependency_analyzer import DependencyAnalyzer
-from freyja.utils.json_formatter import JsonFormatter
 
 # Configure cache directories to use tmp/
 # os.environ.setdefault('RUFF_CACHE_DIR', str(project_src / 'tmp' / '.ruff_cache'))
