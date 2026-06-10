@@ -10,9 +10,8 @@ the decoration site.
 
 from typing import Any, Callable
 
-from modgud.domain import GuardClauseError, GuardFailureStrategy
+from modgud.domain.guarded_expr import GuardClauseError, GuardFailureStrategy, GuardFunction
 from modgud.infrastructure import GuardRuntime, ImplicitReturnTransformer
-from modgud.shared import GuardFunction
 
 
 def guarded_expression(

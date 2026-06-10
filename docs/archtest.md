@@ -170,7 +170,7 @@ class DependencyAnalyzer:
 
     def analyze_project(self, root: Path) -> ProjectAnalysis:
         """Analyze entire Python project."""
-        pass
+        
 
     def analyze_module(self, path: Path) -> ModuleAnalysis:
         """Analyze single Python module."""
@@ -178,7 +178,7 @@ class DependencyAnalyzer:
 
     def extract_imports(self, tree: AST) -> List[Import]:
         """Extract all imports from AST."""
-        pass
+        
 
     def build_dependency_graph(self, analysis: ProjectAnalysis) -> DependencyGraph:
         """Build complete dependency graph."""

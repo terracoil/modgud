@@ -6,8 +6,4 @@ definitions and protocols used across the library.
 
 from typing import Callable
 
-__all__ = ['GuardFunction']
-
-# Guard function signature: (*args, **kwargs) -> True | str
-# Guards return True for success, or an error message string for failure.
 GuardFunction = Callable[..., bool | str]

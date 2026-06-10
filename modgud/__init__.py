@@ -56,6 +56,7 @@ from .domain import (
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
+from .domain.guarded_expr import GuardFunction
 from .infrastructure import CommonGuards, GuardRegistry
 
 # Export guards as module-level functions for convenient direct import

@@ -11,8 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Protocol
 
-from modgud.domain.guarded_expr import GuardFailureStrategy
-from modgud.shared import GuardFunction
+from modgud.domain.guarded_expr import GuardFailureStrategy, GuardFunction
 
 
 class GuardRuntimePort(Protocol):

@@ -8,8 +8,7 @@ failures through the chosen `GuardFailureStrategy`.
 import functools
 from typing import Any, Callable
 
-from modgud.domain import GuardClauseError, GuardFailureStrategy
-from modgud.shared import GuardFunction
+from modgud.domain.guarded_expr import GuardClauseError, GuardFailureStrategy, GuardFunction
 
 
 class GuardRuntime:
