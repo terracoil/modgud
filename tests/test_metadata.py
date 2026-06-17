@@ -1,7 +1,7 @@
 """Tests for metadata preservation and edge cases."""
 
 import pytest
-from modgud import guarded_expression
+from modgud.app import guarded_expression
 
 
 class TestMetadataPreservation:

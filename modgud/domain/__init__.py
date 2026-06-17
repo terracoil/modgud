@@ -1,22 +1,7 @@
-"""Domain layer aggregator.
+"""Domain layer - passive types, enums, errors, and ports.
 
-Re-exports the public-facing types from each feature subpackage so callers
-can use the shortest absolute path (`from modgud.domain import X`).
+This is a pure container package and intentionally re-exports nothing. Import
+each symbol from the leaf feature subpackage that owns it, e.g.
+``from modgud.domain.guarded_expr import GuardFailureStrategy`` or
+``from modgud.domain.implicit_ret import ImplicitReturnError``.
 """
-
-from .guarded_expr import GuardClauseError, GuardFailureStrategy
-from .implicit_ret import (
-  ExplicitReturnDisallowedError,
-  ImplicitReturnError,
-  MissingImplicitReturnError,
-  UnsupportedConstructError,
-)
-
-__all__ = [
-  'ExplicitReturnDisallowedError',
-  'GuardClauseError',
-  'GuardFailureStrategy',
-  'ImplicitReturnError',
-  'MissingImplicitReturnError',
-  'UnsupportedConstructError',
-]

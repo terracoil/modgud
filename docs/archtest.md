@@ -518,18 +518,14 @@ pattern: layered
 layers:
   app:
     path: "modgud/app"
-    allowed_imports: ["modgud.infrastructure", "modgud.domain", "modgud.util"]
+    allowed_imports: ["modgud.infrastructure", "modgud.domain"]
 
   infrastructure:
     path: "modgud/infrastructure"
-    allowed_imports: ["modgud.domain", "modgud.util"]
+    allowed_imports: ["modgud.domain"]
 
   domain:
     path: "modgud/domain"
-    allowed_imports: ["modgud.util"]
-
-  util:
-    path: "modgud/util"
     allowed_imports: []  # Leaf layer
 
 import_rules:

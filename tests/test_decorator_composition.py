@@ -7,11 +7,13 @@ without interference.
 import warnings
 
 import pytest
-from modgud import GuardClauseError, guarded_expression, implicit_return, not_none, positive
+from modgud.app import guarded_expression, implicit_return
+from modgud.domain.guarded_expr import GuardClauseError
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 
 # Module-level functions for implicit return tests
-@guarded_expression(positive('x'))
+@guarded_expression(CommonGuards.positive('x'))
 @implicit_return
 def composed_guards_then_implicit(x):
   """Recommended composition: guards then implicit_return."""
@@ -23,7 +25,7 @@ def composed_guards_then_implicit(x):
 # When @implicit_return wraps a guarded function, it re-transforms the original
 # source, effectively removing the guard wrapper
 @implicit_return
-@guarded_expression(positive('x'), implicit_return=False)
+@guarded_expression(CommonGuards.positive('x'), implicit_return=False)
 def composed_implicit_then_guards(x):
   """Invalid composition: bypasses guards due to source retrieval behavior."""
   result = x * 2
@@ -39,13 +41,13 @@ def standalone_implicit(x, y):
     x - y
 
 
-@guarded_expression(positive('x', position=0), not_none('y', position=1))
+@guarded_expression(CommonGuards.positive('x', position=0), CommonGuards.not_none('y', position=1))
 def standalone_guards(x, y):
   """Standalone guards with implicit return (modern pattern)."""
   x + y
 
 
-@guarded_expression(positive('x'))
+@guarded_expression(CommonGuards.positive('x'))
 def guards_with_modern_pattern(x):
   """Guards with modern implicit return pattern."""
   x * 3
@@ -93,7 +95,7 @@ class TestDecoratorComposition:
     with warnings.catch_warnings(record=True) as w:
       warnings.simplefilter('always')
 
-      @guarded_expression(positive('x'), implicit_return=False)
+      @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
       def explicit_return_usage(x):
         return x * 2
 
@@ -108,7 +110,7 @@ class TestDecoratorComposition:
     with warnings.catch_warnings(record=True) as w:
       warnings.simplefilter('always')
 
-      @guarded_expression(positive('x'))  # Default implicit_return=True
+      @guarded_expression(CommonGuards.positive('x'))  # Default implicit_return=True
       def default_usage(x):
         result = x * 2
         result  # noqa: B018 - implicit return

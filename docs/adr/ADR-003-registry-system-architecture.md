@@ -25,13 +25,13 @@ Architecture:
 _GLOBAL_REGISTRY = GuardRegistry()
 
 # Registration with namespaces
-from modgud import positive
-register_guard("positive", positive)  # Default namespace
-register_guard("email", validators.email, namespace="validators")
+from modgud.infrastructure.guarded_expr import CommonGuards, GuardRegistry
+GuardRegistry.register("positive", CommonGuards.positive)  # Default namespace
+GuardRegistry.register("email", validators.email, namespace="validators")
 
 # Usage
-registry.get("positive")()  # Returns guard factory
-registry.get("email", namespace="validators")()
+GuardRegistry.get("positive")()  # Returns guard factory
+GuardRegistry.get("email", namespace="validators")()
 ```
 
 ## Consequences
@@ -79,7 +79,7 @@ class CommonNamespace:
 ### 4. Decorator Registration
 Register guards via decorator at definition.
 ```python
-@register_guard("positive")
+@GuardRegistry.register("positive")
 def positive_guard(...): ...
 ```
 - **Rejected**: Couples definition with registration, less flexible
@@ -106,9 +106,9 @@ Pre-built guards auto-register at import:
 # At module level in common_guards.py
 def _register_common_guards():
   # Each guard function is registered individually
-  register_guard('not_none', not_none, namespace='common')
-  register_guard('positive', positive, namespace='common')
-  register_guard('type_check', type_check, namespace='common')
+  GuardRegistry.register('not_none', CommonGuards.not_none, namespace='common')
+  GuardRegistry.register('positive', CommonGuards.positive, namespace='common')
+  GuardRegistry.register('type_check', CommonGuards.type_check, namespace='common')
   # ... etc for all pre-built guards
 
 _register_common_guards()

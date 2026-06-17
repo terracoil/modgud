@@ -93,22 +93,23 @@ poetry run twine check dist/*
 
 ## Code Architecture
 
-Per-feature decomposition (see `project.md` at the repo root). Dependencies flow downward only: `app → domain`, `infrastructure.<feature> → domain.<feature>`, `domain.<feature> → shared, util`, `shared → util`.
+Per-feature decomposition (see `project.md` at the repo root). Dependencies flow downward only: `app → domain.<feature>`, `app → infrastructure.<feature>`, `infrastructure.<feature> → domain.<feature>`. The `domain` layer is self-contained (its shared `GuardFunction` type lives in `domain/guarded_expr/types.py`).
 
 ```
 modgud/
   app/                                # public decorators (entry points)
     guarded_expression.py             # @guarded_expression — plain function
     implicit_return.py                # @implicit_return — plain function
-  domain/
+  domain/                             # container package — no re-exports
     guarded_expr/
       enums.py                        # GuardFailureStrategy (IntEnum)
       errors.py                       # GuardClauseError
+      types.py                        # GuardFunction (used by app + infra)
       ports/guard_runtime_port.py     # Protocol describing GuardRuntime
     implicit_ret/
       errors.py                       # ImplicitReturnError + 3 children
       ports/implicit_return_transformer_port.py
-  infrastructure/
+  infrastructure/                     # container package — no re-exports
     guarded_expr/
       guard_runtime.py                # GuardRuntime — guard eval + dispatch
       common_guards.py                # CommonGuards (pre-built validators)
@@ -118,14 +119,11 @@ modgud/
       _no_explicit_return_checker.py  # private helper
       _tail_rewriter.py               # private helper
       _top_level_transformer.py       # private helper
-  shared/
-    types.py                          # GuardFunction (used by app + infra)
-  util/                               # placeholder; no contents yet
 ```
 
 **Ports**: `GuardRuntimePort` and `ImplicitReturnTransformerPort` document the contract the app decorators consume. The decorators currently import the concrete classes directly; the ports exist so the wiring can flip to IoC injection (via `gleipnyr`) without surface changes.
 
-**Public API**: `modgud/__init__.py` re-exports the two decorators, `GuardFailureStrategy`, the guard validators, `CommonGuards`, `GuardRegistry`, and the error classes.
+**Public API**: the package structure *is* the API — there is no flat top-level re-export. `modgud/__init__.py`, `modgud/domain/__init__.py`, and `modgud/infrastructure/__init__.py` are pure containers (docstring only; `modgud/__init__.py` also holds `__version__`). Import each symbol from the leaf subpackage that owns it: decorators from `modgud.app`; `GuardFailureStrategy`/`GuardClauseError`/`GuardFunction` from `modgud.domain.guarded_expr`; the implicit-return errors from `modgud.domain.implicit_ret`; `CommonGuards`/`GuardRegistry`/`GuardRuntime` from `modgud.infrastructure.guarded_expr`; `ImplicitReturnTransformer` from `modgud.infrastructure.implicit_ret`. The guard validators are static methods on `CommonGuards` (e.g. `CommonGuards.positive('x')`).
 
 ### Key Design Patterns
 
@@ -204,22 +202,21 @@ The v0.2.0 refactoring implements clean architecture with clear separation of co
 
 **Primary API:**
 ```python
-from modgud import (
-    guarded_expression, positive, not_none, type_check,
-    GuardFailureStrategy, GuardClauseError,
-)
+from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardClauseError, GuardFailureStrategy
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 # Defaults: ERROR_RAISE, on_failure=GuardClauseError, continuance=0, implicit_return=True
-@guarded_expression(positive("x"))
+@guarded_expression(CommonGuards.positive("x"))
 def process(x):
     result = x * 2
     result  # implicit return
 
 # Multiple guards, collect up to 3 failures total (1 + continuance=2)
 @guarded_expression(
-    not_none("user"),
-    type_check(str, "name"),
-    positive("amount"),
+    CommonGuards.not_none("user"),
+    CommonGuards.type_check(str, "name"),
+    CommonGuards.positive("amount"),
     continuance=2,
 )
 def create_transaction(user, name, amount):
@@ -227,7 +224,7 @@ def create_transaction(user, name, amount):
 
 # Return a fallback value instead of raising
 @guarded_expression(
-    positive("x"),
+    CommonGuards.positive("x"),
     implicit_return=False,
     strategy=GuardFailureStrategy.RETURN_VALUE,
     on_failure=None,
@@ -240,7 +237,7 @@ def explain(errors, *args, **kwargs):
     return {"errors": errors, "args": args}
 
 @guarded_expression(
-    positive("x"),
+    CommonGuards.positive("x"),
     strategy=GuardFailureStrategy.CALL_HANDLER,
     on_failure=explain,
 )

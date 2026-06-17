@@ -2,7 +2,7 @@
 
 import ast
 
-from modgud.domain import MissingImplicitReturnError, UnsupportedConstructError
+from modgud.domain.implicit_ret import MissingImplicitReturnError, UnsupportedConstructError
 
 
 class _TailRewriter:

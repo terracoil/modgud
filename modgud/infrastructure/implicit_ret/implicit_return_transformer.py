@@ -7,7 +7,7 @@ import inspect
 import textwrap
 from typing import Any, Callable, TypeVar
 
-from modgud.domain import ExplicitReturnDisallowedError
+from modgud.domain.implicit_ret import ExplicitReturnDisallowedError
 
 from ._no_explicit_return_checker import _NoExplicitReturnChecker
 from ._tail_rewriter import _TailRewriter

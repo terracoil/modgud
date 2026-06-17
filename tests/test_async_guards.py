@@ -3,7 +3,7 @@
 import asyncio
 
 import pytest
-from modgud import GuardClauseError
+from modgud.domain.guarded_expr import GuardClauseError
 
 
 class TestAsyncFunctionSupport:

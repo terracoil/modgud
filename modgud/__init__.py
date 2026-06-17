@@ -1,35 +1,31 @@
 """Modgud - guard clauses + implicit returns for Python.
 
-Primary surface:
+The package structure *is* the public API - import each symbol from the leaf
+subpackage that owns it rather than from the top-level ``modgud`` namespace:
 
-- ``guarded_expression`` - unified decorator combining guard validation
-  with optional implicit-return AST rewrite. Failure dispatch is controlled
-  by ``GuardFailureStrategy`` plus a paired ``on_failure`` payload; the
-  ``continuance`` parameter caps how many guards past the first failure
-  are still evaluated.
-- ``implicit_return`` - standalone Ruby-style implicit-return decorator.
-- Pre-built guard validators: ``positive``, ``not_none``, ``not_empty``,
-  ``type_check``, ``in_range``, ``matches_pattern``, ``valid_file_path``,
-  ``valid_url``, ``valid_enum``.
-- ``GuardRegistry`` for custom guard registration.
+- ``from modgud.app import guarded_expression, implicit_return`` - the decorators.
+- ``from modgud.domain.guarded_expr import GuardFailureStrategy, GuardClauseError``
+  - failure-dispatch enum and guard error.
+- ``from modgud.domain.implicit_ret import ImplicitReturnError`` (and its three
+  subclasses) - implicit-return transformation errors.
+- ``from modgud.infrastructure.guarded_expr import CommonGuards, GuardRegistry``
+  - pre-built guard validators (as ``CommonGuards`` static methods) and the
+  custom-guard registry.
 
 Example::
 
-    from modgud import (
-      guarded_expression,
-      GuardFailureStrategy,
-      positive,
-      GuardClauseError,
-    )
+    from modgud.app import guarded_expression
+    from modgud.domain.guarded_expr import GuardFailureStrategy
+    from modgud.infrastructure.guarded_expr import CommonGuards
 
 
-    @guarded_expression(positive('x'))
+    @guarded_expression(CommonGuards.positive('x'))
     def double(x):
       x * 2  # implicit return
 
 
     @guarded_expression(
-      positive('x'),
+      CommonGuards.positive('x'),
       strategy=GuardFailureStrategy.RETURN_VALUE,
       on_failure=-1,
     )
@@ -39,61 +35,12 @@ Example::
 
     # Collect up to two extra failures past the first:
     @guarded_expression(
-      positive('x'),
-      positive('y'),
+      CommonGuards.positive('x'),
+      CommonGuards.positive('y'),
       continuance=2,
     )
     def add(x, y):
       x + y
 """
 
-from .app import guarded_expression, implicit_return
-from .domain import (
-  ExplicitReturnDisallowedError,
-  GuardClauseError,
-  GuardFailureStrategy,
-  ImplicitReturnError,
-  MissingImplicitReturnError,
-  UnsupportedConstructError,
-)
-from .domain.guarded_expr import GuardFunction
-from .infrastructure import CommonGuards, GuardRegistry
-
-# Export guards as module-level functions for convenient direct import
-not_empty = CommonGuards.not_empty
-not_none = CommonGuards.not_none
-positive = CommonGuards.positive
-in_range = CommonGuards.in_range
-type_check = CommonGuards.type_check
-matches_pattern = CommonGuards.matches_pattern
-valid_file_path = CommonGuards.valid_file_path
-valid_url = CommonGuards.valid_url
-valid_enum = CommonGuards.valid_enum
-
 __version__ = '2.0.0'
-__all__ = [
-  # Primary decorators
-  'guarded_expression',
-  'implicit_return',
-  # Strategy enum
-  'GuardFailureStrategy',
-  # Classes
-  'CommonGuards',
-  'GuardRegistry',
-  # Guard validators (convenience exports)
-  'not_empty',
-  'not_none',
-  'positive',
-  'in_range',
-  'type_check',
-  'matches_pattern',
-  'valid_file_path',
-  'valid_url',
-  'valid_enum',
-  # Error classes
-  'GuardClauseError',
-  'ImplicitReturnError',
-  'ExplicitReturnDisallowedError',
-  'MissingImplicitReturnError',
-  'UnsupportedConstructError',
-]

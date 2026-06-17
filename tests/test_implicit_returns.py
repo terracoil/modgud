@@ -1,7 +1,9 @@
 """Tests for implicit return functionality."""
 
 import pytest
-from modgud import ExplicitReturnDisallowedError, GuardClauseError, guarded_expression
+from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardClauseError
+from modgud.domain.implicit_ret import ExplicitReturnDisallowedError
 
 from tests.helpers import assert_guard_fails
 

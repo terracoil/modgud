@@ -11,7 +11,8 @@ the decoration site.
 from typing import Any, Callable
 
 from modgud.domain.guarded_expr import GuardClauseError, GuardFailureStrategy, GuardFunction
-from modgud.infrastructure import GuardRuntime, ImplicitReturnTransformer
+from modgud.infrastructure.guarded_expr import GuardRuntime
+from modgud.infrastructure.implicit_ret import ImplicitReturnTransformer
 
 
 def guarded_expression(

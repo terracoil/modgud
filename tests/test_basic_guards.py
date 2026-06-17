@@ -1,7 +1,8 @@
 """Tests for basic guard clause functionality."""
 
 import pytest
-from modgud import GuardFailureStrategy, guarded_expression
+from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureStrategy
 
 from tests.helpers import assert_guard_fails
 

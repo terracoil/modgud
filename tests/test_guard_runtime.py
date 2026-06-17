@@ -1,8 +1,8 @@
 """Unit tests for GuardRuntime: check_guards + handle_failure."""
 
 import pytest
-from modgud import GuardClauseError, GuardFailureStrategy
-from modgud.infrastructure import GuardRuntime
+from modgud.domain.guarded_expr import GuardClauseError, GuardFailureStrategy
+from modgud.infrastructure.guarded_expr import GuardRuntime
 
 
 class TestCheckGuards:

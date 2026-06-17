@@ -105,14 +105,15 @@ Multiple return points everywhere. Business logic buried at the bottom. Error ha
 **modgud** gives you guard clauses and expression-oriented programming in Python:
 
 ```python
-from modgud import guarded_expression, implicit_return, positive, type_check, in_range, not_empty, GuardRegistry
+from modgud.app import guarded_expression, implicit_return
+from modgud.infrastructure.guarded_expr import CommonGuards, GuardRegistry
 
 @guarded_expression(
-    positive("user_id"),
-    type_check(int, "user_id"),
-    positive("amount"),
-    in_range(1, 10000, "amount"),
-    not_empty("payment_method"),
+    CommonGuards.positive("user_id"),
+    CommonGuards.type_check(int, "user_id"),
+    CommonGuards.positive("amount"),
+    CommonGuards.in_range(1, 10000, "amount"),
+    CommonGuards.not_empty("payment_method"),
     lambda pm: pm in ["card", "bank", "crypto"] or "Invalid payment method",
     implicit_return=True,  # Unified approach - fully supported!
     on_error={"success": False, "error": "Validation failed"}
@@ -150,11 +151,12 @@ def withdraw(account_id, amount):
 
 **After:**
 ```python
-from modgud import guarded_expression, not_none, positive
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 @guarded_expression(
-    not_none("account_id"),
-    positive("amount"),
+    CommonGuards.not_none("account_id"),
+    CommonGuards.positive("amount"),
     lambda account_id, amount: amount <= get_balance(account_id) or "Insufficient funds",
     implicit_return=True  # Unified approach - clean and simple!
 )
@@ -181,11 +183,12 @@ def classify_user(age, premium):
 
 **After:**
 ```python
-from modgud import guarded_expression, positive
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 # Using the unified parameter approach
 @guarded_expression(
-    positive("age"),
+    CommonGuards.positive("age"),
     implicit_return=True
 )
 def classify_user(age, premium):
@@ -210,15 +213,16 @@ Guards handle early exits. Your function handles business logic. Separation of c
 Stop writing the same validations over and over:
 
 ```python
-from modgud import guarded_expression, not_none, matches_pattern, positive, in_range, not_empty, type_check
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 @guarded_expression(
-    not_none("email"),
-    matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
-    positive("age"),
-    in_range(13, 120, "age"),
-    not_empty("username"),
-    type_check(str, "username"),
+    CommonGuards.not_none("email"),
+    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
+    CommonGuards.positive("age"),
+    CommonGuards.in_range(13, 120, "age"),
+    CommonGuards.not_empty("username"),
+    CommonGuards.type_check(str, "username"),
     implicit_return=True  # Clean, all-in-one configuration
 )
 def register_user(email, age, username):
@@ -242,7 +246,8 @@ Plus you can write custom guards in seconds.
 Register your own reusable guards:
 
 ```python
-from modgud import GuardRegistry, guarded_expression
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import GuardRegistry
 
 # Define a custom guard factory
 def valid_age(min_age=0, max_age=150, param_name="age"):
@@ -273,10 +278,11 @@ Your code, your rules. Choose how guards fail:
 
 **Return custom values:**
 ```python
-from modgud import guarded_expression, positive
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 @guarded_expression(
-    positive("amount"),
+    CommonGuards.positive("amount"),
     implicit_return=True,
     on_error={"error": "Invalid amount", "code": 400}
 )
@@ -286,10 +292,11 @@ def process(amount):
 
 **Raise exceptions:**
 ```python
-from modgud import guarded_expression, not_empty
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 @guarded_expression(
-    not_empty("username"),
+    CommonGuards.not_empty("username"),
     implicit_return=True,
     on_error=ValueError
 )
@@ -299,7 +306,7 @@ def create_account(username):
 
 **Custom handlers:**
 ```python
-from modgud import guarded_expression
+from modgud.app import guarded_expression
 
 def audit_and_return(error_msg, *args, **kwargs):
     log_security_event(error_msg)
@@ -341,12 +348,13 @@ pip install modgud
 ### Your First Guarded Function
 
 ```python
-from modgud import guarded_expression, positive, in_range
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 # Option 1: Unified approach (recommended for simple cases)
 @guarded_expression(
-    positive("x"),
-    in_range(1, 100, "x"),
+    CommonGuards.positive("x"),
+    CommonGuards.in_range(1, 100, "x"),
     implicit_return=True  # All-in-one configuration
 )
 def calculate_discount(x):
@@ -356,11 +364,11 @@ def calculate_discount(x):
         x * 0.1
 
 # Option 2: Separate decorators (for complex compositions)
-from modgud import implicit_return
+from modgud.app import implicit_return
 
 @guarded_expression(
-    positive("x"),
-    in_range(1, 100, "x")
+    CommonGuards.positive("x"),
+    CommonGuards.in_range(1, 100, "x")
 )
 @implicit_return
 def calculate_discount_v2(x):
@@ -430,16 +438,17 @@ def create_user(email, age, username, password):
 **With modgud:**
 
 ```python
-from modgud import guarded_expression, not_empty, matches_pattern, type_check, in_range
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 @guarded_expression(
-    not_empty("email"),
-    matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
-    type_check(int, "age"),
-    in_range(13, 120, "age"),
-    not_empty("username"),
+    CommonGuards.not_empty("email"),
+    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
+    CommonGuards.type_check(int, "age"),
+    CommonGuards.in_range(13, 120, "age"),
+    CommonGuards.not_empty("username"),
     lambda username: 3 <= len(username) <= 20 or "Username must be 3-20 chars",
-    not_empty("password"),
+    CommonGuards.not_empty("password"),
     implicit_return=True,  # Clean configuration in one place
     on_error={"status": 400, "error": "Validation failed"}
 )
@@ -519,7 +528,7 @@ def get_status(user):
     return status
 
 # Expression-oriented (with modgud)
-from modgud import guarded_expression
+from modgud.app import guarded_expression
 
 @guarded_expression(implicit_return=True)
 def get_status(user):
@@ -541,11 +550,12 @@ With modgud, Python developers can finally write in an expression-oriented style
 
 ```python
 # Complex business logic, expression style
-from modgud import guarded_expression, not_none, positive
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 @guarded_expression(
-    not_none("order"),
-    positive("discount_rate"),
+    CommonGuards.not_none("order"),
+    CommonGuards.positive("discount_rate"),
     implicit_return=True  # Expression-oriented with guards!
 )
 def calculate_final_price(order, discount_rate, is_premium):
@@ -595,12 +605,13 @@ Your functions should focus on *what they do*, not on validating *what they rece
 
 ### Pattern 1: Unified Parameter (Simple, All-in-One)
 ```python
-from modgud import guarded_expression, positive, not_none
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 # Everything configured in one decorator
 @guarded_expression(
-    not_none("x"),
-    positive("x"),
+    CommonGuards.not_none("x"),
+    CommonGuards.positive("x"),
     implicit_return=True  # Fully supported!
 )
 def process(x):
@@ -616,10 +627,11 @@ def process(x):
 
 ### Pattern 2: Separate Decorators (Flexible, Composable)
 ```python
-from modgud import guarded_expression, implicit_return, positive, not_none
+from modgud.app import guarded_expression, implicit_return
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 # Separate concerns with multiple decorators
-@guarded_expression(not_none("x"), positive("x"))
+@guarded_expression(CommonGuards.not_none("x"), CommonGuards.positive("x"))
 @implicit_return
 def process(x):
     result = x * 2
@@ -638,14 +650,14 @@ When using separate decorators, **order matters**:
 
 ```python
 # ✅ CORRECT: Guards before implicit
-@guarded_expression(positive("x"))
+@guarded_expression(CommonGuards.positive("x"))
 @implicit_return
 def correct(x):
     x * 2
 
 # ❌ PROBLEMATIC: Implicit before guards (may bypass guards!)
 @implicit_return
-@guarded_expression(positive("x"))  # Guards may be bypassed!
+@guarded_expression(CommonGuards.positive("x"))  # Guards may be bypassed!
 def problematic(x):
     x * 2
 ```
@@ -654,8 +666,8 @@ def problematic(x):
 ```python
 # Guards only (traditional explicit returns)
 @guarded_expression(
-    not_none("x"),
-    positive("x"),
+    CommonGuards.not_none("x"),
+    CommonGuards.positive("x"),
     implicit_return=False  # Explicit returns
 )
 def calculate(x):
@@ -724,12 +736,12 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ```python
 # Old way (v0.2.x - REMOVED)
-from modgud import register_guard, get_guard
-register_guard('my_guard', factory_fn)
-guard = get_guard('my_guard')
+from modgud.infrastructure.guarded_expr import GuardRegistry
+GuardRegistry.register('my_guard', factory_fn)
+guard = GuardRegistry.get('my_guard')
 
 # New way (v1.1+)
-from modgud import GuardRegistry
+from modgud.infrastructure.guarded_expr import GuardRegistry
 GuardRegistry.register('my_guard', factory_fn)
 guard = GuardRegistry.get('my_guard')
 ```

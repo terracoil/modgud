@@ -6,7 +6,7 @@ function's return value. Explicit `return` statements are not allowed.
 
 from typing import Any, Callable, TypeVar, cast
 
-from modgud.infrastructure import ImplicitReturnTransformer
+from modgud.infrastructure.implicit_ret import ImplicitReturnTransformer
 
 F = TypeVar('F', bound=Callable[..., Any])
 

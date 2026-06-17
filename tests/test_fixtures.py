@@ -6,7 +6,9 @@ by the implicit_return transformer.
 
 import asyncio
 
-from modgud import GuardFailureStrategy, guarded_expression, not_none, positive
+from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureStrategy
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 
 # Simple implicit return
@@ -43,7 +45,7 @@ def safe_divide_with_guard(x):
 
 
 # CommonGuards with implicit return
-@guarded_expression(not_none('x'), positive('x'), implicit_return=True)
+@guarded_expression(CommonGuards.not_none('x'), CommonGuards.positive('x'), implicit_return=True)
 def double_with_guards(x):
   x * 2
 
@@ -61,7 +63,7 @@ async def async_double(x):
   x * 2
 
 
-@guarded_expression(not_none('x'), implicit_return=True)
+@guarded_expression(CommonGuards.not_none('x'), implicit_return=True)
 async def async_classify(x):
   await asyncio.sleep(0)
   if x > 0:

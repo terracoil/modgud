@@ -65,7 +65,7 @@ else:
 With modgud, Python joins the expression-oriented revolution:
 
 ```python
-from modgud import guarded_expression, implicit_return
+from modgud.app import guarded_expression, implicit_return
 
 @guarded_expression()
 @implicit_return
@@ -129,11 +129,12 @@ Modgud follows clean architecture principles with three distinct layers:
 When you decorate a function with `@guarded_expression`, here's what happens at runtime:
 
 ```python
-from modgud import guarded_expression, implicit_return, not_none
+from modgud.app import guarded_expression, implicit_return
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 # User code
 @guarded_expression(
-    not_none("x"),
+    CommonGuards.not_none("x"),
     on_error=ValueError
 )
 @implicit_return
@@ -421,17 +422,18 @@ Modgud is thread-safe:
 **Separation of Concerns:** modgud now provides separate decorators that can be composed:
 
 ```python
-from modgud import guarded_expression, implicit_return
+from modgud.app import guarded_expression, implicit_return
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 # Recommended pattern: Guard validation + expression transformation
-@guarded_expression(not_none("x"), positive("x"))
+@guarded_expression(CommonGuards.not_none("x"), CommonGuards.positive("x"))
 @implicit_return  
 def process(x):
     result = x * 2
     result
 
 # Guards only (traditional explicit returns)
-@guarded_expression(not_none("x"))
+@guarded_expression(CommonGuards.not_none("x"))
 def calculate(x):
     return x * 2
 
@@ -481,14 +483,15 @@ ImplicitReturnError (base)
 You can provide custom error handling logic:
 
 ```python
-from modgud import guarded_expression, implicit_return, positive
+from modgud.app import guarded_expression, implicit_return
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 def my_error_handler(error_msg, *args, **kwargs):
     logger.error(f"Guard failed: {error_msg}")
     return {"error": error_msg, "args": args}
 
 @guarded_expression(
-    positive("amount"),
+    CommonGuards.positive("amount"),
     on_error=my_error_handler
 )
 @implicit_return
@@ -502,11 +505,12 @@ def process_payment(amount):
 Enable built-in logging with `log=True`:
 
 ```python
-from modgud import guarded_expression, implicit_return, not_none
+from modgud.app import guarded_expression, implicit_return
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 
 @guarded_expression(
-  not_none("user"),
+  CommonGuards.not_none("user"),
   log=True  # Logs failures at INFO level
 )
 @implicit_return
@@ -523,7 +527,7 @@ def greet_user(user):
 Register reusable guards in namespaces:
 
 ```python
-from modgud import register_guard
+from modgud.infrastructure.guarded_expr import GuardRegistry
 
 # Define custom guard
 def valid_email(param_name="email", position=0):
@@ -535,12 +539,13 @@ def valid_email(param_name="email", position=0):
     return check
 
 # Register it
-register_guard("valid_email", valid_email, namespace="validators")
+GuardRegistry.register("valid_email", valid_email, namespace="validators")
 
 # Use it anywhere
-from modgud import get_guard
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import GuardRegistry
 
-email_guard = get_guard("valid_email", namespace="validators")
+email_guard = GuardRegistry.get("valid_email", namespace="validators")
 
 @guarded_expression(email_guard("user_email"))
 def send_newsletter(user_email):
@@ -554,13 +559,14 @@ Organize guards by domain:
 
 ```python
 # Register domain-specific guards
-register_guard("valid_product_id", product_id_guard, namespace="ecommerce")
-register_guard("valid_user_role", role_guard, namespace="auth")
-register_guard("valid_api_key", api_key_guard, namespace="api")
+from modgud.infrastructure.guarded_expr import GuardRegistry
+GuardRegistry.register("valid_product_id", product_id_guard, namespace="ecommerce")
+GuardRegistry.register("valid_user_role", role_guard, namespace="auth")
+GuardRegistry.register("valid_api_key", api_key_guard, namespace="api")
 
 # List available namespaces
-from modgud import list_guard_namespaces
-namespaces = list_guard_namespaces()  # ['default', 'ecommerce', 'auth', 'api']
+from modgud.infrastructure.guarded_expr import GuardRegistry
+namespaces = GuardRegistry.list_namespaces()  # ['default', 'ecommerce', 'auth', 'api']
 ```
 
 ### Debugging Transformed Functions
@@ -569,7 +575,7 @@ To debug a transformed function, examine the generated code:
 
 ```python
 import inspect
-from modgud import guarded_expression
+from modgud.app import guarded_expression
 
 @guarded_expression()
 def my_function(x):
@@ -592,13 +598,14 @@ assert my_function(-5) == 0
 4. **Prefer pre-built guards**: Optimized implementations
 
 ```python
-from modgud import guarded_expression, not_none, not_empty, type_check
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
 
 # Optimized guard ordering
 @guarded_expression(
-    not_none("data"),      # Fails fast on None
-    not_empty("data"),     # Then check if empty
-    type_check(list, "data"),  # Finally validate type
+    CommonGuards.not_none("data"),      # Fails fast on None
+    CommonGuards.not_empty("data"),     # Then check if empty
+    CommonGuards.type_check(list, "data"),  # Finally validate type
 )
 def process_data(data):
     len(data) * 100
