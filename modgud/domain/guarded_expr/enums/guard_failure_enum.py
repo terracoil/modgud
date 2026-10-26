@@ -7,10 +7,10 @@ budget on the decorator cover every combination cleanly.
 
 from enum import IntEnum, auto
 
-__all__ = ['GuardFailureStrategy']
+__all__ = ['GuardFailureEnum']
 
 
-class GuardFailureStrategy(IntEnum):
+class GuardFailureEnum(IntEnum):
   """How @guarded_expression reacts when one or more guards report failure."""
 
   ERROR_RAISE = auto()  # Raise GuardClauseError with all failures (if any occurred)

@@ -2,13 +2,13 @@
 
 GuardRuntime encapsulates guard evaluation (with optional `continuance`
 budget for collecting additional failures) and dispatches the collected
-failures through the chosen `GuardFailureStrategy`.
+failures through the chosen `GuardFailurEnum`.
 """
 
 import functools
 from typing import Any, Callable
 
-from modgud.domain.guarded_expr import GuardClauseError, GuardFailureStrategy, GuardFunction
+from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum, GuardFunction
 
 
 class GuardRuntime:
@@ -19,7 +19,7 @@ class GuardRuntime:
     cls,
     func: Callable[..., Any],
     guards: tuple[GuardFunction, ...],
-    strategy: GuardFailureStrategy,
+    strategy: GuardFailureEnum,
     on_failure: Any,
     continuance: int,
   ) -> Callable[..., Any]:
@@ -80,7 +80,7 @@ class GuardRuntime:
   def handle_failure(
     cls,
     errors: list[str],
-    strategy: GuardFailureStrategy,
+    strategy: GuardFailureEnum,
     on_failure: Any,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
@@ -90,11 +90,11 @@ class GuardRuntime:
     :returns: Whatever the strategy yields (for RETURN_VALUE / ERROR_RETURN /
               CALL_HANDLER). ERROR_RAISE never returns - it raises.
     """
-    if strategy is GuardFailureStrategy.ERROR_RAISE:
+    if strategy is GuardFailureEnum.ERROR_RAISE:
       raise cls._build_exception(errors, on_failure)
-    if strategy is GuardFailureStrategy.ERROR_RETURN:
+    if strategy is GuardFailureEnum.ERROR_RETURN:
       result: Any = cls._build_exception(errors, on_failure)
-    elif strategy is GuardFailureStrategy.RETURN_VALUE:
+    elif strategy is GuardFailureEnum.RETURN_VALUE:
       result = on_failure
     else:  # CALL_HANDLER
       result = on_failure(errors, *args, **kwargs)

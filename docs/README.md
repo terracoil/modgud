@@ -1,8 +1,8 @@
 **Parent**: [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md) | [⚙️ How It Works](how-it-works.md)
 
-> ⚠️ **v2 API note.** Many examples below predate the v2 surface. The current decorator signature is
-> `guarded_expression(*guards, implicit_return=True, strategy=GuardFailureStrategy.ERROR_RAISE, on_failure=GuardClauseError, continuance=0)`.
-> `on_error` / `log` were removed. See `modgud/__init__.py` docstring and `api-reference.md` for the up-to-date contract.
+> **v2 surface.** The current decorator signature is
+> `guarded_expression(*guards, implicit_return=True, strategy=GuardFailureEnum.ERROR_RAISE, on_failure=GuardClauseError, continuance=0)`.
+> The pre-2.0 `on_error` / `log` parameters were removed. See [`api-reference.md`](api-reference.md) for the full contract.
 
 # MODGUD Technical Documentation Hub
 
@@ -19,7 +19,7 @@ This document contains:
   - [Basic Guard Usage](#basic-guard-usage)
   - [Implicit Returns](#implicit-returns)
   - [Explicit Returns](#explicit-returns)
-  - [Error Handling Strategies](#error-handling-strategies)
+  - [Failure Handling Strategies](#failure-handling-strategies)
   - [Pre-built Guards Usage](#pre-built-guards-usage)
   - [Advanced Patterns](#advanced-patterns)
 - [🎨 Implicit Return Semantics](#implicit-return-semantics) - How implicit returns work
@@ -30,7 +30,7 @@ This document contains:
 - [✍️ Guard Function Signature](#guard-function-signature) - Writing custom guards
 - [⚙️ Configuration Options](#configuration-options) - Decorator parameters
 - [🧪 Testing Considerations](#testing-considerations) - Testing with modgud
-- [🔄 Migration Guide](#migration-guide) - Upgrading between versions
+- [🔄 Upgrading from Pre-2.0 Code](#upgrading-from-pre-20-code) - Mapping old snippets forward
 - [🏛️ Architecture Details](#architecture-details) - Design principles
 
 > **Looking for specific API details?** See the [Complete API Reference](api-reference.md) for detailed documentation of all functions and classes.
@@ -62,7 +62,7 @@ modgud solves these problems by:
 - Enforcing single return point architecture
 - Enabling expression-oriented programming (like Ruby, Rust, Scala)
 - Providing composable, reusable guard functions
-- Standardizing error handling approaches
+- Standardizing failure handling through a single strategy enum
 
 ## 📦 Installation
 
@@ -105,7 +105,14 @@ Below is a quick overview. For detailed documentation including all parameters, 
 The primary API for modgud, providing unified guard validation and implicit return functionality.
 
 ```python
-@guarded_expression(*guards, implicit_return=True, on_error=GuardClauseError, log=False)
+# illustrative — signature only
+guarded_expression(
+  *guards,
+  implicit_return=True,
+  strategy=GuardFailureEnum.ERROR_RAISE,
+  on_failure=GuardClauseError,
+  continuance=0,
+)
 ```
 
 #### Parameters
@@ -114,8 +121,9 @@ The primary API for modgud, providing unified guard validation and implicit retu
 |-----------|------|---------|-------------|
 | `*guards` | `GuardFunction` | `()` | Variable number of guard functions that validate inputs |
 | `implicit_return` | `bool` | `True` | Enable implicit return transformation |
-| `on_error` | `Any` | `GuardClauseError` | Behavior when guard fails |
-| `log` | `bool` | `False` | Enable logging of guard failures |
+| `strategy` | `GuardFailureEnum` | `ERROR_RAISE` | How collected failures are dispatched |
+| `on_failure` | `Any` | `GuardClauseError` | Payload paired with `strategy` |
+| `continuance` | `int` | `0` | Extra guards to evaluate past the first failure |
 
 #### Parameter Details
 
@@ -123,28 +131,28 @@ The primary API for modgud, providing unified guard validation and implicit retu
 - Accepts `(*args, **kwargs)` matching the decorated function's signature
 - Returns `True` if validation passes
 - Returns a string error message if validation fails
-- Guards are evaluated sequentially and fail fast on first failure
+- Guards are evaluated in order; `continuance` controls how many are checked past the first failure
 
 **`implicit_return`**: Controls return behavior:
 - `True` (default): Last expression in each branch is auto-returned; explicit `return` statements are forbidden
 - `False`: Traditional Python behavior; explicit `return` required as last statement
 
-**`on_error`**: Defines failure behavior when a guard fails:
-- Exception class (default: `GuardClauseError`): Instantiated with error message and raised
-- Callable: Invoked as `handler(error_msg, *args, **kwargs)`, return value becomes function result
-- Any other value: Returned directly as the function result
-- `None`: Returns `None` on guard failure
+**`strategy`** + **`on_failure`**: Together they decide what happens once one or more guards fail:
+- `ERROR_RAISE` (default): raise `on_failure(message)`; multiple collected failures raise an `ExceptionGroup('Guards failed', [...])`
+- `ERROR_RETURN`: build the same exception instance(s) but *return* them instead of raising
+- `RETURN_VALUE`: return `on_failure` exactly as given (any value, e.g. `None`, `False`, a dict)
+- `CALL_HANDLER`: return `on_failure(errors, *args, **kwargs)`, where `errors` is always a `list[str]`
 
-**`log`**: Logging behavior:
-- `True`: Logs guard failures using Python's `logging` module at WARNING level
-- `False` (default): No logging
+**`continuance`**: Failure-collection budget:
+- `0` (default): stop at the first failing guard
+- `N > 0`: keep evaluating and collect up to `1 + N` failures before dispatching them through `strategy`
 
 #### Return Value
 
 Returns a decorated function that:
-1. Evaluates all guards before function execution
-2. Handles failures according to `on_error` parameter
-3. Transforms function for implicit returns if enabled
+1. Evaluates guards before function execution
+2. Handles failures according to `strategy` / `on_failure`
+3. Transforms the function for implicit returns if enabled
 4. Preserves original function metadata (`__name__`, `__doc__`, etc.)
 
 ### Pre-built Guard Validators
@@ -154,6 +162,7 @@ Pre-built guard validators for common validation scenarios.
 #### not_none
 
 ```python
+# illustrative — signature only
 CommonGuards.not_none(param_name='parameter', position=0) -> GuardFunction
 ```
 
@@ -169,15 +178,17 @@ Ensures parameter is not None.
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(CommonGuards.not_none("user_id"))
+
+@guarded_expression(CommonGuards.not_none('user_id'))
 def get_user(user_id):
-    # user_id guaranteed not None
-    fetch_from_db(user_id)
+  # user_id guaranteed not None
+  fetch_from_db(user_id)
 ```
 
 #### not_empty
 
 ```python
+# illustrative — signature only
 CommonGuards.not_empty(param_name='parameter', position=None) -> GuardFunction
 ```
 
@@ -186,22 +197,24 @@ Ensures collection/string parameter is not empty.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `param_name` | `str` | `'parameter'` | Name for error messages and kwargs lookup |
-| `position` | `Optional[int]` | `None` | Position in args tuple (None = first arg) |
+| `position` | `int \| None` | `None` | Position in args tuple (None = first arg) |
 
 **Example:**
 ```python
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(CommonGuards.not_empty("items", position=1))
+
+@guarded_expression(CommonGuards.not_empty('items', position=1))
 def process_list(user, items):
-    # items guaranteed to have length > 0
-    [process(item) for item in items]
+  # items guaranteed to have length > 0
+  [process(item) for item in items]
 ```
 
 #### positive
 
 ```python
+# illustrative — signature only
 CommonGuards.positive(param_name='parameter', position=0) -> GuardFunction
 ```
 
@@ -217,15 +230,17 @@ Ensures numeric parameter is positive (> 0).
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(CommonGuards.positive("amount"))
+
+@guarded_expression(CommonGuards.positive('amount'))
 def calculate_tax(amount):
-    # amount guaranteed > 0
-    amount * 0.08
+  # amount guaranteed > 0
+  amount * 0.08
 ```
 
 #### in_range
 
 ```python
+# illustrative — signature only
 CommonGuards.in_range(min_val, max_val, param_name='parameter', position=0) -> GuardFunction
 ```
 
@@ -243,15 +258,17 @@ Ensures parameter is within inclusive range [min_val, max_val].
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(CommonGuards.in_range(1, 100, "page"))
+
+@guarded_expression(CommonGuards.in_range(1, 100, 'page'))
 def get_page(page):
-    # page guaranteed between 1 and 100
-    fetch_page_data(page)
+  # page guaranteed between 1 and 100
+  fetch_page_data(page)
 ```
 
 #### type_check
 
 ```python
+# illustrative — signature only
 CommonGuards.type_check(expected_type, param_name='parameter', position=0) -> GuardFunction
 ```
 
@@ -268,15 +285,17 @@ Ensures parameter matches expected type.
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(CommonGuards.type_check(dict, "config"))
+
+@guarded_expression(CommonGuards.type_check(dict, 'config'))
 def load_config(config):
-    # config guaranteed to be a dict
-    {**defaults, **config}
+  # config guaranteed to be a dict
+  {**defaults, **config}
 ```
 
 #### matches_pattern
 
 ```python
+# illustrative — signature only
 CommonGuards.matches_pattern(pattern, param_name='parameter', position=0) -> GuardFunction
 ```
 
@@ -293,12 +312,13 @@ Ensures string parameter matches regex pattern.
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 @guarded_expression(
-    CommonGuards.matches_pattern(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', "email")
+  CommonGuards.matches_pattern(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', 'email')
 )
 def send_email(email):
-    # email guaranteed to match email pattern
-    smtp_client.send(email)
+  # email guaranteed to match email pattern
+  smtp_client.send(email)
 ```
 
 ### 🚨 Error Classes
@@ -306,25 +326,37 @@ def send_email(email):
 #### GuardClauseError
 
 ```python
+# illustrative — class definition
 class GuardClauseError(Exception):
-    """Raised when guard clause validation fails."""
+  """Raised when guard clause validation fails."""
 ```
 
-Default exception raised when guards fail (if `on_error=GuardClauseError`).
+Default exception raised when guards fail under `ERROR_RAISE` (the default `on_failure` is the `GuardClauseError` class).
 
 **Example:**
 ```python
+from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardClauseError
+from modgud.infrastructure.guarded_expr import CommonGuards
+
+
+@guarded_expression(CommonGuards.positive('x'))
+def needs_positive(x):
+  x * 2
+
+
 try:
-    result = guarded_function(-5)  # Negative when positive required
+  needs_positive(-5)  # Negative when positive required
 except GuardClauseError as e:
-    print(f"Validation failed: {e}")
+  print(f'Validation failed: {e}')
 ```
 
 #### ImplicitReturnError
 
 ```python
+# illustrative — class definition
 class ImplicitReturnError(SyntaxError):
-    """Base class for implicit return transformation errors."""
+  """Base class for implicit return transformation errors."""
 ```
 
 Base exception for all implicit return transformation errors. Subclasses provide specific error types.
@@ -332,44 +364,47 @@ Base exception for all implicit return transformation errors. Subclasses provide
 #### ExplicitReturnDisallowedError
 
 ```python
+# illustrative — class definition
 class ExplicitReturnDisallowedError(ImplicitReturnError):
-    """Raised when explicit return found with implicit_return=True."""
+  """Raised when explicit return found with implicit_return=True."""
 ```
 
 Raised during function transformation when an explicit `return` statement is found in a function decorated with `implicit_return=True`.
 
 **Example:**
 ```python
-# This will raise ExplicitReturnDisallowedError at decoration time
+# illustrative — raises ExplicitReturnDisallowedError at decoration time
 @guarded_expression()  # implicit_return=True by default
 def bad_function(x):
-    return x * 2  # ERROR: explicit return not allowed
+  return x * 2  # ERROR: explicit return not allowed
 ```
 
 #### MissingImplicitReturnError
 
 ```python
+# illustrative — class definition
 class MissingImplicitReturnError(ImplicitReturnError):
-    """Raised when code branch doesn't produce a vector for implicit return."""
+  """Raised when a code branch doesn't produce a value for implicit return."""
 ```
 
 Raised when a code branch at tail position doesn't produce a value (e.g., missing else clause).
 
 **Example:**
 ```python
-# This will raise MissingImplicitReturnError at decoration time
+# illustrative — raises MissingImplicitReturnError at decoration time
 @guarded_expression()
 def incomplete(x):
-    if x > 0:
-        x * 2
-    # ERROR: missing else clause at tail position
+  if x > 0:
+    x * 2
+  # ERROR: missing else clause at tail position
 ```
 
 #### UnsupportedConstructError
 
 ```python
+# illustrative — class definition
 class UnsupportedConstructError(ImplicitReturnError):
-    """Raised when unsupported AST construct found at tail position."""
+  """Raised when an unsupported AST construct is found at tail position."""
 ```
 
 Raised when the AST transformer encounters an unsupported construct at tail position (e.g., `with` statements, `async for`, etc.).
@@ -382,35 +417,43 @@ Raised when the AST transformer encounters an unsupported construct at tail posi
 
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardClauseError
+
 
 @guarded_expression(
-    lambda x: x > 0 or "x must be positive",
-    lambda x: x < 100 or "x must be less than 100"
+  lambda *args, **kwargs: args[0] > 0 or 'x must be positive',
+  lambda *args, **kwargs: args[0] < 100 or 'x must be less than 100',
 )
 def process_value(x):
-    result = x * 2 + 10
-    result  # Implicit return
+  result = x * 2 + 10
+  result  # Implicit return
+
 
 # Success case
 print(process_value(5))  # Returns 20
 
 # Failure case - raises GuardClauseError
 try:
-    process_value(-5)
+  process_value(-5)
 except GuardClauseError as e:
-    print(e)  # "x must be positive"
+  print(e)  # "x must be positive"
 ```
+
+Custom lambda guards receive the *full* argument tuple, so they read `args[0]` (or a kwarg) rather than declaring a single named parameter.
 
 #### Multiple Parameters
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression(
-    lambda x, y: x > 0 or "x must be positive",
-    lambda x, y: y > 0 or "y must be positive",
-    lambda x, y: x != y or "x and y must be different"
+  lambda *args, **kwargs: args[0] > 0 or 'x must be positive',
+  lambda *args, **kwargs: args[1] > 0 or 'y must be positive',
+  lambda *args, **kwargs: args[0] != args[1] or 'x and y must be different',
 )
 def calculate_ratio(x, y):
-    x / y
+  x / y
 ```
 
 ### Implicit Returns
@@ -418,9 +461,13 @@ def calculate_ratio(x, y):
 #### Basic Implicit Return
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()  # No guards, just implicit return
 def double(x):
-    x * 2  # Last expression is returned
+  x * 2  # Last expression is returned
+
 
 print(double(5))  # Returns 10
 ```
@@ -431,29 +478,34 @@ print(double(5))  # Returns 10
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(CommonGuards.not_none("vector"))
-def classify_number(value):
-    if value > 0:
-        "positive"
-    elif value < 0:
-        "negative"
-    else:
-        "zero"
 
-print(classify_number(5))    # Returns "positive"
-print(classify_number(-3))   # Returns "negative"
-print(classify_number(0))    # Returns "zero"
+@guarded_expression(CommonGuards.not_none('value'))
+def classify_number(value):
+  if value > 0:
+    'positive'
+  elif value < 0:
+    'negative'
+  else:
+    'zero'
+
+
+print(classify_number(5))   # Returns "positive"
+print(classify_number(-3))  # Returns "negative"
+print(classify_number(0))   # Returns "zero"
 ```
 
 #### Complex Expressions
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def process_data(data):
-    cleaned = data.strip().lower()
-    tokens = cleaned.split()
-    filtered = [t for t in tokens if len(t) > 2]
-    " ".join(filtered)  # Implicit return of joined string
+  cleaned = data.strip().lower()
+  tokens = cleaned.split()
+  filtered = [t for t in tokens if len(t) > 2]
+  ' '.join(filtered)  # Implicit return of joined string
 ```
 
 ### Explicit Returns
@@ -464,125 +516,146 @@ When you need traditional Python return behavior:
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 @guarded_expression(
-    CommonGuards.positive("x"),
-    implicit_return=False  # Disable implicit returns
+  CommonGuards.positive('x'),
+  implicit_return=False,  # Disable implicit returns
 )
 def calculate(x):
-    result = x * 2
-    intermediate = result + 10
-    final = intermediate / 2
-    return final  # Explicit return required
+  result = x * 2
+  intermediate = result + 10
+  final = intermediate / 2
+  return final  # Explicit return required
+
 
 print(calculate(5))  # Returns 10.0
 ```
 
-### Error Handling Strategies
+### Failure Handling Strategies
 
-#### Return Custom Values
+Every failure mode is selected by the `strategy` argument (a `GuardFailureEnum`) paired with an `on_failure` payload.
+
+#### Return Custom Values (`RETURN_VALUE`)
 
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
+
 
 # Return None on failure
 @guarded_expression(
-    CommonGuards.positive("x"),
-    on_error=None
+  CommonGuards.positive('x'),
+  strategy=GuardFailureEnum.RETURN_VALUE,
+  on_failure=None,
 )
 def safe_sqrt(x):
-    import math
-    math.sqrt(x)
+  x ** 0.5
 
-print(safe_sqrt(4))   # Returns 2.0
+
+print(safe_sqrt(4))  # Returns 2.0
 print(safe_sqrt(-1))  # Returns None
 
-# Return error dict
+
+# Return error dict on failure
 @guarded_expression(
-    CommonGuards.not_empty("data"),
-    on_error={"success": False, "error": "Invalid input"}
+  CommonGuards.not_empty('data'),
+  strategy=GuardFailureEnum.RETURN_VALUE,
+  on_failure={'success': False, 'error': 'Invalid input'},
 )
 def process_data(data):
-    {"success": True, "result": data.upper()}
+  {'success': True, 'result': data.upper()}
 
-print(process_data("hello"))  # Returns {"success": True, "result": "HELLO"}
-print(process_data(""))       # Returns {"success": False, "error": "Invalid input"}
+
+print(process_data('hello'))  # Returns {'success': True, 'result': 'HELLO'}
+print(process_data(''))  # Returns {'success': False, 'error': 'Invalid input'}
 ```
 
-#### Custom Exception Classes
+#### Custom Exception Classes (`ERROR_RAISE`)
 
 ```python
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
+
 
 class ValidationError(Exception):
-    """Custom validation exception."""
-    pass
+  """Custom validation exception."""
+
 
 @guarded_expression(
-    CommonGuards.positive("amount"),
-    on_error=ValidationError
+  CommonGuards.positive('amount'),
+  on_failure=ValidationError,
 )
 def withdraw(amount):
-    {"withdrawn": amount, "timestamp": "2024-01-01"}
+  {'withdrawn': amount, 'timestamp': '2024-01-01'}
+
 
 try:
-    withdraw(-100)
+  withdraw(-100)
 except ValidationError as e:
-    print(f"Validation failed: {e}")
+  print(f'Validation failed: {e}')
 ```
 
-#### Handler Functions
+#### Handler Functions (`CALL_HANDLER`)
+
+The handler is invoked as `on_failure(errors, *args, **kwargs)`, where `errors` is always a `list[str]`:
 
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-def log_and_default(error_msg, *args, **kwargs):
-    """Log error and return default vector."""
-    print(f"Guard failed: {error_msg}")
-    print(f"Args: {args}, Kwargs: {kwargs}")
-    return {"error": True, "message": error_msg}
+
+def log_and_default(errors, *args, **kwargs):
+  """Log the collected errors and return a default value."""
+  print(f'Guards failed: {errors}')
+  print(f'Args: {args}, Kwargs: {kwargs}')
+  return {'error': True, 'messages': errors}
+
 
 @guarded_expression(
-    CommonGuards.in_range(1, 10, "level"),
-    on_error=log_and_default
+  CommonGuards.in_range(1, 10, 'level'),
+  strategy=GuardFailureEnum.CALL_HANDLER,
+  on_failure=log_and_default,
 )
 def set_level(level):
-    {"level": level, "success": True}
+  {'level': level, 'success': True}
 
-result = set_level(15)
-# Prints: Guard failed: level must be between 1 and 10
+
+set_level(15)
+# Prints: Guards failed: ['level must be between 1 and 10']
 # Prints: Args: (15,), Kwargs: {}
-# Returns: {"error": True, "message": "level must be between 1 and 10"}
+# Returns: {'error': True, 'messages': ['level must be between 1 and 10']}
 ```
 
 ### Pre-built Guards Usage
 
 #### Parameter Extraction
 
-Guard validators intelligently extract parameters from both positional and keyword arguments:
+Guard validators intelligently extract parameters from both positional and keyword arguments (value taken from `kwargs[param_name]` if present, else `args[position]`):
 
 ```python
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 @guarded_expression(
-    CommonGuards.not_none("user_id"),      # First positional or kwargs["user_id"]
-    CommonGuards.positive("amount"),        # Second positional or kwargs["amount"]
-    CommonGuards.not_empty("description", position=2)  # Third positional
+  CommonGuards.not_none('user_id'),                 # First positional or kwargs['user_id']
+  CommonGuards.positive('amount', position=1),      # Second positional or kwargs['amount']
+  CommonGuards.not_empty('description', position=2),  # Third positional
 )
-def create_transaction(user_id, amount, description=""):
-    {"user": user_id, "amount": amount, "desc": description}
+def create_transaction(user_id, amount, description=''):
+  {'user': user_id, 'amount': amount, 'desc': description}
+
 
 # Works with positional arguments
-create_transaction(123, 50.0, "Payment")
+create_transaction(123, 50.0, 'Payment')
 
 # Works with keyword arguments
-create_transaction(user_id=123, amount=50.0, description="Payment")
+create_transaction(user_id=123, amount=50.0, description='Payment')
 
 # Mixed arguments
-create_transaction(123, amount=50.0, description="Payment")
+create_transaction(123, amount=50.0, description='Payment')
 ```
 
 #### Combining Multiple Guards
@@ -591,28 +664,51 @@ create_transaction(123, amount=50.0, description="Payment")
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 @guarded_expression(
-    # User validation
-    CommonGuards.not_none("email"),
-    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
-
-    # Age validation
-    CommonGuards.type_check(int, "age", position=1),
-    CommonGuards.in_range(13, 120, "age", position=1),
-
-    # Password validation
-    CommonGuards.not_empty("password", position=2),
-
-    log=True  # Log all validation failures
+  # User validation
+  CommonGuards.not_none('email'),
+  CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', 'email'),
+  # Age validation
+  CommonGuards.type_check(int, 'age', position=1),
+  CommonGuards.in_range(13, 120, 'age', position=1),
+  # Password validation
+  CommonGuards.not_empty('password', position=2),
 )
 def register_user(email, age, password):
-    user = {
-        "email": email,
-        "age": age,
-        "password_hash": hash_password(password)
-    }
-    save_to_db(user)
-    user
+  user = {
+    'email': email,
+    'age': age,
+    'password_hash': hash_password(password),
+  }
+  save_to_db(user)
+  user
+```
+
+#### Collecting Multiple Failures with `continuance`
+
+By default a guarded function stops at the first failing guard. Set `continuance` to collect more, which surfaces every problem at once as an `ExceptionGroup`:
+
+```python
+from modgud.app import guarded_expression
+from modgud.infrastructure.guarded_expr import CommonGuards
+
+
+@guarded_expression(
+  CommonGuards.not_empty('email'),
+  CommonGuards.type_check(int, 'age', position=1),
+  CommonGuards.not_empty('password', position=2),
+  continuance=2,  # collect up to 1 + 2 = 3 failures
+)
+def register(email, age, password):
+  {'email': email, 'age': age}
+
+
+try:
+  register('', 'not-an-int', '')
+except* Exception as eg:
+  for err in eg.exceptions:
+    print(err)
 ```
 
 ### Advanced Patterns
@@ -623,22 +719,24 @@ def register_user(email, age, password):
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-# Define reusable guard combinations
+
+# Define reusable guard combinations (guards accept the full argument tuple)
 pagination_guards = [
-    lambda page=1: page >= 1 or "Page must be at least 1",
-    lambda page=1, limit=10: limit >= 1 or "Limit must be at least 1",
-    lambda page=1, limit=10: limit <= 100 or "Limit cannot exceed 100"
+  CommonGuards.in_range(1, 1_000_000, 'page', position=1),
+  CommonGuards.in_range(1, 100, 'limit', position=2),
 ]
 
 auth_guards = [
-    CommonGuards.not_none("api_key"),
-    lambda api_key: validate_api_key(api_key) or "Invalid API key"
+  CommonGuards.not_none('api_key'),
+  lambda *args, **kwargs: validate_api_key(kwargs.get('api_key', args[0] if args else None))
+  or 'Invalid API key',
 ]
+
 
 @guarded_expression(*auth_guards, *pagination_guards)
 def get_user_posts(api_key, page=1, limit=10):
-    posts = fetch_posts(page, limit)
-    {"posts": posts, "page": page, "count": len(posts)}
+  posts = fetch_posts(page, limit)
+  {'posts': posts, 'page': page, 'count': len(posts)}
 ```
 
 #### Dynamic Guard Generation
@@ -647,20 +745,23 @@ def get_user_posts(api_key, page=1, limit=10):
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-def max_length(max_len, param_name="param", position=0):
-    """Create a guard for maximum string length."""
-    def check_length(*args, **kwargs):
-        value = kwargs.get(param_name, args[position] if position < len(args) else "")
-        return len(str(value)) <= max_len or f"{param_name} exceeds max length {max_len}"
-    return check_length
+
+def max_length(max_len, param_name='param', position=0):
+  """Create a guard for maximum string length."""
+  def check_length(*args, **kwargs):
+    value = kwargs.get(param_name, args[position] if position < len(args) else '')
+    return len(str(value)) <= max_len or f'{param_name} exceeds max length {max_len}'
+
+  return check_length
+
 
 @guarded_expression(
-    CommonGuards.not_empty("username"),
-    max_length(20, "username"),
-    max_length(100, "bio", position=1)
+  CommonGuards.not_empty('username'),
+  max_length(20, 'username'),
+  max_length(100, 'bio', position=1),
 )
-def create_profile(username, bio=""):
-    {"username": username, "bio": bio}
+def create_profile(username, bio=''):
+  {'username': username, 'bio': bio}
 ```
 
 #### Conditional Guards
@@ -669,55 +770,37 @@ def create_profile(username, bio=""):
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 def conditional_guard(condition, guard):
-    """Apply guard only if condition is met."""
-    def check(*args, **kwargs):
-        if condition(*args, **kwargs):
-            return guard(*args, **kwargs)
-        return True
-    return check
+  """Apply guard only if condition is met."""
+  def check(*args, **kwargs):
+    result = True
+    if condition(*args, **kwargs):
+      result = guard(*args, **kwargs)
+    return result
+
+  return check
+
 
 @guarded_expression(
-    CommonGuards.not_none("data"),
-    conditional_guard(
-        lambda data, validate=False, **kw: validate,
-        CommonGuards.type_check(dict, "data")
-    )
+  CommonGuards.not_none('data'),
+  conditional_guard(
+    lambda *args, **kwargs: kwargs.get('validate', False),
+    CommonGuards.type_check(dict, 'data'),
+  ),
 )
 def process(data, validate=False):
-    if validate:
-        {"validated": True, "data": data}
-    else:
-        {"validated": False, "data": data}
+  if validate:
+    {'validated': True, 'data': data}
+  else:
+    {'validated': False, 'data': data}
+
 
 # Without validation - accepts any non-None type
-process("string data", validate=False)
+process('string data', validate=False)
 
 # With validation - requires dict
-process({"key": "vector"}, validate=True)
-```
-
-#### Guard with Logging
-
-```python
-from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
-import logging
-
-logging.basicConfig(level=logging.INFO)
-
-@guarded_expression(
-    CommonGuards.positive("amount"),
-    CommonGuards.in_range(1, 10000, "amount"),
-    log=True  # Enable automatic logging
-)
-def transfer_funds(amount):
-    transaction_id = generate_id()
-    {"id": transaction_id, "amount": amount, "status": "completed"}
-
-# Failed guard will log:
-# WARNING:root:Guard 'amount must be positive' failed with args (0,) kwargs {}
-transfer_funds(0)
+process({'key': 'value'}, validate=True)
 ```
 
 ## 🎨 Implicit Return Semantics
@@ -729,14 +812,18 @@ Implicit return transforms functions to automatically return the last expression
 #### Basic If/Else
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def sign(x):
-    if x > 0:
-        1
-    elif x < 0:
-        -1
-    else:
-        0
+  if x > 0:
+    1
+  elif x < 0:
+    -1
+  else:
+    0
+
 
 print(sign(5))   # Returns 1
 print(sign(-3))  # Returns -1
@@ -746,15 +833,18 @@ print(sign(0))   # Returns 0
 #### Nested Conditionals
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def categorize(value, threshold=10):
-    if isinstance(value, (int, float)):
-        if value > threshold:
-            "high"
-        else:
-            "low"
+  if isinstance(value, (int, float)):
+    if value > threshold:
+      'high'
     else:
-        "invalid"
+      'low'
+  else:
+    'invalid'
 ```
 
 #### Required Else Clause
@@ -762,20 +852,21 @@ def categorize(value, threshold=10):
 At tail position (the end of the function), if statements must have an else clause:
 
 ```python
-# ERROR: Missing else at tail position
+# illustrative — the first function raises MissingImplicitReturnError
 @guarded_expression()
 def bad_conditional(x):
-    if x > 0:
-        "positive"
-    # MissingImplicitReturnError - no vector for x <= 0
+  if x > 0:
+    'positive'
+  # MissingImplicitReturnError - no value for x <= 0
+
 
 # CORRECT: All branches covered
 @guarded_expression()
 def good_conditional(x):
-    if x > 0:
-        "positive"
-    else:
-        "non-positive"
+  if x > 0:
+    'positive'
+  else:
+    'non-positive'
 ```
 
 ### Try/Except Blocks
@@ -783,51 +874,61 @@ def good_conditional(x):
 #### Basic Try/Except
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def safe_divide(x, y):
-    try:
-        x / y
-    except ZeroDivisionError:
-        float('inf')
-    except TypeError:
-        None
+  try:
+    x / y
+  except ZeroDivisionError:
+    float('inf')
+  except TypeError:
+    None
+
 
 print(safe_divide(10, 2))    # Returns 5.0
 print(safe_divide(10, 0))    # Returns inf
-print(safe_divide(10, "a"))  # Returns None
+print(safe_divide(10, 'a'))  # Returns None
 ```
 
 #### Try/Except/Else/Finally
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def robust_operation(data):
-    try:
-        result = process(data)
-    except ValueError:
-        {"error": "invalid vector"}
-    except Exception as e:
-        {"error": str(e)}
-    else:
-        {"success": True, "result": result}
-    # finally clause executes but doesn't affect return
+  try:
+    parsed = process(data)
+    parsed  # the try body must end in an expression
+  except ValueError:
+    {'error': 'invalid value'}
+  except Exception as e:
+    {'error': str(e)}
+  else:
+    {'success': True, 'result': parsed}  # else replaces the try-body value on success
 ```
 
 #### Nested Try Blocks
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def nested_safety(x, y):
+  try:
     try:
-        try:
-            x / y
-        except ZeroDivisionError:
-            try:
-                y / x
-            except ZeroDivisionError:
-                0
-    except Exception as e:
-        None
+      x / y
+    except ZeroDivisionError:
+      try:
+        y / x
+      except ZeroDivisionError:
+        0
+  except Exception:
+    None
 ```
 
 ### Match/Case Statements
@@ -835,54 +936,61 @@ def nested_safety(x, y):
 Python 3.10+ pattern matching is fully supported:
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def process_command(command):
-    match command:
-        case ["move", x, y]:
-            {"action": "move", "x": x, "y": y}
-        case ["rotate", angle]:
-            {"action": "rotate", "angle": angle}
-        case ["stop", factor]:
-            {"action": "stop", "factor": factor}
-        case _:
-            {"action": "unknown", "command": command}
+  match command:
+    case ['move', x, y]:
+      {'action': 'move', 'x': x, 'y': y}
+    case ['rotate', angle]:
+      {'action': 'rotate', 'angle': angle}
+    case ['stop', factor]:
+      {'action': 'stop', 'factor': factor}
+    case _:
+      {'action': 'unknown', 'command': command}
 
-print(process_command(["move", 10, 20]))
-# Returns: {"action": "move", "x": 10, "y": 20}
 
-print(process_command(["rotate", 90]))
-# Returns: {"action": "rotate", "angle": 90}
+print(process_command(['move', 10, 20]))
+# Returns: {'action': 'move', 'x': 10, 'y': 20}
 
-print(process_command(["invalid"]))
-# Returns: {"action": "unknown", "command": ["invalid"]}
+print(process_command(['rotate', 90]))
+# Returns: {'action': 'rotate', 'angle': 90}
+
+print(process_command(['invalid']))
+# Returns: {'action': 'unknown', 'command': ['invalid']}
 ```
 
 #### Pattern Matching with Guards
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def classify_point(point):
-    match point:
-        case (0, 0):
-            "origin"
-        case (x, 0) if x > 0:
-            "positive x-axis"
-        case (x, 0) if x < 0:
-            "negative x-axis"
-        case (0, y) if y > 0:
-            "positive y-axis"
-        case (0, y) if y < 0:
-            "negative y-axis"
-        case (x, y) if x > 0 and y > 0:
-            "quadrant I"
-        case (x, y) if x < 0 and y > 0:
-            "quadrant II"
-        case (x, y) if x < 0 and y < 0:
-            "quadrant III"
-        case (x, y) if x > 0 and y < 0:
-            "quadrant IV"
-        case _:
-            "unknown"
+  match point:
+    case (0, 0):
+      'origin'
+    case (x, 0) if x > 0:
+      'positive x-axis'
+    case (x, 0) if x < 0:
+      'negative x-axis'
+    case (0, y) if y > 0:
+      'positive y-axis'
+    case (0, y) if y < 0:
+      'negative y-axis'
+    case (x, y) if x > 0 and y > 0:
+      'quadrant I'
+    case (x, y) if x < 0 and y > 0:
+      'quadrant II'
+    case (x, y) if x < 0 and y < 0:
+      'quadrant III'
+    case (x, y) if x > 0 and y < 0:
+      'quadrant IV'
+    case _:
+      'unknown'
 ```
 
 ### Rules and Restrictions
@@ -892,21 +1000,22 @@ def classify_point(point):
 With `implicit_return=True` (default), explicit return statements are forbidden:
 
 ```python
-# ERROR: Raises ExplicitReturnDisallowedError
+# illustrative — the first function raises ExplicitReturnDisallowedError
 @guarded_expression()
 def with_explicit_return(x):
-    if x > 0:
-        return x * 2  # ERROR!
-    else:
-        x * 3
+  if x > 0:
+    return x * 2  # ERROR!
+  else:
+    x * 3
+
 
 # CORRECT: Use expressions only
 @guarded_expression()
 def without_explicit_return(x):
-    if x > 0:
-        x * 2
-    else:
-        x * 3
+  if x > 0:
+    x * 2
+  else:
+    x * 3
 ```
 
 #### All Branches Must Produce Values
@@ -914,16 +1023,17 @@ def without_explicit_return(x):
 Every code path must result in an expression:
 
 ```python
-# ERROR: for loop doesn't produce a vector
+# illustrative — the first function raises MissingImplicitReturnError
 @guarded_expression()
 def bad_loop(items):
-    for item in items:
-        process(item)  # ERROR: loops don't return values
+  for item in items:
+    process(item)  # ERROR: loops don't return values
 
-# CORRECT: Use list comprehension (produces a vector)
+
+# CORRECT: Use list comprehension (produces a value)
 @guarded_expression()
 def good_loop(items):
-    [process(item) for item in items]
+  [process(item) for item in items]
 ```
 
 #### Nested Functions
@@ -931,15 +1041,17 @@ def good_loop(items):
 Nested functions within an implicit return function CAN use explicit returns:
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def outer(x):
-    def inner(y):
-        # Explicit return OK in nested function
-        if y > 0:
-            return y * 2
-        return y * 3
+  def inner(y):
+    # Explicit return OK in nested function
+    result = y * 2 if y > 0 else y * 3
+    return result
 
-    inner(x) + 10  # Implicit return in outer
+  inner(x) + 10  # Implicit return in outer
 ```
 
 #### Unsupported Constructs
@@ -959,17 +1071,20 @@ The following constructs cannot appear at tail position (end of function):
 These can still be used elsewhere in the function:
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()
 def process_file(filename):
-    # with statement OK here (not at tail)
-    with open(filename) as f:
-        data = f.read()
+  # with statement OK here (not at tail)
+  with open(filename) as f:
+    data = f.read()
 
-    # Process data
-    cleaned = data.strip().upper()
+  # Process data
+  cleaned = data.strip().upper()
 
-    # Implicit return at tail position
-    cleaned.split()
+  # Implicit return at tail position
+  cleaned.split()
 ```
 
 ## ✍️ Guard Function Signature
@@ -983,89 +1098,99 @@ A guard function is any callable that:
 
 ```python
 def my_guard(*args, **kwargs):
-    # Validation logic
-    if condition_met:
-        return True
-    return "Error message describing the failure"
+  # Validation logic
+  result = True
+  if not condition_met(*args):
+    result = 'Error message describing the failure'
+  return result
 ```
 
 ### Simple Guards
 
-```python
-# Lambda guard
-lambda x: x > 0 or "Value must be positive"
+Because a guard receives the *entire* argument tuple, read the value you want by position or by keyword:
 
-# Named function guard
-def is_even(x):
-    return x % 2 == 0 or "Value must be even"
+```python
+from modgud.app import guarded_expression
+
+
+def is_even(*args, **kwargs):
+  return args[0] % 2 == 0 or 'Value must be even'
+
 
 @guarded_expression(
-    lambda x: x > 0 or "Must be positive",
-    is_even
+  lambda *args, **kwargs: args[0] > 0 or 'Must be positive',
+  is_even,
 )
 def process(x):
-    x / 2
+  x / 2
 ```
 
 ### Guards with Multiple Parameters
 
 ```python
-def sum_less_than_100(x, y):
-    total = x + y
-    return total < 100 or f"Sum {total} exceeds maximum of 100"
+from modgud.app import guarded_expression
+
+
+def sum_less_than_100(*args, **kwargs):
+  total = args[0] + args[1]
+  return total < 100 or f'Sum {total} exceeds maximum of 100'
+
 
 @guarded_expression(sum_less_than_100)
 def add_limited(x, y):
-    x + y
+  x + y
 ```
 
 ### Guards with Keyword Arguments
 
 ```python
+from modgud.app import guarded_expression
+
+
 def validate_config(*args, **kwargs):
-    # Can access specific kwargs
-    if "timeout" in kwargs:
-        timeout = kwargs["timeout"]
-        if timeout <= 0:
-            return "Timeout must be positive"
+  result = True
+  if 'timeout' in kwargs and kwargs['timeout'] <= 0:
+    result = 'Timeout must be positive'
+  elif 'api_key' not in kwargs:
+    result = 'api_key is required'
+  return result
 
-    # Can validate presence of required kwargs
-    if "api_key" not in kwargs:
-        return "api_key is required"
-
-    return True
 
 @guarded_expression(validate_config)
 def api_call(endpoint, **kwargs):
-    make_request(endpoint, **kwargs)
+  make_request(endpoint, **kwargs)
 ```
 
 ### Parameterized Guard Factories
 
 ```python
+from modgud.app import guarded_expression
+
+
 def min_length(min_len):
-    """Factory that creates a minimum length guard."""
-    def check_length(*args, **kwargs):
-        # Assume first arg is the string to check
-        value = args[0] if args else ""
-        if len(value) >= min_len:
-            return True
-        return f"Must be at least {min_len} characters"
-    return check_length
+  """Factory that creates a minimum length guard."""
+  def check_length(*args, **kwargs):
+    value = args[0] if args else ''
+    return len(value) >= min_len or f'Must be at least {min_len} characters'
+
+  return check_length
+
 
 def max_value(limit):
-    """Factory that creates a maximum vector guard."""
-    def check_max(*args, **kwargs):
-        value = args[0] if args else 0
-        return value <= limit or f"Value {value} exceeds limit {limit}"
-    return check_max
+  """Factory that creates a maximum value guard."""
+  def check_max(*args, **kwargs):
+    value = args[0] if args else 0
+    return value <= limit or f'Value {value} exceeds limit {limit}'
+
+  return check_max
+
 
 @guarded_expression(
-    min_length(3),
-    max_value(100)
+  min_length(3),
+  max_value(100),
 )
 def constrained_process(value):
-    value * 2
+  value * 2
 ```
 
 ### Stateful Guards
@@ -1073,40 +1198,46 @@ def constrained_process(value):
 Guards can maintain state (though this should be used carefully):
 
 ```python
-class RateLimitGuard:
-    def __init__(self, max_calls=10):
-        self.calls = 0
-        self.max_calls = max_calls
+from modgud.app import guarded_expression
 
-    def __call__(self, *args, **kwargs):
-        self.calls += 1
-        if self.calls > self.max_calls:
-            return f"Rate limit exceeded: {self.calls}/{self.max_calls}"
-        return True
+
+class RateLimitGuard:
+  def __init__(self, max_calls=10):
+    self.calls = 0
+    self.max_calls = max_calls
+
+  def __call__(self, *args, **kwargs):
+    self.calls += 1
+    return self.calls <= self.max_calls or f'Rate limit exceeded: {self.calls}/{self.max_calls}'
+
 
 rate_limiter = RateLimitGuard(max_calls=5)
 
+
 @guarded_expression(rate_limiter)
 def limited_operation(data):
-    process(data)
+  process(data)
 ```
 
 ### Async Guards
 
-For async functions, guards are still synchronous (evaluated before the async function runs):
+For async functions, guards are still synchronous (evaluated before the async function runs). Pair them with `implicit_return=False` so the async body keeps its explicit `return`:
 
 ```python
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 @guarded_expression(
-    CommonGuards.not_none("url"),
-    lambda url: url.startswith("https://") or "URL must use HTTPS"
+  CommonGuards.not_none('url'),
+  lambda *args, **kwargs: str(kwargs.get('url', args[0] if args else '')).startswith('https://')
+  or 'URL must use HTTPS',
+  implicit_return=False,
 )
 async def fetch_secure(url):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            await response.text()
+  async with aiohttp.ClientSession() as session:
+    async with session.get(url) as response:
+      return await response.text()
 ```
 
 ## ⚙️ Configuration Options
@@ -1117,8 +1248,9 @@ async def fetch_secure(url):
 |-----------|------|---------|-------------|
 | `*guards` | `GuardFunction` | `()` | Guard validation functions |
 | `implicit_return` | `bool` | `True` | Enable implicit returns |
-| `on_error` | `Any` | `GuardClauseError` | Failure behavior |
-| `log` | `bool` | `False` | Enable logging |
+| `strategy` | `GuardFailureEnum` | `ERROR_RAISE` | How collected failures are dispatched |
+| `on_failure` | `Any` | `GuardClauseError` | Payload paired with `strategy` |
+| `continuance` | `int` | `0` | Extra guards to evaluate past the first failure |
 
 ### Common Configuration Patterns
 
@@ -1128,101 +1260,86 @@ async def fetch_secure(url):
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 @guarded_expression(
-    CommonGuards.positive("x"),
-    implicit_return=False,
-    on_error=None
+  CommonGuards.positive('x'),
+  implicit_return=False,
 )
 def validate_only(x):
-    # Traditional Python with guards
-    result = x * 2
-    return result
+  # Traditional Python with guards
+  result = x * 2
+  return result
 ```
 
 #### Expression-Oriented (No Guards)
 
 ```python
+from modgud.app import guarded_expression
+
+
 @guarded_expression()  # All defaults
 def expression_oriented(x):
-    # Pure implicit return, no validation
-    x * 2 + 10
+  # Pure implicit return, no validation
+  x * 2 + 10
 ```
 
-#### Safe Operations (Return Default on Error)
+#### Safe Operations (Return Default on Failure)
 
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-DEFAULT_USER = {"id": 0, "name": "Guest"}
+DEFAULT_USER = {'id': 0, 'name': 'Guest'}
+
 
 @guarded_expression(
-    CommonGuards.positive("user_id"),
-    on_error=DEFAULT_USER
+  CommonGuards.positive('user_id'),
+  strategy=GuardFailureEnum.RETURN_VALUE,
+  on_failure=DEFAULT_USER,
 )
 def get_user(user_id):
-    fetch_from_database(user_id)
+  fetch_from_database(user_id)
 ```
 
 #### Audit Trail (Custom Handler)
 
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-def audit_handler(error_msg, *args, **kwargs):
-    audit_log.write(f"Failed: {error_msg}, Args: {args}")
-    return None
+
+def audit_handler(errors, *args, **kwargs):
+  audit_log.write(f'Failed: {errors}, Args: {args}')
+  return None
+
 
 @guarded_expression(
-    CommonGuards.not_none("sensitive_data"),
-    on_error=audit_handler,
-    log=True
+  CommonGuards.not_none('sensitive_data'),
+  strategy=GuardFailureEnum.CALL_HANDLER,
+  on_failure=audit_handler,
 )
 def sensitive_operation(sensitive_data):
-    process_sensitive(sensitive_data)
+  process_sensitive(sensitive_data)
 ```
 
 #### API Response Pattern
 
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 @guarded_expression(
-    CommonGuards.type_check(dict, "payload"),
-    on_error={"status": 400, "error": "Invalid request"},
-    log=True
+  CommonGuards.type_check(dict, 'payload'),
+  strategy=GuardFailureEnum.RETURN_VALUE,
+  on_failure={'status': 400, 'error': 'Invalid request'},
 )
 def api_endpoint(payload):
-    result = process_request(payload)
-    {"status": 200, "data": result}
-```
-
-### Logging Configuration
-
-When `log=True`, failures are logged using Python's standard logging:
-
-```python
-from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
-import logging
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-
-@guarded_expression(
-    CommonGuards.positive("vector"),
-    log=True  # Failures logged at WARNING level
-)
-def logged_function(value):
-    value * 2
-
-# This logs: WARNING:root:Guard 'vector must be positive' failed with args (-5,) kwargs {}
-logged_function(-5)
+  result = process_request(payload)
+  {'status': 200, 'data': result}
 ```
 
 ## 🧪 Testing Considerations
@@ -1235,250 +1352,148 @@ Functions using `implicit_return=True` must be defined at module level because `
 # test_fixtures.py - Define test functions here
 from modgud.app import guarded_expression
 
+
 @guarded_expression()
 def fixture_with_implicit(x):
-    if x > 0:
-        "positive"
-    else:
-        "non-positive"
+  if x > 0:
+    'positive'
+  else:
+    'non-positive'
 ```
 
 ```python
-# test_implicit.py - Import and test
+# illustrative — imports the sibling test_fixtures module shown above
 from test_fixtures import fixture_with_implicit
 
+
 def test_implicit_return():
-    assert fixture_with_implicit(5) == "positive"
-    assert fixture_with_implicit(-5) == "non-positive"
+  assert fixture_with_implicit(5) == 'positive'
+  assert fixture_with_implicit(-5) == 'non-positive'
 ```
 
 ### Testing Guard Failures
 
 ```python
 import pytest
+
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardClauseError
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(
-    CommonGuards.positive("x"),
-    on_error=GuardClauseError
-)
+
+@guarded_expression(CommonGuards.positive('x'))
 def needs_positive(x):
-    x * 2
+  x * 2
+
 
 def test_guard_success():
-    assert needs_positive(5) == 10
+  assert needs_positive(5) == 10
+
 
 def test_guard_failure():
-    with pytest.raises(GuardClauseError, match="must be positive"):
-        needs_positive(-5)
+  with pytest.raises(GuardClauseError, match='must be positive'):
+    needs_positive(-5)
 ```
 
-### Testing Different Error Behaviors
+### Testing Different Failure Strategies
 
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 @guarded_expression(
-    CommonGuards.not_none("vector"),
-    on_error=None
+  CommonGuards.not_none('value'),
+  strategy=GuardFailureEnum.RETURN_VALUE,
+  on_failure=None,
 )
 def returns_none_on_failure(value):
-    value.upper()
+  value.upper()
+
 
 @guarded_expression(
-    CommonGuards.not_none("vector"),
-    on_error={"error": True}
+  CommonGuards.not_none('value'),
+  strategy=GuardFailureEnum.RETURN_VALUE,
+  on_failure={'error': True},
 )
 def returns_dict_on_failure(value):
-    {"result": value.upper()}
+  {'result': value.upper()}
 
-def test_none_on_error():
-    assert returns_none_on_failure(None) is None
-    assert returns_none_on_failure("hello") == "HELLO"
 
-def test_dict_on_error():
-    assert returns_dict_on_failure(None) == {"error": True}
-    assert returns_dict_on_failure("hello") == {"result": "HELLO"}
+def test_none_strategy():
+  assert returns_none_on_failure(None) is None
+  assert returns_none_on_failure('hello') == 'HELLO'
+
+
+def test_dict_strategy():
+  assert returns_dict_on_failure(None) == {'error': True}
+  assert returns_dict_on_failure('hello') == {'result': 'HELLO'}
 ```
 
 ### Testing Custom Guards
 
 ```python
-def custom_guard(x, y):
-    return x < y or f"x ({x}) must be less than y ({y})"
+import pytest
+
+from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardClauseError
+
+
+def custom_guard(*args, **kwargs):
+  x, y = args[0], args[1]
+  return x < y or f'x ({x}) must be less than y ({y})'
+
 
 @guarded_expression(custom_guard)
 def compare(x, y):
-    y - x
+  y - x
+
 
 def test_custom_guard():
-    assert compare(3, 5) == 2
-
-    with pytest.raises(GuardClauseError, match="x \\(5\\) must be less than y \\(3\\)"):
-        compare(5, 3)
+  assert compare(3, 5) == 2
+  with pytest.raises(GuardClauseError, match=r'x \(5\) must be less than y \(3\)'):
+    compare(5, 3)
 ```
 
-### Mocking Guards
+### Verifying Guard Evaluation Order
 
-```python
-from unittest.mock import Mock
-
-def test_guard_evaluation_order():
-    guard1 = Mock(return_value=True)
-    guard2 = Mock(return_value="Guard 2 failed")
-    guard3 = Mock(return_value=True)
-
-    @guarded_expression(guard1, guard2, guard3, on_error=None)
-    def test_func(x):
-        x * 2
-
-    result = test_func(5)
-
-    # First guard called
-    guard1.assert_called_once_with(5)
-
-    # Second guard called and failed
-    guard2.assert_called_once_with(5)
-
-    # Third guard never called (fail fast)
-    guard3.assert_not_called()
-
-    # Function returned None due to guard2 failure
-    assert result is None
-```
-
-## 🔄 Migration Guide
-
-### From v0.1.x to v0.2.0
-
-Version 0.2.0 introduces the unified `guarded_expression` decorator as the primary API. The old separate decorators are no longer needed.
-
-#### Old Style (v0.1.x)
-
-```python
-from modgud.app import guarded_expression, implicit_return
-
-# Separate decorators for guards and implicit return
-@guarded_expression(lambda x: x > 0 or "x must be positive")
-@implicit_return
-def old_style(x):
-    x * 2
-```
-
-#### New Style (v0.2.0+)
+By default guards stop at the first failure, so later guards never run. `continuance` widens that window when you want to collect more:
 
 ```python
 from modgud.app import guarded_expression
-
-# Unified decorator with both features
-@guarded_expression(
-    lambda x: x > 0 or "x must be positive"
-    # implicit_return=True by default
-)
-def new_style(x):
-    x * 2
-```
-
-### Migration Patterns
-
-#### Guards Only → guarded_expression
-
-```python
-# Old
-@guarded_expression(
-    lambda x: x > 0 or "x must be positive",
-    on_error=None
-)
-def validate(x):
-    return x * 2
-
-# New
-@guarded_expression(
-    lambda x: x > 0 or "x must be positive",
-    implicit_return=False,  # Disable implicit return
-    on_error=None
-)
-def validate(x):
-    return x * 2
-```
-
-#### Implicit Return Only → guarded_expression
-
-```python
-# Old
-@implicit_return
-def calculate(x):
-    x * 2
-
-# New
-@guarded_expression()  # No guards, implicit_return=True by default
-def calculate(x):
-    x * 2
-```
-
-#### Both Decorators → guarded_expression
-
-```python
-from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardClauseError
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-# Old
-@guarded_expression(CommonGuards.positive("x"))
-@implicit_return
-def process(x):
-    x * 2
 
-# New
-@guarded_expression(CommonGuards.positive("x"))
-def process(x):
-    x * 2
+@guarded_expression(
+  CommonGuards.positive('x'),          # fails first for x <= 0
+  CommonGuards.in_range(1, 10, 'x'),   # never reached with continuance=0
+)
+def bounded(x):
+  x * 2
+
+
+def test_fail_fast():
+  import pytest
+
+  # Only the first guard's message surfaces (fail-fast default)
+  with pytest.raises(GuardClauseError, match='must be positive'):
+    bounded(-5)
 ```
 
-### Feature Comparison
+## 🔄 Upgrading from Pre-2.0 Code
 
-| Feature | v0.1.x | v0.2.0 |
-|---------|--------|--------|
-| Guard validation | `@guard_clause` | `@guarded_expression` |
-| Implicit returns | `@implicit_return` | `@guarded_expression` |
-| Combined usage | Stack decorators | Single decorator |
-| Default behavior | Explicit returns | Implicit returns |
-| Error handling | Configurable | Configurable |
-| Pre-built Guards | Available | Available |
-| Performance | Good | Better (single decorator) |
+The v2 surface is the only supported API. If you have snippets written against an older `modgud`, map them across mechanically — there is no compatibility shim:
 
-### Breaking Changes
-
-1. **Removed packages**: `modgud.guard_clause` and `modgud.implicit_return` packages removed
-2. **Import changes**: Import from `modgud` directly, not subpackages
-3. **Default behavior**: Implicit return is now ON by default
-4. **Single decorator**: Use `guarded_expression` for everything
-
-### Compatibility Mode
-
-If you need time to migrate, you can create compatibility wrappers:
-
-```python
-# compatibility.py - Temporary migration helpers
-from modgud.app import guarded_expression
-
-def guard_clause(*guards, on_error=None, log=False):
-    """Compatibility wrapper for old guard_clause decorator."""
-    def decorator(func):
-        return guarded_expression(
-            *guards,
-            implicit_return=False,  # Old behavior
-            on_error=on_error,
-            log=log
-        )(func)
-    return decorator
-
-def implicit_return(func):
-    """Compatibility wrapper for old implicit_return decorator."""
-    return guarded_expression()(func)
-```
+| Pre-2.0 | v2.0 |
+|---------|------|
+| `on_error=SomeException` | `strategy=GuardFailureEnum.ERROR_RAISE, on_failure=SomeException` (raise) or `ERROR_RETURN` to return the instance |
+| `on_error=<value>` (dict / `None` / etc.) | `strategy=GuardFailureEnum.RETURN_VALUE, on_failure=<value>` |
+| `on_error=<handler>` | `strategy=GuardFailureEnum.CALL_HANDLER, on_failure=<handler>` |
+| `log=True` | removed — log from the call site or from a `CALL_HANDLER` |
+| flat `from modgud import guarded_expression` | subpackage imports, e.g. `from modgud.app import guarded_expression` |
+| handler signature `(error_msg, *args, **kwargs)` | `(errors, *args, **kwargs)` where `errors` is a `list[str]` |
 
 ## 🏛️ Architecture Details
 
@@ -1492,19 +1507,33 @@ modgud follows clean architecture with clear separation of concerns:
 
 ### Module Structure
 
+Dependencies flow downward only: `app → domain.<feature>`, `app → infrastructure.<feature>`, `infrastructure.<feature> → domain.<feature>`. `guarded_expression` and `implicit_return` are **functions**, not classes.
+
 ```
 modgud/
-├── __init__.py                 # Public API exports
-├── guarded_expression/         # Primary decorator package
-│   ├── __init__.py
-│   ├── decorator.py           # Main guarded_expression class
-│   ├── ast_transform.py       # Pure AST transformation functions
-│   ├── guard_runtime.py       # Pure guard checking functions
-│   └── common_guards.py       # Pre-built guard factories
-└── shared/                     # Shared infrastructure
-    ├── __init__.py
-    ├── types.py               # Type definitions
-    └── errors.py              # Exception classes
+  app/                                 # public decorators (entry points)
+    guarded_expression.py              # @guarded_expression (function)
+    implicit_return.py                 # @implicit_return (function)
+  domain/                              # passive types/enums/exceptions (no re-exports)
+    guarded_expr/
+      enums/guard_failure_enum.py      # GuardFailureEnum (IntEnum)
+      errors/guard_clause_error.py     # GuardClauseError
+      types.py                         # GuardFunction
+      ports/                           # GuardRuntimePort
+    implicit_ret/
+      errors/                         # one exception per module
+        implicit_return_error.py      # ImplicitReturnError (base)
+        explicit_return_disallowed_error.py
+        missing_implicit_return_error.py
+        unsupported_construct_error.py
+      ports/                           # ImplicitReturnTransformerPort
+  infrastructure/                      # runtime + AST transform (no re-exports)
+    guarded_expr/
+      guard_runtime.py                 # GuardRuntime — guard eval + dispatch
+      common_guards.py                 # CommonGuards — pre-built validators
+      guard_registry.py                # GuardRegistry — custom guard registration
+    implicit_ret/
+      implicit_return_transformer.py   # ImplicitReturnTransformer — AST rewriter
 ```
 
 ### AST Transformation Process
@@ -1522,19 +1551,18 @@ For implicit returns, the transformation process:
 
 ### Guard Evaluation Pipeline
 
-1. Guards evaluated sequentially before function execution
-2. First guard returning non-True value triggers failure
-3. Optional logging if `log=True`
-4. Failure handling based on `on_error`:
-   - Exception class: instantiate and raise
-   - Callable: invoke with `(error_msg, *args, **kwargs)`
-   - Other value: return directly
-5. Success: execute wrapped function
+1. Guards are evaluated in order; `continuance` controls how many run past the first failure
+2. Collected failure strings are dispatched through `strategy` / `on_failure`:
+   - `ERROR_RAISE`: instantiate and raise `on_failure` (an `ExceptionGroup` when multiple failures)
+   - `ERROR_RETURN`: instantiate `on_failure` but return it
+   - `RETURN_VALUE`: return `on_failure` as-is
+   - `CALL_HANDLER`: return `on_failure(errors, *args, **kwargs)` with `errors` as a `list[str]`
+3. The wrapped function body runs only when no failure was recorded
 
 ### Performance Considerations
 
 - **Single Decorator**: Reduced overhead vs. stacked decorators
-- **Fail Fast**: Guards stop at first failure
+- **Fail Fast**: Guards stop at the first failure by default (`continuance=0`)
 - **Lazy Compilation**: AST transformation happens once at decoration time
 - **Zero Runtime Dependencies**: Uses only Python standard library
 
@@ -1543,17 +1571,19 @@ For implicit returns, the transformation process:
 modgud is fully typed and mypy-compliant:
 
 ```python
-from typing import Callable, Any, Union
-from modgud.domain.guarded_expr import GuardFailureStrategy, GuardFunction
+from modgud.app import guarded_expression
+
 
 # Guard functions are typed
-def typed_guard(x: int) -> Union[bool, str]:
-    return x > 0 or "Must be positive"
+def typed_guard(*args, **kwargs) -> bool | str:
+  return args[0] > 0 or 'Must be positive'
+
 
 # Decorated functions preserve type hints
 @guarded_expression(typed_guard)
 def typed_func(x: int) -> int:
-    x * 2
+  x * 2
+
 
 # mypy correctly infers: typed_func(x: int) -> int
 ```

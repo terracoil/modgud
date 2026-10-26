@@ -6,12 +6,12 @@
   -domain/                         # Container package — no re-exports
    -guarded_expr/             # Guarded-expression parent
      -ports/                      # Interfaces, or protocols injected to hide irrelevant infrastructure
-     -enums.py                    # GuardFailureStrategy
-     -errors.py                   # GuardClauseError
+     -enums/guard_failure_enum.py # GuardFailureEnum
+     -errors/guard_clause_error.py # GuardClauseError
      -types.py                    # GuardFunction (shared by guarded_expr & app)
     -implicit_ret/                # Implicit Return parent
      -ports/                      # Interfaces, or protocols injected to hide irrelevant infrastructure
-     -errors.py                   # ImplicitReturnError + 3 children
+     -errors/                     # ImplicitReturnError + 3 children, one per module
   -infrastructure/                    # Container package — no re-exports. Implementations that don't concern the user.  For optimal hiding, we will use a domain/port (protocol) and an infrastructure/adapter (implementation) and use iOC (../gleipnyr soon to be published).
     -guarded_expr/                    # Guarded-expression functionality; encapsulated in adapters
     -implicit_ret/                    # Implicit Return functionality; encapsulated in adapters

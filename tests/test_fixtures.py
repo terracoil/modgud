@@ -7,7 +7,7 @@ by the implicit_return transformer.
 import asyncio
 
 from modgud.app import guarded_expression
-from modgud.domain.guarded_expr import GuardFailureStrategy
+from modgud.domain.guarded_expr import GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
 
 
@@ -74,7 +74,7 @@ async def async_classify(x):
 
 @guarded_expression(
   implicit_return=False,
-  strategy=GuardFailureStrategy.RETURN_VALUE,
+  strategy=GuardFailureEnum.RETURN_VALUE,
   on_failure=None,
 )
 async def async_explicit_return(x):

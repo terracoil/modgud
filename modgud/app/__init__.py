@@ -7,3 +7,8 @@ __all__ = [
   'guarded_expression',
   'implicit_return',
 ]
+
+# from idunn import Idunn
+
+# print("Running autodiscover...")
+# Idunn().autodiscover('modgud')   # idempotent; survives a prior reset()

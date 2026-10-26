@@ -4,7 +4,7 @@ The package structure *is* the public API - import each symbol from the leaf
 subpackage that owns it rather than from the top-level ``modgud`` namespace:
 
 - ``from modgud.app import guarded_expression, implicit_return`` - the decorators.
-- ``from modgud.domain.guarded_expr import GuardFailureStrategy, GuardClauseError``
+- ``from modgud.domain.guarded_expr import GuardFailurEnum, GuardClauseError``
   - failure-dispatch enum and guard error.
 - ``from modgud.domain.implicit_ret import ImplicitReturnError`` (and its three
   subclasses) - implicit-return transformation errors.
@@ -15,7 +15,7 @@ subpackage that owns it rather than from the top-level ``modgud`` namespace:
 Example::
 
     from modgud.app import guarded_expression
-    from modgud.domain.guarded_expr import GuardFailureStrategy
+    from modgud.domain.guarded_expr import GuardFailurEnum
     from modgud.infrastructure.guarded_expr import CommonGuards
 
 
@@ -26,7 +26,7 @@ Example::
 
     @guarded_expression(
       CommonGuards.positive('x'),
-      strategy=GuardFailureStrategy.RETURN_VALUE,
+      strategy=GuardFailurEnum.RETURN_VALUE,
       on_failure=-1,
     )
     def safe_square(x):

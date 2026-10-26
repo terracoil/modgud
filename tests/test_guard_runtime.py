@@ -1,7 +1,7 @@
 """Unit tests for GuardRuntime: check_guards + handle_failure."""
 
 import pytest
-from modgud.domain.guarded_expr import GuardClauseError, GuardFailureStrategy
+from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum
 from modgud.infrastructure.guarded_expr import GuardRuntime
 
 
@@ -77,20 +77,18 @@ class TestCheckGuards:
 
 
 class TestHandleFailure:
-  """Tests for failure dispatch through GuardFailureStrategy."""
+  """Tests for failure dispatch through GuardFailurEnum."""
 
   def test_error_raise_single(self):
     """ERROR_RAISE with one failure raises the on_failure class."""
     with pytest.raises(GuardClauseError, match='boom'):
-      GuardRuntime.handle_failure(
-        ['boom'], GuardFailureStrategy.ERROR_RAISE, GuardClauseError, (), {}
-      )
+      GuardRuntime.handle_failure(['boom'], GuardFailureEnum.ERROR_RAISE, GuardClauseError, (), {})
 
   def test_error_raise_multiple_uses_exception_group(self):
     """ERROR_RAISE with multiple failures raises an ExceptionGroup."""
     with pytest.raises(ExceptionGroup) as exc:
       GuardRuntime.handle_failure(
-        ['a', 'b', 'c'], GuardFailureStrategy.ERROR_RAISE, GuardClauseError, (), {}
+        ['a', 'b', 'c'], GuardFailureEnum.ERROR_RAISE, GuardClauseError, (), {}
       )
     assert exc.value.message == 'Guards failed'
     assert len(exc.value.exceptions) == 3
@@ -100,12 +98,12 @@ class TestHandleFailure:
   def test_error_raise_custom_exception_class(self):
     """ERROR_RAISE respects a custom exception class in on_failure."""
     with pytest.raises(ValueError, match='nope'):
-      GuardRuntime.handle_failure(['nope'], GuardFailureStrategy.ERROR_RAISE, ValueError, (), {})
+      GuardRuntime.handle_failure(['nope'], GuardFailureEnum.ERROR_RAISE, ValueError, (), {})
 
   def test_error_return_single_returns_instance(self):
     """ERROR_RETURN with one failure returns the exception instance."""
     result = GuardRuntime.handle_failure(
-      ['err'], GuardFailureStrategy.ERROR_RETURN, GuardClauseError, (), {}
+      ['err'], GuardFailureEnum.ERROR_RETURN, GuardClauseError, (), {}
     )
     assert isinstance(result, GuardClauseError)
     assert str(result) == 'err'
@@ -113,7 +111,7 @@ class TestHandleFailure:
   def test_error_return_multiple_returns_group(self):
     """ERROR_RETURN with multiple failures returns an ExceptionGroup."""
     result = GuardRuntime.handle_failure(
-      ['a', 'b'], GuardFailureStrategy.ERROR_RETURN, GuardClauseError, (), {}
+      ['a', 'b'], GuardFailureEnum.ERROR_RETURN, GuardClauseError, (), {}
     )
     assert isinstance(result, ExceptionGroup)
     assert len(result.exceptions) == 2
@@ -122,15 +120,13 @@ class TestHandleFailure:
     """RETURN_VALUE returns on_failure verbatim."""
     sentinel = {'error': 'custom'}
     result = GuardRuntime.handle_failure(
-      ['ignored'], GuardFailureStrategy.RETURN_VALUE, sentinel, (), {}
+      ['ignored'], GuardFailureEnum.RETURN_VALUE, sentinel, (), {}
     )
     assert result is sentinel
 
   def test_return_value_none(self):
     """RETURN_VALUE handles None payload."""
-    result = GuardRuntime.handle_failure(
-      ['ignored'], GuardFailureStrategy.RETURN_VALUE, None, (), {}
-    )
+    result = GuardRuntime.handle_failure(['ignored'], GuardFailureEnum.RETURN_VALUE, None, (), {})
     assert result is None
 
   def test_call_handler_passes_errors_args_kwargs(self):
@@ -144,7 +140,7 @@ class TestHandleFailure:
       return 'handled'
 
     result = GuardRuntime.handle_failure(
-      ['boom'], GuardFailureStrategy.CALL_HANDLER, handler, (1, 2), {'k': 'v'}
+      ['boom'], GuardFailureEnum.CALL_HANDLER, handler, (1, 2), {'k': 'v'}
     )
     assert result == 'handled'
     assert captured['errors'] == ['boom']
@@ -159,7 +155,7 @@ class TestHandleFailure:
       received.append(errors)
       return None
 
-    GuardRuntime.handle_failure(['only one'], GuardFailureStrategy.CALL_HANDLER, handler, (), {})
+    GuardRuntime.handle_failure(['only one'], GuardFailureEnum.CALL_HANDLER, handler, (), {})
     assert received == [['only one']]
 
 
@@ -175,7 +171,7 @@ class TestWrapFunctionIntegration:
     wrapped = GuardRuntime.wrap_function(
       f,
       (lambda x: x > 0 or 'positive',),
-      GuardFailureStrategy.ERROR_RAISE,
+      GuardFailureEnum.ERROR_RAISE,
       GuardClauseError,
       0,
     )
@@ -194,7 +190,7 @@ class TestWrapFunctionIntegration:
     wrapped = GuardRuntime.wrap_function(
       f,
       (lambda x: 'fail',),
-      GuardFailureStrategy.RETURN_VALUE,
+      GuardFailureEnum.RETURN_VALUE,
       'fallback',
       0,
     )
@@ -210,7 +206,7 @@ class TestWrapFunctionIntegration:
     wrapped = GuardRuntime.wrap_function(
       f,
       (lambda x: 'fail-a', lambda x: 'fail-b', lambda x: 'fail-c'),
-      GuardFailureStrategy.ERROR_RAISE,
+      GuardFailureEnum.ERROR_RAISE,
       GuardClauseError,
       2,
     )

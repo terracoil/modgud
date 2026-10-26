@@ -1,7 +1,5 @@
 
-<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Freyja" title="Freyja" width="300"/>
-    
-[//]: # (https://github.com/terracoil/modgud/blob/8613cce30d374538d80b8e2513096a1336fba437/docs/modgud-github.jpg)
+![Modgud](https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg)
 
 **Parent**: [📚 Documentation Hub](docs/README.md) | [📖 API Reference](docs/api-reference.md) | [⚙️ How It Works](docs/how-it-works.md)
 
@@ -12,7 +10,6 @@
 Tired of functions where 80% of the code is validation boilerplate? Frustrated by nested conditionals checking types, values, and state before you can even *think* about business logic? Wish Python had expression-oriented programming like Ruby, Rust, or Scala?
 
 **modgud changes everything.**
-
 
 
 ---
@@ -28,7 +25,7 @@ After all, what are expression-oriented guard clauses if not *genuinely good mod
 ---
 
 ## 📋 Table of Contents
-- [🔥️ Why Modgud](#the-problem) - Why modgud is essential
+- [🔥️ Why Modgud](#why-modgud) - Why modgud is essential
 - [⚠️ The Problem](#the-problem) - Why defensive programming gets messy
 - [💡 The Solution](#the-solution) - How modgud changes everything
 - [🔑 Features](#features) - Six compelling features
@@ -38,7 +35,6 @@ After all, what are expression-oriented guard clauses if not *genuinely good mod
 - [📚 Documentation](#documentation) - Complete guides and references
 - [📦 Installation](#installation) - How to install
 - [🤝 Contributing](#contributing) - Join the project
-- [✨ What's New](#whats-new-in-v11) - Latest changes
 
 ---
 ## 🔥 Why Modgud?
@@ -46,7 +42,7 @@ After all, what are expression-oriented guard clauses if not *genuinely good mod
 Despite Python's evolution toward more functional features (pattern matching in 3.10+, better type hints, etc.), modgud fills a critical gap: **making Python functions behave like expressions without changing Python's syntax**. This is uniquely valuable because:
 
 ### 1. **Zero-Syntax-Cost Expression Orientation**
-While Python 3.10+ adds pattern matching, it's still statement-based. modgud's `@guarded_expression` transforms regular functions into expression-oriented code *today*, working seamlessly with Python 3.6+ codebases. You get Haskell-like guards and implicit returns without waiting for PEP acceptance or version upgrades.
+While Python 3.10+ adds pattern matching, it's still statement-based. modgud's `@guarded_expression` transforms regular functions into expression-oriented code *today*, running on Python 3.11+ codebases. You get Haskell-like guards and implicit returns without waiting for PEP acceptance or version upgrades.
 
 ### 2. **Gradual Adoption Path**
 Unlike heavy functional libraries (PyMonad, toolz, etc.) that require wholesale architectural changes, modgud decorators can be applied selectively. Start with one critical function, see the benefits, expand gradually. This pragmatic approach reduces resistance in teams unfamiliar with FP.
@@ -55,10 +51,10 @@ Unlike heavy functional libraries (PyMonad, toolz, etc.) that require wholesale 
 Rather than forcing Haskell or Scala idioms into Python, modgud enhances Python's existing decorator pattern. This feels natural to Python developers while delivering expression-oriented benefits. No new operators, no category theory, just cleaner functions.
 
 ### 4. **Performance Without Overhead**
-Many FP libraries introduce abstraction penalties through wrapper objects and indirection. modgud's approach (presumably) operates at the function level with minimal runtime overhead, making it suitable for performance-sensitive code where other FP solutions might be rejected.
+Many FP libraries introduce abstraction penalties through wrapper objects and indirection. modgud does its AST rewrite once at decoration time, so guarded functions run with minimal runtime overhead—suitable for performance-sensitive code where other FP solutions might be rejected.
 
-### 5. **Compatibility Story**
-Working from Python 3.6+ means modgud supports the vast majority of production Python deployments. Enterprises stuck on older versions for stability can still adopt modern expression-oriented patterns without infrastructure changes.
+### 5. **Modern Python Baseline**
+Targeting Python 3.11+ means modgud leans on `ExceptionGroup`, structural pattern matching, and precise typing—giving you modern expression-oriented patterns without dragging along legacy compatibility shims.
 
 
 ## ⚠️ The Problem
@@ -66,35 +62,37 @@ Working from Python 3.6+ means modgud supports the vast majority of production P
 Look familiar?
 
 ```python
-def process_payment(user_id, amount, payment_method):
+class PaymentProcessor:
+  @staticmethod
+  def process_payment(user_id, amount, payment_method):
     # Validation hell begins...
     if user_id is None:
-        return {"error": "User ID required"}
+      return {'error': 'User ID required'}
 
     if not isinstance(user_id, int):
-        return {"error": "Invalid user ID type"}
+      return {'error': 'Invalid user ID type'}
 
     if user_id <= 0:
-        return {"error": "User ID must be positive"}
+      return {'error': 'User ID must be positive'}
 
     if amount is None or amount <= 0:
-        return {"error": "Invalid amount"}
+      return {'error': 'Invalid amount'}
 
     if amount > 10000:
-        return {"error": "Amount exceeds limit"}
+      return {'error': 'Amount exceeds limit'}
 
-    if not payment_method or payment_method == "":
-        return {"error": "Payment method required"}
+    if not payment_method or payment_method == '':
+      return {'error': 'Payment method required'}
 
-    if payment_method not in ["card", "bank", "crypto"]:
-        return {"error": "Invalid payment method"}
+    if payment_method not in ['card', 'bank', 'crypto']:
+      return {'error': 'Invalid payment method'}
 
     # Finally, the actual business logic (if you can find it)
     transaction = create_transaction(user_id, amount, payment_method)
-    return {"success": True, "transaction_id": transaction.id}
+    return {'success': True, 'transaction_id': transaction.id}
 ```
 
-**8 validation checks. 16 lines of defensive code. 2 lines of actual business logic.**
+**7 validation checks. A wall of defensive code. 2 lines of actual business logic.**
 
 Multiple return points everywhere. Business logic buried at the bottom. Error handling inconsistent. This is what happens when validation and logic mix.
 
@@ -105,25 +103,37 @@ Multiple return points everywhere. Business logic buried at the bottom. Error ha
 **modgud** gives you guard clauses and expression-oriented programming in Python:
 
 ```python
-from modgud.app import guarded_expression, implicit_return
-from modgud.infrastructure.guarded_expr import CommonGuards, GuardRegistry
+from enum import Enum
 
-@guarded_expression(
-    CommonGuards.positive("user_id"),
-    CommonGuards.type_check(int, "user_id"),
-    CommonGuards.positive("amount"),
-    CommonGuards.in_range(1, 10000, "amount"),
-    CommonGuards.not_empty("payment_method"),
-    lambda pm: pm in ["card", "bank", "crypto"] or "Invalid payment method",
-    implicit_return=True,  # Unified approach - fully supported!
-    on_error={"success": False, "error": "Validation failed"}
-)
-def process_payment(user_id, amount, payment_method):
+from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
+from modgud.infrastructure.guarded_expr import CommonGuards
+
+
+class PaymentMethod(Enum):
+  CARD = 'card'
+  BANK = 'bank'
+  CRYPTO = 'crypto'
+
+
+class PaymentProcessor:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.type_check(int, 'user_id'),
+    CommonGuards.positive('user_id'),
+    CommonGuards.in_range(1, 10000, 'amount', position=1),
+    CommonGuards.valid_enum(PaymentMethod, 'payment_method', position=2),
+    strategy=GuardFailureEnum.RETURN_VALUE,
+    on_failure={'success': False, 'error': 'Validation failed'},
+  )
+  def process_payment(user_id, amount, payment_method):
     transaction = create_transaction(user_id, amount, payment_method)
-    {"success": True, "transaction_id": transaction.id}  # Implicit return!
+    {'success': True, 'transaction_id': transaction.id}  # Implicit return!
 ```
 
 **Same functionality. Zero defensive clutter. Single return point. Business logic front and center.**
+
+Note the `position=` offsets: `CommonGuards` reads the first positional argument by default, so guards on the second and third parameters declare `position=1` and `position=2`.
 
 ---
 
@@ -135,13 +145,15 @@ Declare your function's contract upfront. Validations execute before your functi
 
 **Before:**
 ```python
-def withdraw(account_id, amount):
+class Account:
+  @staticmethod
+  def withdraw(account_id, amount):
     if account_id is None:
-        raise ValueError("Account required")
+      raise ValueError('Account required')
     if amount <= 0:
-        raise ValueError("Amount must be positive")
+      raise ValueError('Amount must be positive')
     if amount > get_balance(account_id):
-        raise ValueError("Insufficient funds")
+      raise ValueError('Insufficient funds')
 
     # Actual work hidden at the bottom
     balance = get_balance(account_id) - amount
@@ -154,17 +166,29 @@ def withdraw(account_id, amount):
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(
-    CommonGuards.not_none("account_id"),
-    CommonGuards.positive("amount"),
-    lambda account_id, amount: amount <= get_balance(account_id) or "Insufficient funds",
-    implicit_return=True  # Unified approach - clean and simple!
-)
-def withdraw(account_id, amount):
+
+class AccountGuards:
+  @staticmethod
+  def sufficient_funds(*args, **kwargs):
+    account_id = kwargs.get('account_id', args[0] if args else None)
+    amount = kwargs.get('amount', args[1] if len(args) > 1 else 0)
+    return amount <= get_balance(account_id) or 'Insufficient funds'
+
+
+class Account:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.not_none('account_id'),
+    CommonGuards.positive('amount', position=1),
+    AccountGuards.sufficient_funds,
+  )
+  def withdraw(account_id, amount):
     balance = get_balance(account_id) - amount
     update_balance(account_id, balance)
     balance  # Clean implicit return
 ```
+
+Custom guards receive the *full* argument tuple as `(*args, **kwargs)`, so they pull the values they need by name or position and return `True` (pass) or an error `str` (fail).
 
 ### 2. 🎨 Expression-Oriented Programming (Finally!)
 
@@ -172,13 +196,15 @@ The last expression in each branch is your return value. Just like Ruby, Rust, S
 
 **Before:**
 ```python
-def classify_user(age, premium):
+class UserClassifier:
+  @staticmethod
+  def classify(age, premium):
     if age < 18:
-        return "minor"
+      return 'minor'
     elif premium:
-        return "premium_adult"
+      return 'premium_adult'
     else:
-        return "standard_adult"
+      return 'standard_adult'
 ```
 
 **After:**
@@ -186,18 +212,17 @@ def classify_user(age, premium):
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-# Using the unified parameter approach
-@guarded_expression(
-    CommonGuards.positive("age"),
-    implicit_return=True
-)
-def classify_user(age, premium):
+
+class UserClassifier:
+  @staticmethod
+  @guarded_expression(CommonGuards.positive('age'))
+  def classify(age, premium):
     if age < 18:
-        "minor"
+      'minor'
     elif premium:
-        "premium_adult"
+      'premium_adult'
     else:
-        "standard_adult"
+      'standard_adult'
 ```
 
 Clean. Readable. Expressive. The way code should be.
@@ -216,19 +241,19 @@ Stop writing the same validations over and over:
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(
-    CommonGuards.not_none("email"),
-    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
-    CommonGuards.positive("age"),
-    CommonGuards.in_range(13, 120, "age"),
-    CommonGuards.not_empty("username"),
-    CommonGuards.type_check(str, "username"),
-    implicit_return=True  # Clean, all-in-one configuration
-)
-def register_user(email, age, username):
+
+class Registration:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.not_none('email'),
+    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', 'email'),
+    CommonGuards.in_range(13, 120, 'age', position=1),
+    CommonGuards.not_empty('username', position=2),
+  )
+  def register_user(email, age, username):
     user_id = create_user_record(email, age, username)
     send_welcome_email(email)
-    {"success": True, "user_id": user_id}
+    {'success': True, 'user_id': user_id}
 ```
 
 Built-in guards for:
@@ -238,86 +263,107 @@ Built-in guards for:
 - `in_range` - Bounded value checking
 - `type_check` - Runtime type validation
 - `matches_pattern` - Regex pattern matching
+- `valid_file_path` / `valid_url` / `valid_enum` - Richer domain checks
 
 Plus you can write custom guards in seconds.
 
 #### Creating Custom Guards
 
-Register your own reusable guards:
+Register your own reusable guards. Guard factories live as static methods (no loose functions), and the guard they return accepts the full argument tuple:
 
 ```python
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import GuardRegistry
 
-# Define a custom guard factory
-def valid_age(min_age=0, max_age=150, param_name="age"):
+
+class AgeGuards:
+  @staticmethod
+  def valid_age(min_age=0, max_age=150, param_name='age', position=0):
     def check(*args, **kwargs):
-        age = kwargs.get(param_name, args[0] if args else None)
-        if not isinstance(age, int):
-            return f"{param_name} must be an integer"
-        if min_age <= age <= max_age:
-            return True
-        return f"{param_name} must be between {min_age} and {max_age}"
+      age = kwargs.get(param_name, args[position] if position < len(args) else None)
+      result = True
+      if not isinstance(age, int):
+        result = f'{param_name} must be an integer'
+      elif not (min_age <= age <= max_age):
+        result = f'{param_name} must be between {min_age} and {max_age}'
+      return result
+
     return check
 
-# Register it for reuse
-GuardRegistry.register("valid_age", valid_age)
 
-# Use your custom guard with implicit returns
-@guarded_expression(
-    GuardRegistry.get("valid_age")(min_age=18, max_age=120),
-    implicit_return=True  # All configured in one place
-)
-def can_vote(age):
+# Register it for reuse
+GuardRegistry.register('valid_age', AgeGuards.valid_age)
+
+
+class Voting:
+  @staticmethod
+  @guarded_expression(GuardRegistry.get('valid_age')(min_age=18, max_age=120))
+  def can_vote(age):
     age >= 18
 ```
 
 ### 5. 🎛️ Flexible Error Handling
 
-Your code, your rules. Choose how guards fail:
+Your code, your rules. A single `GuardFailureEnum` enum, paired with an `on_failure` payload, chooses how guards fail:
 
-**Return custom values:**
+**Return custom values (`RETURN_VALUE`):**
+
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(
-    CommonGuards.positive("amount"),
-    implicit_return=True,
-    on_error={"error": "Invalid amount", "code": 400}
-)
-def process(amount):
-    {"success": True, "amount": amount}
+
+class Billing:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.positive('amount'),
+    strategy=GuardFailureEnum.RETURN_VALUE,
+    on_failure={'error': 'Invalid amount', 'code': 400},
+  )
+  def process(amount):
+    {'success': True, 'amount': amount}
 ```
 
-**Raise exceptions:**
+**Raise exceptions (`ERROR_RAISE`, the default):**
 ```python
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(
-    CommonGuards.not_empty("username"),
-    implicit_return=True,
-    on_error=ValueError
-)
-def create_account(username):
+
+class Accounts:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.not_empty('username'),
+    on_failure=ValueError,
+  )
+  def create_account(username):
     Account(username)
 ```
 
-**Custom handlers:**
+**Custom handlers (`CALL_HANDLER`):** the handler is invoked as `on_failure(errors, *args, **kwargs)`, where `errors` is always a `list[str]`:
+
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
+from modgud.infrastructure.guarded_expr import CommonGuards
 
-def audit_and_return(error_msg, *args, **kwargs):
-    log_security_event(error_msg)
+
+class SecurityAudit:
+  @staticmethod
+  def record(errors, *args, **kwargs):
+    log_security_event(errors)
     return None
 
-@guarded_expression(
-    lambda api_key: validate_key(api_key) or "Invalid key",
-    implicit_return=True,
-    on_error=audit_and_return
-)
-def sensitive_operation(api_key):
+
+class SensitiveOps:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.not_empty('api_key'),
+    strategy=GuardFailureEnum.CALL_HANDLER,
+    on_failure=SecurityAudit.record,
+  )
+  def run(api_key):
     perform_operation()
 ```
 
@@ -327,8 +373,8 @@ Built entirely on Python's standard library. No bloat. No version conflicts. Jus
 
 ### 7. ✅ Battle-Tested & Type-Safe
 
-- Full mypy type checking support
-- Comprehensive test suite with 92% coverage
+- Full mypy type checking support (strict settings)
+- Comprehensive test suite (110 passing tests)
 - Clean architecture with separation of concerns
 - Thread-safe decorators
 - Preserves all function metadata for debugging
@@ -348,38 +394,43 @@ pip install modgud
 ### Your First Guarded Function
 
 ```python
-from modgud.app import guarded_expression
+from modgud.app import guarded_expression, implicit_return
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 # Option 1: Unified approach (recommended for simple cases)
-@guarded_expression(
-    CommonGuards.positive("x"),
-    CommonGuards.in_range(1, 100, "x"),
-    implicit_return=True  # All-in-one configuration
-)
-def calculate_discount(x):
+class DiscountCalculator:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.positive('x'),
+    CommonGuards.in_range(1, 100, 'x'),
+  )
+  def calculate(x):
     if x >= 50:
-        x * 0.2
+      x * 0.2
     else:
-        x * 0.1
+      x * 0.1
+
 
 # Option 2: Separate decorators (for complex compositions)
-from modgud.app import implicit_return
-
-@guarded_expression(
-    CommonGuards.positive("x"),
-    CommonGuards.in_range(1, 100, "x")
-)
-@implicit_return
-def calculate_discount_v2(x):
+class DiscountCalculatorV2:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.positive('x'),
+    CommonGuards.in_range(1, 100, 'x'),
+    implicit_return=False,
+  )
+  @implicit_return
+  def calculate(x):
     if x >= 50:
-        x * 0.2
+      x * 0.2
     else:
-        x * 0.1
+      x * 0.1
 
-print(calculate_discount(75))   # Returns 15.0
-print(calculate_discount(25))   # Returns 2.5
-print(calculate_discount(-10))  # Raises GuardClauseError
+
+DiscountCalculator.calculate(75)  # Returns 15.0
+DiscountCalculator.calculate(25)  # Returns 2.5
+# DiscountCalculator.calculate(-10) would raise GuardClauseError
 ```
 
 **That's it.** You're writing cleaner Python.
@@ -393,12 +444,13 @@ print(calculate_discount(-10))  # Raises GuardClauseError
 - **🎯 Single Return Point** - One logical exit point per function
 - **🧩 Pre-Built Guards** - Standard validations ready to use (not_none, positive, in_range, type_check, etc.)
 - **📝 Custom Guard Registry** - Create and register reusable validation guards
-- **🎛️ Configurable Failure Behaviors** - Return values, raise exceptions, or call custom handlers
+- **🎛️ Configurable Failure Strategies** - Raise, return an exception, return a value, or call a handler
+- **📊 Failure Collection** - `continuance` gathers multiple failures into an `ExceptionGroup`
 - **🏛️ Clean Architecture** - Per-feature decomposition with ports + adapters
 - **📦 Zero Dependencies** - Uses only Python standard library
 - **✅ Type-Safe** - Full mypy support with proper type hints
 - **🔒 Thread-Safe** - No shared mutable state
-- **🧪 Well-Tested** - 92% coverage with 40+ comprehensive tests
+- **🧪 Well-Tested** - 110 passing tests across the guard runtime and AST transformer
 
 ---
 
@@ -407,57 +459,70 @@ print(calculate_discount(-10))  # Raises GuardClauseError
 **Before modgud:**
 
 ```python
-def create_user(email, age, username, password):
+class UserApi:
+  @staticmethod
+  def create_user(email, age, username, password):
     # Validation nightmare
-    if not email or email == "":
-        return {"status": 400, "error": "Email required"}
+    if not email or email == '':
+      return {'status': 400, 'error': 'Email required'}
 
     if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
-        return {"status": 400, "error": "Invalid email format"}
+      return {'status': 400, 'error': 'Invalid email format'}
 
     if age is None or not isinstance(age, int):
-        return {"status": 400, "error": "Invalid age"}
+      return {'status': 400, 'error': 'Invalid age'}
 
     if age < 13 or age > 120:
-        return {"status": 400, "error": "Age must be 13-120"}
+      return {'status': 400, 'error': 'Age must be 13-120'}
 
-    if not username or username == "":
-        return {"status": 400, "error": "Username required"}
+    if not username or username == '':
+      return {'status': 400, 'error': 'Username required'}
 
     if len(username) < 3 or len(username) > 20:
-        return {"status": 400, "error": "Username must be 3-20 chars"}
+      return {'status': 400, 'error': 'Username must be 3-20 chars'}
 
-    if not password or password == "":
-        return {"status": 400, "error": "Password required"}
+    if not password or password == '':
+      return {'status': 400, 'error': 'Password required'}
 
     # Finally, the actual work
     user_id = db.create_user(email, age, username, hash_password(password))
-    return {"status": 200, "user_id": user_id}
+    return {'status': 200, 'user_id': user_id}
 ```
 
 **With modgud:**
 
 ```python
 from modgud.app import guarded_expression
+from modgud.domain.guarded_expr import GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(
-    CommonGuards.not_empty("email"),
-    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
-    CommonGuards.type_check(int, "age"),
-    CommonGuards.in_range(13, 120, "age"),
-    CommonGuards.not_empty("username"),
-    lambda username: 3 <= len(username) <= 20 or "Username must be 3-20 chars",
-    CommonGuards.not_empty("password"),
-    implicit_return=True,  # Clean configuration in one place
-    on_error={"status": 400, "error": "Validation failed"}
-)
-def create_user(email, age, username, password):
+
+class UserGuards:
+  @staticmethod
+  def username_length(*args, **kwargs):
+    username = kwargs.get('username', args[2] if len(args) > 2 else '')
+    return 3 <= len(username) <= 20 or 'Username must be 3-20 chars'
+
+
+class UserApi:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.not_empty('email'),
+    CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', 'email'),
+    CommonGuards.type_check(int, 'age', position=1),
+    CommonGuards.in_range(13, 120, 'age', position=1),
+    CommonGuards.not_empty('username', position=2),
+    UserGuards.username_length,
+    CommonGuards.not_empty('password', position=3),
+    strategy=GuardFailureEnum.RETURN_VALUE,
+    on_failure={'status': 400, 'error': 'Validation failed'},
+  )
+  def create_user(email, age, username, password):
     user_id = db.create_user(email, age, username, hash_password(password))
-    {"status": 200, "user_id": user_id}
+    {'status': 200, 'user_id': user_id}
 ```
 
-**14 lines → 8 lines. Zero defensive clutter. 100% focus on business logic.**
+**A wall of defensive checks collapses into a declarative contract. Zero clutter. 100% focus on business logic.**
 
 ---
 
@@ -517,25 +582,32 @@ Expression-oriented programming isn't about being clever—it's about writing co
 
 ```python
 # Statement-oriented (traditional Python)
-def get_status(user):
+class StatusService:
+  @staticmethod
+  def get_status(user):
     if user.is_active:
-        if user.is_premium:
-            status = "premium_active"
-        else:
-            status = "standard_active"
+      if user.is_premium:
+        status = 'premium_active'
+      else:
+        status = 'standard_active'
     else:
-        status = "inactive"
+      status = 'inactive'
     return status
+```
 
+```python
 # Expression-oriented (with modgud)
 from modgud.app import guarded_expression
 
-@guarded_expression(implicit_return=True)
-def get_status(user):
+
+class StatusService:
+  @staticmethod
+  @guarded_expression()
+  def get_status(user):
     if user.is_active:
-        "premium_active" if user.is_premium else "standard_active"
+      'premium_active' if user.is_premium else 'standard_active'
     else:
-        "inactive"
+      'inactive'
 ```
 
 The second version isn't just shorter—it's *clearer*. The code structure mirrors the logic structure. No hunting for return statements. No temporary variables. Just pure intent.
@@ -553,23 +625,25 @@ With modgud, Python developers can finally write in an expression-oriented style
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-@guarded_expression(
-    CommonGuards.not_none("order"),
-    CommonGuards.positive("discount_rate"),
-    implicit_return=True  # Expression-oriented with guards!
-)
-def calculate_final_price(order, discount_rate, is_premium):
+
+class Pricing:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.not_none('order'),
+    CommonGuards.positive('discount_rate', position=1),
+  )
+  def calculate_final_price(order, discount_rate, is_premium):
     base_price = order.total
     if is_premium:
-        if base_price > 100:
-            base_price * (1 - discount_rate * 1.5)  # Premium + bulk discount
-        else:
-            base_price * (1 - discount_rate * 1.2)  # Premium discount only
+      if base_price > 100:
+        base_price * (1 - discount_rate * 1.5)  # Premium + bulk discount
+      else:
+        base_price * (1 - discount_rate * 1.2)  # Premium discount only
     else:
-        if base_price > 100:
-            base_price * (1 - discount_rate)        # Standard bulk discount
-        else:
-            base_price                               # No discount
+      if base_price > 100:
+        base_price * (1 - discount_rate)  # Standard bulk discount
+      else:
+        base_price  # No discount
 ```
 
 Every branch yields a value. No `return` keywords cluttering the logic. The code reads like a mathematical expression, not a procedure.
@@ -582,7 +656,7 @@ Ready to dive deeper?
 
 - **[⚙️ How It Works](docs/how-it-works.md)** - Deep dive into AST transformation and the magic behind implicit returns
 - **[📖 API Reference](docs/api-reference.md)** - Complete API documentation for all decorators and guards
-- **[📚 Full Documentation Hub](docs/README.md)** - Usage examples, migration guide, and advanced patterns
+- **[📚 Full Documentation Hub](docs/README.md)** - Usage examples and advanced patterns
 - **[🏛️ Architecture](docs/architecture/README.md)** - Clean architecture design principles
 - **[GitHub Repository](https://github.com/terracoil/modgud)** - Source code, issues, contributions
 - **[PyPI Package](https://pypi.org/project/modgud/)** - Official releases
@@ -608,13 +682,15 @@ Your functions should focus on *what they do*, not on validating *what they rece
 from modgud.app import guarded_expression
 from modgud.infrastructure.guarded_expr import CommonGuards
 
-# Everything configured in one decorator
-@guarded_expression(
-    CommonGuards.not_none("x"),
-    CommonGuards.positive("x"),
-    implicit_return=True  # Fully supported!
-)
-def process(x):
+
+# Everything configured in one decorator (implicit_return=True is the default)
+class Processor:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.not_none('x'),
+    CommonGuards.positive('x'),
+  )
+  def process(x):
     result = x * 2
     result  # Clean implicit return
 ```
@@ -630,10 +706,17 @@ def process(x):
 from modgud.app import guarded_expression, implicit_return
 from modgud.infrastructure.guarded_expr import CommonGuards
 
+
 # Separate concerns with multiple decorators
-@guarded_expression(CommonGuards.not_none("x"), CommonGuards.positive("x"))
-@implicit_return
-def process(x):
+class Processor:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.not_none('x'),
+    CommonGuards.positive('x'),
+    implicit_return=False,
+  )
+  @implicit_return
+  def process(x):
     result = x * 2
     result  # Clean implicit return
 ```
@@ -646,40 +729,50 @@ def process(x):
 
 ### ⚠️ Composition Order Warning
 
-When using separate decorators, **order matters**:
+When stacking `@guarded_expression` (with `implicit_return=False`) on top of `@implicit_return`, **order matters** — guards go on the outside, the implicit-return transform closest to the `def`:
 
 ```python
-# ✅ CORRECT: Guards before implicit
-@guarded_expression(CommonGuards.positive("x"))
+# ✅ CORRECT: Guards wrap the implicit-return transform
+# illustrative — shows correct vs incorrect stacking order
+@guarded_expression(CommonGuards.positive('x'), implicit_return=False)
 @implicit_return
 def correct(x):
-    x * 2
+  x * 2
 
-# ❌ PROBLEMATIC: Implicit before guards (may bypass guards!)
+# ❌ PROBLEMATIC: Implicit-return outermost may bypass guards
 @implicit_return
-@guarded_expression(CommonGuards.positive("x"))  # Guards may be bypassed!
+@guarded_expression(CommonGuards.positive('x'))
 def problematic(x):
-    x * 2
+  x * 2
 ```
 
 ### Individual Use Cases
 ```python
+from modgud.app import guarded_expression, implicit_return
+from modgud.infrastructure.guarded_expr import CommonGuards
+
+
 # Guards only (traditional explicit returns)
-@guarded_expression(
-    CommonGuards.not_none("x"),
-    CommonGuards.positive("x"),
-    implicit_return=False  # Explicit returns
-)
-def calculate(x):
+class Calc:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.not_none('x'),
+    CommonGuards.positive('x'),
+    implicit_return=False,
+  )
+  def calculate(x):
     return x * 2
 
+
 # Expression-orientation only (no guards)
-@implicit_return
-def classify(status):
-    if status == "active":
-        "user_active"
+class Classifier:
+  @staticmethod
+  @implicit_return
+  def classify(status):
+    if status == 'active':
+      'user_active'
     else:
-        "user_inactive"
+      'user_inactive'
 ```
 
 **Both patterns are first-class citizens in modgud. Choose the one that best fits your use case!**
@@ -717,34 +810,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## ✨ What's New in v1.1
-
-### 🏛️ Architecture Improvements
-
-- **BREAKING:** Removed all deprecated module-level registry functions
-  - Old: `register_guard()`, `get_guard()`, `list_custom_guards()`, etc.
-  - New: Use `GuardRegistry.register()`, `GuardRegistry.get()`, `GuardRegistry.list_guards()`, etc.
-- **NEW:** `GuardRegistry` now uses proper singleton pattern with `@classmethod` interface
-- **NEW:** `CommonGuards._register_to_global_registry()` - encapsulated registration logic
-- **IMPROVED:** Better code organization - all functionality properly encapsulated in classes
-- **IMPROVED:** Test coverage increased from 94% to 96%
-
-### Migration Guide
-
-```python
-# Old way (v0.2.x - REMOVED)
-from modgud.infrastructure.guarded_expr import GuardRegistry
-GuardRegistry.register('my_guard', factory_fn)
-guard = GuardRegistry.get('my_guard')
-
-# New way (v1.1+)
-from modgud.infrastructure.guarded_expr import GuardRegistry
-GuardRegistry.register('my_guard', factory_fn)
-guard = GuardRegistry.get('my_guard')
-```
 
 ---
 

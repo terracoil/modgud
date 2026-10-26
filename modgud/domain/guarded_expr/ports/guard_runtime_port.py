@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Protocol
 
-from modgud.domain.guarded_expr import GuardFailureStrategy, GuardFunction
+from modgud.domain.guarded_expr import GuardFailureEnum, GuardFunction
 
 
 class GuardRuntimePort(Protocol):
@@ -22,7 +22,7 @@ class GuardRuntimePort(Protocol):
     cls,
     func: Callable[..., Any],
     guards: tuple[GuardFunction, ...],
-    strategy: GuardFailureStrategy,
+    strategy: GuardFailureEnum,
     on_failure: Any,
     continuance: int,
   ) -> Callable[..., Any]:

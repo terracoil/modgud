@@ -10,7 +10,7 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 - **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
 - **Expression decorator**: `implicit_return` (standalone)
 - **Guard system**: Pre-built guards + `GuardRegistry` for custom validators
-- **Failure handling**: Single `GuardFailureStrategy` enum (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload; `continuance: int` caps how many guards past the first failure are evaluated. Multiple collected failures produce an `ExceptionGroup` for the error strategies.
+- **Failure handling**: Single `GuardFailureEnum` enum (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload; `continuance: int` caps how many guards past the first failure are evaluated. Multiple collected failures produce an `ExceptionGroup` for the error strategies.
 - **Architecture**: Clean separation across `app/` (decorators), `infrastructure/` (runtime + AST transform), `domain/` (passive types/enums/exceptions).
 
 ## Development Commands
@@ -102,12 +102,16 @@ modgud/
     implicit_return.py                # @implicit_return — plain function
   domain/                             # container package — no re-exports
     guarded_expr/
-      enums.py                        # GuardFailureStrategy (IntEnum)
-      errors.py                       # GuardClauseError
+      enums/guard_failure_enum.py     # GuardFailureEnum (IntEnum)
+      errors/guard_clause_error.py    # GuardClauseError
       types.py                        # GuardFunction (used by app + infra)
       ports/guard_runtime_port.py     # Protocol describing GuardRuntime
     implicit_ret/
-      errors.py                       # ImplicitReturnError + 3 children
+      errors/                         # one exception per module
+        implicit_return_error.py      # ImplicitReturnError (base)
+        explicit_return_disallowed_error.py
+        missing_implicit_return_error.py
+        unsupported_construct_error.py
       ports/implicit_return_transformer_port.py
   infrastructure/                     # container package — no re-exports
     guarded_expr/
@@ -123,7 +127,7 @@ modgud/
 
 **Ports**: `GuardRuntimePort` and `ImplicitReturnTransformerPort` document the contract the app decorators consume. The decorators currently import the concrete classes directly; the ports exist so the wiring can flip to IoC injection (via `gleipnyr`) without surface changes.
 
-**Public API**: the package structure *is* the API — there is no flat top-level re-export. `modgud/__init__.py`, `modgud/domain/__init__.py`, and `modgud/infrastructure/__init__.py` are pure containers (docstring only; `modgud/__init__.py` also holds `__version__`). Import each symbol from the leaf subpackage that owns it: decorators from `modgud.app`; `GuardFailureStrategy`/`GuardClauseError`/`GuardFunction` from `modgud.domain.guarded_expr`; the implicit-return errors from `modgud.domain.implicit_ret`; `CommonGuards`/`GuardRegistry`/`GuardRuntime` from `modgud.infrastructure.guarded_expr`; `ImplicitReturnTransformer` from `modgud.infrastructure.implicit_ret`. The guard validators are static methods on `CommonGuards` (e.g. `CommonGuards.positive('x')`).
+**Public API**: the package structure *is* the API — there is no flat top-level re-export. `modgud/__init__.py`, `modgud/domain/__init__.py`, and `modgud/infrastructure/__init__.py` are pure containers (docstring only; `modgud/__init__.py` also holds `__version__`). Import each symbol from the leaf subpackage that owns it: decorators from `modgud.app`; `GuardFailureEnum`/`GuardClauseError`/`GuardFunction` from `modgud.domain.guarded_expr`; the implicit-return errors from `modgud.domain.implicit_ret`; `CommonGuards`/`GuardRegistry`/`GuardRuntime` from `modgud.infrastructure.guarded_expr`; `ImplicitReturnTransformer` from `modgud.infrastructure.implicit_ret`. The guard validators are static methods on `CommonGuards` (e.g. `CommonGuards.positive('x')`).
 
 ### Key Design Patterns
 
@@ -136,7 +140,7 @@ modgud/
 
 **Failure Behavior Chain**:
 1. Guards are evaluated in order. Default `continuance=0` stops at the first failure; `continuance=N` collects up to `1+N` failures. A guard that *raises* propagates if no prior failures were recorded, otherwise it terminates collection (cascade safety).
-2. Collected failure strings (`list[str]`) are dispatched through `GuardFailureStrategy`:
+2. Collected failure strings (`list[str]`) are dispatched through `GuardFailureEnum`:
    - `ERROR_RAISE` (default): raise `on_failure(msg)` for a single error, or `ExceptionGroup('Guards failed', [...])` for multiple.
    - `ERROR_RETURN`: same instances, but *returned* instead of raised.
    - `RETURN_VALUE`: return `on_failure` as-is.
@@ -179,7 +183,7 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 
 **Key test scenarios**:
 - Guard success / failure paths
-- Each `GuardFailureStrategy` (ERROR_RAISE / ERROR_RETURN / RETURN_VALUE / CALL_HANDLER) with and without a custom `on_failure`
+- Each `GuardFailureEnum` (ERROR_RAISE / ERROR_RETURN / RETURN_VALUE / CALL_HANDLER) with and without a custom `on_failure`
 - `continuance` budget: collecting multiple failures, ExceptionGroup shape, cascade-safety when a guard raises mid-window
 - Implicit return with various constructs (if/else, try/except, match/case)
 - Explicit return disallowed with implicit_return=True
@@ -201,48 +205,54 @@ The v0.2.0 refactoring implements clean architecture with clear separation of co
 ### Import Examples
 
 **Primary API:**
+
 ```python
 from modgud.app import guarded_expression
-from modgud.domain.guarded_expr import GuardClauseError, GuardFailureStrategy
+from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum
 from modgud.infrastructure.guarded_expr import CommonGuards
+
 
 # Defaults: ERROR_RAISE, on_failure=GuardClauseError, continuance=0, implicit_return=True
 @guarded_expression(CommonGuards.positive("x"))
 def process(x):
-    result = x * 2
-    result  # implicit return
+  result = x * 2
+  result  # implicit return
+
 
 # Multiple guards, collect up to 3 failures total (1 + continuance=2)
 @guarded_expression(
-    CommonGuards.not_none("user"),
-    CommonGuards.type_check(str, "name"),
-    CommonGuards.positive("amount"),
-    continuance=2,
+  CommonGuards.not_none("user"),
+  CommonGuards.type_check(str, "name"),
+  CommonGuards.positive("amount"),
+  continuance=2,
 )
 def create_transaction(user, name, amount):
-    Transaction(user, name, amount).id  # implicit return
+  Transaction(user, name, amount).id  # implicit return
+
 
 # Return a fallback value instead of raising
 @guarded_expression(
-    CommonGuards.positive("x"),
-    implicit_return=False,
-    strategy=GuardFailureStrategy.RETURN_VALUE,
-    on_failure=None,
+  CommonGuards.positive("x"),
+  implicit_return=False,
+  strategy=GuardFailureEnum.RETURN_VALUE,
+  on_failure=None,
 )
 def calculate(x):
-    return x * 2
+  return x * 2
+
 
 # Custom handler that sees the full errors list
 def explain(errors, *args, **kwargs):
-    return {"errors": errors, "args": args}
+  return {"errors": errors, "args": args}
+
 
 @guarded_expression(
-    CommonGuards.positive("x"),
-    strategy=GuardFailureStrategy.CALL_HANDLER,
-    on_failure=explain,
+  CommonGuards.positive("x"),
+  strategy=GuardFailureEnum.CALL_HANDLER,
+  on_failure=explain,
 )
 def report(x):
-    x * 2
+  x * 2
 ```
 
 ### Error Hierarchy

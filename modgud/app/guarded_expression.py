@@ -10,7 +10,7 @@ the decoration site.
 
 from typing import Any, Callable
 
-from modgud.domain.guarded_expr import GuardClauseError, GuardFailureStrategy, GuardFunction
+from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum, GuardFunction
 from modgud.infrastructure.guarded_expr import GuardRuntime
 from modgud.infrastructure.implicit_ret import ImplicitReturnTransformer
 
@@ -18,7 +18,7 @@ from modgud.infrastructure.implicit_ret import ImplicitReturnTransformer
 def guarded_expression(
   *guards: GuardFunction,
   implicit_return: bool = True,
-  strategy: GuardFailureStrategy = GuardFailureStrategy.ERROR_RAISE,
+  strategy: GuardFailureEnum = GuardFailureEnum.ERROR_RAISE,
   on_failure: Any = GuardClauseError,
   continuance: int = 0,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
