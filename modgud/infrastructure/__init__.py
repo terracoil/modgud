@@ -1,9 +1,10 @@
-"""Infrastructure layer - port adapters and shared infrastructure helpers.
+"""Infrastructure layer: re-exports the public guard toolkit.
 
-This is a pure container package and intentionally re-exports nothing:
-
-- ``modgud.infrastructure.adapters`` - ``GuardRuntime`` and ``ImplicitReturnTransformer``, the
-  ``@Adapter`` implementations Idunn injects into the app decorators.
-- ``modgud.infrastructure.common`` - ``CommonGuards`` and ``GuardRegistry`` (public), plus the
-  AST helpers the transformer adapter uses.
+``CommonGuards`` (pre-built validators) and ``GuardRegistry`` (custom guard
+registration) are public and also re-exported from ``modgud``. The ``adapters``
+(injected by Idunn) and ``ast`` (transformer helpers) subpackages are internal.
 """
+
+from modgud.infrastructure.common import CommonGuards, GuardRegistry
+
+__all__ = ['CommonGuards', 'GuardRegistry']

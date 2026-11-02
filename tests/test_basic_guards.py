@@ -1,8 +1,7 @@
 """Tests for basic guard clause functionality."""
 
 import pytest
-from modgud.app import guarded_expression
-from modgud.domain.guarded_expr import GuardFailureEnum
+from modgud import GuardFailureEnum, guarded_expression
 
 from tests.helpers import assert_guard_fails
 

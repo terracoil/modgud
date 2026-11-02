@@ -1,7 +1,7 @@
 """Unit tests for GuardRuntime: check_guards + handle_failure."""
 
 import pytest
-from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum
+from modgud import CommonGuards, GuardClauseError, GuardFailureEnum
 from modgud.infrastructure.adapters import GuardRuntime
 
 
@@ -168,7 +168,7 @@ class TestWrapFunctionIntegration:
     def f(x):
       return x * 2
 
-    wrapped = GuardRuntime.wrap_function(
+    wrapped = GuardRuntime().wrap_function(
       f,
       (lambda x: x > 0 or 'positive',),
       GuardFailureEnum.ERROR_RAISE,
@@ -187,7 +187,7 @@ class TestWrapFunctionIntegration:
       calls.append(x)
       return x
 
-    wrapped = GuardRuntime.wrap_function(
+    wrapped = GuardRuntime().wrap_function(
       f,
       (lambda x: 'fail',),
       GuardFailureEnum.RETURN_VALUE,
@@ -203,7 +203,7 @@ class TestWrapFunctionIntegration:
     def f(x):
       return x
 
-    wrapped = GuardRuntime.wrap_function(
+    wrapped = GuardRuntime().wrap_function(
       f,
       (lambda x: 'fail-a', lambda x: 'fail-b', lambda x: 'fail-c'),
       GuardFailureEnum.ERROR_RAISE,
@@ -213,3 +213,45 @@ class TestWrapFunctionIntegration:
     with pytest.raises(ExceptionGroup) as exc:
       wrapped(0)
     assert len(exc.value.exceptions) == 3
+
+
+class TestDefaultsSeenByGuards:
+  """Parameters the caller leaves at their defaults are still visible to the guards, by name."""
+
+  def test_named_guard_sees_the_default(self):
+    def f(x=5):
+      return x
+
+    wrapped = GuardRuntime().wrap_function(
+      f, (CommonGuards.positive('x'),), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
+    )
+    assert wrapped() == 5
+    assert wrapped(2) == 2
+    with pytest.raises(GuardClauseError, match='x must be positive'):
+      wrapped(-1)
+
+  def test_default_that_fails_the_guard_is_caught(self):
+    def f(x=0):
+      return x
+
+    wrapped = GuardRuntime().wrap_function(
+      f, (CommonGuards.positive('x'),), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
+    )
+    with pytest.raises(GuardClauseError, match='x must be positive'):
+      wrapped()
+
+  def test_custom_guard_gets_defaults_as_keywords_and_positionals_untouched(self):
+    seen: list[tuple[tuple, dict]] = []
+
+    def spy(*args, **kwargs):
+      seen.append((args, kwargs))
+      return True
+
+    def f(a, b=2, *, c=3):
+      return a + b + c
+
+    wrapped = GuardRuntime().wrap_function(
+      f, (spy,), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
+    )
+    assert wrapped(1) == 6
+    assert seen == [((1,), {'b': 2, 'c': 3})]

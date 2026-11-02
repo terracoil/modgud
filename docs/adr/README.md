@@ -6,11 +6,11 @@
 
 ---
 
-This directory contains Architecture Decision Records (ADRs) documenting key architectural decisions for the modgud project.
+Architecture Decision Records for modgud: the decisions that would otherwise live in someone's memory, written down while that memory still exists. A dated **Update** note at the top of an ADR means the code moved on and the record says how.
 
 ## What are ADRs?
 
-ADRs are short documents that capture important architectural decisions along with their context and consequences. They help future developers understand why certain design choices were made.
+Short documents that record one decision each: the context, the choice, the consequences, and what was rejected. They exist so the next person can disagree with the reasoning instead of guessing at it.
 
 ## ADR Index
 
@@ -19,6 +19,8 @@ ADRs are short documents that capture important architectural decisions along wi
 | [ADR-001](./ADR-001-implicit-return-transformation-approach.md) | Implicit Return Transformation Approach | Accepted | 2025-10-26 |
 | [ADR-002](./ADR-002-guard-pattern-design-rationale.md) | Guard Pattern Design Rationale | Accepted | 2025-10-26 |
 | [ADR-003](./ADR-003-registry-system-architecture.md) | Registry System Architecture | Accepted | 2025-10-26 |
+| [ADR-004](./ADR-004-public-facade-and-api-tiers.md) | Public Facade and API Tiers | Accepted | 2026-11-02 |
+| [ADR-005](./ADR-005-idunn-ports-and-adapters.md) | Idunn Ports and Adapters | Accepted | 2026-11-02 |
 
 ## ADR Format
 

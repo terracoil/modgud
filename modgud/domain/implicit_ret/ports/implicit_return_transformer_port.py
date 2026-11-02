@@ -18,7 +18,6 @@ T = TypeVar('T')
 class ImplicitReturnTransformerPort(Protocol):
   """Transform a function so its tail expressions become implicit returns."""
 
-  @classmethod
-  def transform_function(cls, func: Callable[..., T]) -> Callable[..., T]:
+  def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
     """Return `func` rewritten so the tail expressions become implicit returns."""
     ...

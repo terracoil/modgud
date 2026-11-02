@@ -1,34 +1,22 @@
-"""Check for explicit return statements in top-level function body."""
+"""Find the first explicit return statement anywhere inside a function body."""
 
 import ast
 
 
 class NoExplicitReturnChecker(ast.NodeVisitor):
-  """Check for explicit return statements in top-level function body.
+  """Find the first explicit ``return`` anywhere inside an implicit-return body.
 
-  Ensures no explicit `return` appears in the *top-level* body of the decorated
-  function. We deliberately do NOT descend into nested function/async def/lambda
-  bodies so those can use normal Python semantics independently.
+  Visit each statement of the decorated function's body. The checker descends into
+  nested ``def`` / ``async def`` / class bodies too: the whole body is re-compiled
+  as one unit, so a ``return`` anywhere in it is refused at decoration time. Lambdas
+  need no special case, since they cannot contain a ``return`` statement.
   """
 
   def __init__(self) -> None:
     """Start with no explicit ``return`` found."""
-    self.found: tuple[int, int] | None = None  # (lineno, col)
+    self.found: tuple[int, int] | None = None  # (lineno, col) of the first return
 
   def visit_Return(self, node: ast.Return) -> None:
-    """Record the position of a top-level ``return``."""
-    # If we are called, it means we're at top-level (we never recurse into nested defs)
-    self.found = (getattr(node, 'lineno', 0), getattr(node, 'col_offset', 0))
-
-  # Block traversal into nested defs/lambdas - they retain standard Python semantics
-  def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-    """Skip nested function bodies; they may use explicit ``return``."""
-    return
-
-  def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-    """Skip nested coroutine bodies; they may use explicit ``return``."""
-    return
-
-  def visit_Lambda(self, node: ast.Lambda) -> None:
-    """Skip lambda bodies; they are expressions with their own result."""
-    return
+    """Record the position of the first ``return`` seen; later ones are ignored."""
+    if self.found is None:
+      self.found = (getattr(node, 'lineno', 0), getattr(node, 'col_offset', 0))

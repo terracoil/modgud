@@ -17,7 +17,8 @@ class TailRewriter:
     - Expr        -> assign to result
     - If          -> both body and orelse must set result via their own tails
     - Try         -> body and each except must set result; else (if present) also sets it
-    - Match       -> each case body must set result via its tail
+    - Match       -> each case body must set result via its tail, and the last case
+                     must be irrefutable (``case _:`` or a bare capture, no guard)
   """
 
   def __init__(self, result_name: str) -> None:
@@ -35,58 +36,85 @@ class TailRewriter:
 
     Return a list of statements that replace the given tail statement,
     ensuring the result variable is set on all runtime paths.
-    """
-    if isinstance(stmt, ast.Expr):
-      return [self._assign(stmt.value)]
 
-    if isinstance(stmt, ast.If):
-      if not stmt.orelse:
+    :raises MissingImplicitReturnError: For an ``if`` without ``else`` or a ``match`` without
+      a final irrefutable case.
+    :raises UnsupportedConstructError: For any other statement kind at tail position.
+    """
+    rewritten: list[ast.stmt] = [stmt]
+    if isinstance(stmt, ast.Expr):
+      rewritten = [self._assign(stmt.value)]
+    elif isinstance(stmt, ast.If):
+      self._rewrite_if(stmt)
+    elif isinstance(stmt, ast.Try):
+      self._rewrite_try(stmt)
+    elif isinstance(stmt, ast.Match):
+      self._rewrite_match(stmt)
+    elif isinstance(stmt, ast.Pass):
+      # Pass yields None - consistent with Python's implicit None return
+      rewritten = [self._assign(ast.Constant(value=None))]
+    elif isinstance(stmt, ast.Raise):
+      # Initialize result before raise - prevents unbound variable if exception caught higher up
+      rewritten = [self._assign(ast.Constant(value=None)), stmt]
+    else:
+      raise UnsupportedConstructError(
+        f'Unsupported tail construct: {type(stmt).__name__}',
+        getattr(stmt, 'lineno', None),
+        getattr(stmt, 'col_offset', None),
+      )
+    return rewritten
+
+  def _rewrite_if(self, stmt: ast.If) -> None:
+    """Rewrite both branches; without ``else`` the fall-through path would yield nothing."""
+    if not stmt.orelse:
+      raise MissingImplicitReturnError(
+        'If without else at tail position must have an else clause.',
+        getattr(stmt, 'lineno', None),
+        getattr(stmt, 'col_offset', None),
+      )
+    stmt.body = self.rewrite_block(stmt.body)
+    stmt.orelse = self.rewrite_block(stmt.orelse)
+
+  def _rewrite_try(self, stmt: ast.Try) -> None:
+    """Rewrite the body, every handler and ``else``; ``finally`` is cleanup and yields nothing."""
+    stmt.body = self.rewrite_block(stmt.body)
+    for handler in stmt.handlers:
+      handler.body = self.rewrite_block(handler.body)
+    # Else runs on success and replaces the body's value
+    if stmt.orelse:
+      stmt.orelse = self.rewrite_block(stmt.orelse)
+
+  def _rewrite_match(self, stmt: ast.Match) -> None:
+    """Rewrite every case; the last must be irrefutable so no subject falls through unset."""
+    last: ast.match_case = stmt.cases[-1]
+    if last.guard is not None or not self._is_irrefutable(last.pattern):
+      raise MissingImplicitReturnError(
+        'match at tail position must end in a wildcard case (`case _:` or a bare capture '
+        'such as `case other:`, with no guard) so every path yields a value.',
+        getattr(stmt, 'lineno', None),
+        getattr(stmt, 'col_offset', None),
+      )
+    for case in stmt.cases:
+      if not case.body:
         raise MissingImplicitReturnError(
-          'If without else at tail position must have an else clause.',
+          'Empty match case body cannot yield a name.',
           getattr(stmt, 'lineno', None),
           getattr(stmt, 'col_offset', None),
         )
-      stmt.body = self.rewrite_block(stmt.body)
-      stmt.orelse = self.rewrite_block(stmt.orelse)
-      return [stmt]
+      case.body = self.rewrite_block(case.body)
 
-    if isinstance(stmt, ast.Try):
-      # Body must produce a name - normal execution path
-      stmt.body = self.rewrite_block(stmt.body)
-      # Each except must produce a name - error recovery paths need values too
-      for h in stmt.handlers:
-        h.body = self.rewrite_block(h.body)
-      # Else (if present) runs on success, replaces body's name
-      if stmt.orelse:
-        stmt.orelse = self.rewrite_block(stmt.orelse)
-      # Finally runs regardless but can't affect return name - cleanup only
-      return [stmt]
+  @classmethod
+  def _is_irrefutable(cls, pattern: ast.pattern) -> bool:
+    """Tell whether ``pattern`` matches every subject.
 
-    if isinstance(stmt, ast.Match):
-      # All cases must set the result
-      for case in stmt.cases:
-        if not case.body:
-          raise MissingImplicitReturnError(
-            'Empty match case body cannot yield a name.',
-            getattr(stmt, 'lineno', None),
-            getattr(stmt, 'col_offset', None),
-          )
-        case.body = self.rewrite_block(case.body)
-      return [stmt]
-
-    if isinstance(stmt, ast.Pass):
-      # Pass yields None - consistent with Python's implicit None return
-      return [self._assign(ast.Constant(value=None))]
-
-    if isinstance(stmt, ast.Raise):
-      # Initialize result before raise - prevents unbound variable if exception caught higher up
-      return [self._assign(ast.Constant(value=None)), stmt]
-
-    raise UnsupportedConstructError(
-      f'Unsupported tail construct: {type(stmt).__name__}',
-      getattr(stmt, 'lineno', None),
-      getattr(stmt, 'col_offset', None),
-    )
+    True for ``_``, a bare capture, an ``as`` around either, or an or-pattern with one of them.
+    """
+    irrefutable: bool = False
+    if isinstance(pattern, ast.MatchAs):
+      irrefutable = pattern.pattern is None or cls._is_irrefutable(pattern.pattern)
+    elif isinstance(pattern, ast.MatchOr):
+      irrefutable = any(cls._is_irrefutable(alternative) for alternative in pattern.patterns)
+    return irrefutable
 
   def rewrite_block(self, body: list[ast.stmt]) -> list[ast.stmt]:
     """Rewrite the last statement of ``body`` so the block yields its value.

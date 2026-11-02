@@ -1,9 +1,7 @@
 """Integration tests for common guards with guarded_expression decorator."""
 
 import pytest
-from modgud.app import guarded_expression
-from modgud.domain.guarded_expr import GuardClauseError
-from modgud.infrastructure.common import CommonGuards
+from modgud import CommonGuards, GuardClauseError, guarded_expression
 
 
 class TestCommonGuardValidation:

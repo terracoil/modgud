@@ -7,9 +7,7 @@ without interference.
 import warnings
 
 import pytest
-from modgud.app import guarded_expression, implicit_return
-from modgud.domain.guarded_expr import GuardClauseError
-from modgud.infrastructure.common import CommonGuards
+from modgud import CommonGuards, GuardClauseError, guarded_expression, implicit_return
 
 
 # Module-level functions for implicit return tests
@@ -17,17 +15,6 @@ from modgud.infrastructure.common import CommonGuards
 @implicit_return()
 def composed_guards_then_implicit(x):
   """Recommended composition: guards then implicit_return."""
-  result = x * 2
-  result  # noqa: B018 - implicit return
-
-
-# This composition pattern is dangerous because it bypasses guards!
-# When @implicit_return() wraps a guarded function, it re-transforms the original
-# source, effectively removing the guard wrapper
-@implicit_return()
-@guarded_expression(CommonGuards.positive('x'), implicit_return=False)
-def composed_implicit_then_guards(x):
-  """Invalid composition: bypasses guards due to source retrieval behavior."""
   result = x * 2
   result  # noqa: B018 - implicit return
 
@@ -66,16 +53,28 @@ class TestDecoratorComposition:
     with pytest.raises(GuardClauseError, match='x must be positive'):
       composed_guards_then_implicit(-5)
 
-  def test_implicit_then_guards_bypasses_guards(self):
-    """Test that implicit_return wrapping guards bypasses the guards (BUG)."""
-    # This is a known issue: when @implicit_return() wraps a guarded function,
-    # it re-transforms the original source, bypassing the guard wrapper
-    result = composed_implicit_then_guards(5)
-    assert result == 10
+  @pytest.mark.parametrize('inner_rewrite', [False, True])
+  def test_implicit_above_guards_refused(self, inner_rewrite):
+    """``@implicit_return()`` above a guarded wrapper would re-compile the source and drop the
+    guards, so it is refused at decoration time whether or not the inner layer rewrote.
+    """
+    with pytest.raises(TypeError, match=r'must sit below @guarded_expression'):
 
-    # This should raise GuardClauseError but doesn't due to the bug
-    result = composed_implicit_then_guards(-5)
-    assert result == -10  # Guards are bypassed!
+      @implicit_return()
+      @guarded_expression(CommonGuards.positive('x'), implicit_return=inner_rewrite)
+      def implicit_then_guards(x):
+        x * 2
+
+  def test_implicit_above_guarded_staticmethod_refused(self):
+    """The marker is found through a ``staticmethod`` wrapper too."""
+    with pytest.raises(TypeError, match=r'must sit below @guarded_expression'):
+      implicit_return()(staticmethod(guarded_expression(implicit_return=False)(lambda x: x)))
+
+  def test_guarded_wrapper_is_marked(self):
+    """Every guarded wrapper carries the marker; a bare implicit-return function does not."""
+    assert composed_guards_then_implicit.__modgud_guarded__ is True
+    assert standalone_guards.__modgud_guarded__ is True
+    assert not hasattr(standalone_implicit, '__modgud_guarded__')
 
   def test_standalone_implicit(self):
     """Test standalone implicit_return decorator."""
@@ -129,7 +128,6 @@ class TestMetadataPreservation:
 
   def test_function_name_preserved(self):
     """Test that __name__ is preserved."""
-    assert composed_implicit_then_guards.__name__ == 'composed_implicit_then_guards'
     assert composed_guards_then_implicit.__name__ == 'composed_guards_then_implicit'
     assert standalone_implicit.__name__ == 'standalone_implicit'
     assert guards_with_modern_pattern.__name__ == 'guards_with_modern_pattern'
@@ -137,7 +135,6 @@ class TestMetadataPreservation:
   def test_docstring_preserved(self):
     """Test that __doc__ is preserved."""
     assert 'Recommended composition' in composed_guards_then_implicit.__doc__
-    assert 'Invalid composition' in composed_implicit_then_guards.__doc__
     assert 'Standalone implicit' in standalone_implicit.__doc__
     assert 'Guards with modern' in guards_with_modern_pattern.__doc__
 

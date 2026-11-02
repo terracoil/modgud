@@ -9,8 +9,10 @@
 ## Status
 Accepted (2025-10-26)
 
+> **Update 2026-11-02.** The "module-level only" consequence below was too broad. The real constraint is that the source must be on disk and the body is re-compiled at module scope: closures over enclosing locals are lost, and a REPL or `exec` has no source to read. Methods work (instance, static, class, async); they are re-compiled inside stand-in classes named from `__qualname__` so private-name mangling survives. Zero-argument `super()` and class-scope defaults are refused at decoration time with `UnsupportedConstructError`.
+
 ## Context
-Python requires explicit return statements, unlike Ruby which returns the last evaluated expression. This creates verbose code with unnecessary return statements when implementing expression-oriented programming patterns. We needed a way to enable Ruby-style implicit returns while maintaining Python semantics and debugging capabilities.
+Python is a statement language that keeps asking to be an expression language. It requires explicit return statements, unlike Ruby which returns the last evaluated expression. This creates verbose code with unnecessary return statements when implementing expression-oriented programming patterns. We needed a way to enable Ruby-style implicit returns while maintaining Python semantics and debugging capabilities.
 
 ## Decision
 We chose AST (Abstract Syntax Tree) transformation at decoration time to convert implicit returns into explicit return statements. The transformation:
@@ -23,17 +25,16 @@ We chose AST (Abstract Syntax Tree) transformation at decoration time to convert
 ## Consequences
 
 ### Positive
-- **Zero runtime overhead**: Transformation happens once at decoration time, not per-call
+- **No per-call cost**: the rewrite runs once, at decoration; the call pays for a `return` it would have paid anyway
 - **Full Python compatibility**: Generated code is standard Python with explicit returns
-- **Debugging friendly**: Stack traces show transformed code with clear return points
+- **Debuggable**: stack traces show ordinary code with one return in it
 - **Clean syntax**: Users write natural expression-oriented code without return statements
 - **Composable**: Works with guard clauses and other decorators through wrapper pattern
 
 ### Negative
-- **Module-level only**: Functions must be defined at module level (not nested) due to `inspect.getsource()` limitations
-- **Source dependency**: Requires access to source code, won't work with compiled .pyc files
-- **Complexity**: AST transformation adds implementation complexity
-- **Error messages**: Syntax errors reference transformed code, not original
+- **Source on disk**: the body is re-compiled at module scope. Closures over enclosing locals are lost; a REPL, `exec` or a `.pyc`-only install has nothing to read.
+- **Complexity**: an AST rewrite is more code than a `return` statement. That is the trade.
+- **Error messages**: syntax errors point at the rewritten code, not the file the author wrote.
 
 ## Alternatives Considered
 

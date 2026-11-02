@@ -5,9 +5,15 @@ from threading import Thread
 from typing import List
 
 import pytest
-from modgud.app import guarded_expression
-from modgud.domain.guarded_expr import GuardClauseError
-from modgud.infrastructure.common import CommonGuards, GuardRegistry
+from modgud import CommonGuards, GuardClauseError, GuardRegistry, guarded_expression
+
+from tests.test_fixtures import (
+  conditional_noop,
+  deeply_nested_function,
+  empty_function,
+  exception_only_function,
+  noop_function,
+)
 
 
 class TestThreadSafety:
@@ -181,8 +187,6 @@ class TestErrorConditions:
 
   def test_deeply_nested_control_flow(self):
     """Implicit return should work with deeply nested control flow."""
-    from tests.test_fixtures import deeply_nested_function
-
     assert deeply_nested_function(1) == 'one'
     assert deeply_nested_function(2) == 'two-a'
     assert deeply_nested_function(3) == 'three-a-i'
@@ -286,16 +290,12 @@ class TestImplicitReturnEdgeCases:
 
   def test_noop_function_with_pass(self):
     """Function with only pass should handle gracefully."""
-    from tests.test_fixtures import noop_function
-
     # pass statement should result in None being returned
     result = noop_function(5)
     assert result is None
 
   def test_exception_only_function(self):
     """Function that only raises exceptions should work correctly."""
-    from tests.test_fixtures import exception_only_function
-
     # All paths raise exceptions
     with pytest.raises(ValueError, match='Negative name'):
       exception_only_function(-5)
@@ -305,16 +305,12 @@ class TestImplicitReturnEdgeCases:
 
   def test_empty_function_body(self):
     """Function with just docstring should handle gracefully."""
-    from tests.test_fixtures import empty_function
-
     # Empty body should result in None being returned
     result = empty_function(10)
     assert result is None
 
   def test_conditional_noop_paths(self):
     """Function with some paths having values and some having pass."""
-    from tests.test_fixtures import conditional_noop
-
     # Positive path has name
     assert conditional_noop(5) == 10
 

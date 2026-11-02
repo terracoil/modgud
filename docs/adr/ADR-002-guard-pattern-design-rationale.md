@@ -9,8 +9,10 @@
 ## Status
 Accepted (2025-10-26)
 
+> **Update 2026-11-02.** One addition to the contract, decided while making methods work (ADR-004 era, plan decision S3): when the decorated callable is a method (defined in a class body, first positional parameter named `self` or `cls`), guards receive the call's arguments **without** the receiver, so `positive('x')` on `def m(self, x)` checks `x`. `CALL_HANDLER` handlers still get everything. The rule is stated on `GuardRuntimePort.wrap_function`, so a custom `runtime=` is expected to honour it. Detection is by name and defining scope, not by descriptor type: a `@staticmethod` whose first parameter is called `cls` has its first argument skipped too.
+
 ## Context
-Guard clauses need a consistent pattern for expressing validation success/failure. Traditional approaches use boolean returns with separate error handling, making guard functions less composable and requiring additional context for error messages.
+A validator that returns `False` has told you something went wrong and nothing else, which is also what a toddler does. Guard clauses need a consistent pattern for expressing validation success/failure. Traditional approaches use boolean returns with separate error handling, making guard functions less composable and requiring additional context for error messages.
 
 ## Decision
 Guard functions return `True` for success or a string error message for failure. This pattern enables:
@@ -26,14 +28,14 @@ Guard signature: `Callable[..., Union[Literal[True], str]]`
 ### Positive
 - **Self-contained**: Each guard carries its own failure context
 - **Composable**: Guards can be chained without losing error information
-- **Pythonic**: Leverages Python's truthiness and type flexibility
+- **Pythonic**: rides on Python's truthiness instead of inventing a result type
 - **Readable**: Error messages defined at validation point, not elsewhere
 - **Flexible**: Same guard works with exceptions, logging, or return values
 
 ### Negative
-- **Type ambiguity**: Mixed return types require runtime type checking
+- **Type ambiguity**: a `bool | str` return means a runtime check at every guard
 - **String coupling**: Error messages are strings, not structured data
-- **Truthy pitfall**: Must use `is not True` not just `if not result`
+- **Truthy pitfall**: compare with `is not True`; `if not result` waves error strings through
 - **No metadata**: Can't attach additional context beyond error string
 
 ## Alternatives Considered

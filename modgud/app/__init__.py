@@ -2,8 +2,10 @@
 
 from .guarded_expression import guarded_expression
 from .implicit_return import implicit_return
+from .wiring import Wiring
 
 __all__ = [
+  'Wiring',
   'guarded_expression',
   'implicit_return',
 ]

@@ -1,7 +1,6 @@
 """Composition root: discover modgud's ports and adapters once, on first use."""
 
-from idunn import Idunn
-from idunn.domain import ReportMap
+from idunn import Idunn, ReportMap
 
 
 class Wiring:

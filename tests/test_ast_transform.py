@@ -3,7 +3,7 @@
 import ast
 
 import pytest
-from modgud.domain.implicit_ret import ExplicitReturnDisallowedError, MissingImplicitReturnError
+from modgud import ExplicitReturnDisallowedError, MissingImplicitReturnError
 from modgud.infrastructure.adapters import ImplicitReturnTransformer
 
 
@@ -84,8 +84,8 @@ def foo():
     # Should transform successfully and return None
     assert isinstance(tree, ast.Module)
 
-  def test_nested_function_allows_return(self):
-    """Test that nested functions can use return statements."""
+  def test_nested_function_return_refused(self):
+    """A ``return`` inside a nested def is refused too, with the nested return's position."""
     source = """
 def outer():
     def inner():
@@ -93,8 +93,40 @@ def outer():
     x = inner()
     x + 5
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'outer')
-    assert isinstance(tree, ast.Module)
+    with pytest.raises(ExplicitReturnDisallowedError) as exc_info:
+      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'outer')
+    assert (exc_info.value.lineno, exc_info.value.offset) == (3, 8)
+
+  def test_nested_async_def_and_method_returns_refused(self):
+    """Nested coroutines and methods of nested classes are part of the body as well."""
+    async_source = """
+def outer():
+    async def inner():
+        return 10
+    inner
+"""
+    class_source = """
+def outer():
+    class Inner:
+        def value(self):
+            return 10
+    Inner
+"""
+    for source in (async_source, class_source):
+      with pytest.raises(ExplicitReturnDisallowedError):
+        ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'outer')
+
+  def test_first_return_is_reported(self):
+    """With several returns, the error points at the first one in source order."""
+    source = """
+def outer(x):
+    def inner():
+        return 1
+    return inner
+"""
+    with pytest.raises(ExplicitReturnDisallowedError) as exc_info:
+      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'outer')
+    assert exc_info.value.lineno == 3
 
   def test_nested_lambda_not_transformed(self):
     """Test nested lambda functions are not transformed."""
@@ -134,10 +166,91 @@ def foo(x):
     match x:
         case 1:
             pass
+        case _:
+            "other"
 """
     tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
-    # Should transform successfully, pass case returns None
-    assert isinstance(tree, ast.Module)
+    code = compile(tree, '<test>', 'exec')
+    env = {}
+    exec(code, env)
+    assert env['foo'](1) is None
+    assert env['foo'](2) == 'other'
+
+  @pytest.mark.parametrize(
+    'last_case',
+    ['case 2:', 'case _ if x > 2:', 'case other if other > 2:', 'case [_, *_]:'],
+  )
+  def test_match_without_wildcard_refused(self, last_case):
+    """A tail match whose last case can fail would leave the result unset; refuse it early."""
+    source = f"""
+def foo(x):
+    match x:
+        case 1:
+            "one"
+        {last_case}
+            "two"
+"""
+    with pytest.raises(MissingImplicitReturnError, match='must end in a wildcard case') as exc_info:
+      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    assert exc_info.value.lineno == 2
+
+  def test_nested_tail_match_without_wildcard_refused(self):
+    """The rule applies to a match in any tail position, not only the function's last line."""
+    source = """
+def foo(x, flag):
+    if flag:
+        match x:
+            case 1:
+                "one"
+    else:
+        "flag off"
+"""
+    with pytest.raises(MissingImplicitReturnError, match='must end in a wildcard case'):
+      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+
+  def test_match_not_at_tail_needs_no_wildcard(self):
+    """A match earlier in the body is ordinary code; only tail positions must yield a value."""
+    source = """
+def foo(x):
+    label = "other"
+    match x:
+        case 1:
+            label = "one"
+    label
+"""
+    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    code = compile(tree, '<test>', 'exec')
+    env = {}
+    exec(code, env)
+    assert env['foo'](1) == 'one'
+    assert env['foo'](5) == 'other'
+
+  @pytest.mark.parametrize(
+    ('last_case', 'expected'),
+    [
+      ('case _:', 'fallback'),
+      ('case other:', 'fallback 5'),
+      ('case 2 | _:', 'fallback'),
+      ('case (other as alias):', 'fallback 5'),
+    ],
+  )
+  def test_match_with_irrefutable_last_case_accepted(self, last_case, expected):
+    """``case _:``, a bare capture, or an or/as pattern around one all close the match."""
+    body = "f'fallback {other}'" if 'other' in last_case else "'fallback'"
+    source = f"""
+def foo(x):
+    match x:
+        case 1:
+            "one"
+        {last_case}
+            {body}
+"""
+    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    code = compile(tree, '<test>', 'exec')
+    env = {}
+    exec(code, env)
+    assert env['foo'](1) == 'one'
+    assert env['foo'](5) == expected
 
   def test_match_all_cases_transform(self):
     """Test match where all cases produce values."""

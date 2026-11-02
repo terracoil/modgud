@@ -7,11 +7,14 @@ from typing import Any, Callable
 
 import pytest
 from idunn import Idunn
-from modgud.app import guarded_expression, implicit_return
-from modgud.app.wiring import Wiring
-from modgud.domain.guarded_expr import GuardClauseError
-from modgud.domain.guarded_expr.ports import GuardRuntimePort
-from modgud.domain.implicit_ret.ports import ImplicitReturnTransformerPort
+from modgud import (
+  GuardClauseError,
+  GuardRuntimePort,
+  ImplicitReturnTransformerPort,
+  guarded_expression,
+  implicit_return,
+)
+from modgud.app import Wiring
 
 
 class RecordingTransformer:

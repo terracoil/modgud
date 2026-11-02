@@ -18,6 +18,7 @@ from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum, Guard
 from modgud.domain.guarded_expr.ports import GuardRuntimePort
 from modgud.domain.implicit_ret.ports import ImplicitReturnTransformerPort
 
+from .method_descriptors import MethodDescriptors
 from .wiring import Wiring
 
 
@@ -65,16 +66,23 @@ class guarded_expression:
     self._continuance: int = continuance
 
   def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
-    """Apply the (optional) implicit-return rewrite, then wrap ``func`` with guard dispatch."""
-    already_transformed: bool = getattr(func, '__implicit_return__', False)
+    """Apply the (optional) implicit-return rewrite, then wrap ``func`` with guard dispatch.
+
+    ``func`` may also be a ``staticmethod`` / ``classmethod`` object (modgud applied outside
+    the built-in); the result is then a descriptor of the same kind.
+    """
+    plain, kind = MethodDescriptors.unwrap(func)
+    already_transformed: bool = getattr(plain, '__implicit_return__', False)
     target: Callable[..., Any] = (
-      self.transformer.transform_function(func)
+      self.transformer.transform_function(plain)
       if self._implicit_return and not already_transformed
-      else func
+      else plain
     )
     wrapped: Callable[..., Any] = self.runtime.wrap_function(
       target, self._guards, self._strategy, self._on_failure, self._continuance
     )
+    # Lets @implicit_return() refuse to sit above this wrapper: its re-compile would drop the guards
+    wrapped.__modgud_guarded__ = True  # type: ignore[attr-defined]
     if self._implicit_return:
       wrapped.__implicit_return__ = True  # type: ignore[attr-defined]
-    return wrapped
+    return MethodDescriptors.rewrap(wrapped, kind)

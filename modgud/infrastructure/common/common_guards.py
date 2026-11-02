@@ -216,20 +216,24 @@ class CommonGuards:
 
   @staticmethod
   def valid_url(
-    param_name: str = 'url', position: int = 0, require_scheme: bool = True
+    param_name: str = 'url',
+    position: int = 0,
+    require_scheme: bool = True,
+    schemes: tuple[str, ...] = ('http', 'https'),
   ) -> GuardFunction:
     """Guard ensuring parameter is a valid URL.
 
     Args:
         param_name: Name of the parameter to check
         position: Position for positional args (default: 0)
-        require_scheme: If True, URL must have scheme (http/https) (default: True)
+        require_scheme: If True, the URL must carry one of ``schemes`` (default: True)
+        schemes: Accepted schemes when ``require_scheme`` is True (default: http, https)
 
     """
 
     def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
-      return CommonGuards._check_url(param_name, position, require_scheme, args, kwargs)
+      return CommonGuards._check_url(param_name, position, require_scheme, schemes, args, kwargs)
 
     return check
 
@@ -359,6 +363,7 @@ class CommonGuards:
     param_name: str,
     position: int,
     require_scheme: bool,
+    schemes: tuple[str, ...],
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
   ) -> bool | str:
@@ -370,8 +375,8 @@ class CommonGuards:
       result = f'{param_name} is required'
     else:
       parsed = urlparse(str(value))
-      if require_scheme and not parsed.scheme:
-        result = f'{param_name} must include a scheme (http/https): {value}'
+      if require_scheme and parsed.scheme not in schemes:
+        result = f'{param_name} must use one of {"/".join(schemes)}: {value}'
       elif not parsed.netloc and not parsed.path:
         result = f'{param_name} is not a valid URL: {value}'
 

@@ -5,9 +5,7 @@ from enum import Enum
 from pathlib import Path
 
 import pytest
-from modgud.app import guarded_expression
-from modgud.domain.guarded_expr import GuardClauseError
-from modgud.infrastructure.common import CommonGuards
+from modgud import CommonGuards, GuardClauseError, guarded_expression
 
 from .helpers import create_temp_file
 
@@ -104,8 +102,23 @@ class TestValidUrlGuard:
     def fetch_url(url: str):
       return f'Fetching {url}'
 
-    with pytest.raises(GuardClauseError, match='must include a scheme'):
+    with pytest.raises(GuardClauseError, match='must use one of http/https'):
       fetch_url('example.com')
+
+  def test_unexpected_scheme_fails(self):
+    """Test guard rejects a scheme outside the accepted set, and accepts a listed one."""
+
+    @guarded_expression(CommonGuards.valid_url('url'), implicit_return=False)
+    def fetch_url(url: str):
+      return f'Fetching {url}'
+
+    @guarded_expression(CommonGuards.valid_url('url', schemes=('ftp',)), implicit_return=False)
+    def fetch_file(url: str):
+      return f'Fetching {url}'
+
+    with pytest.raises(GuardClauseError, match='must use one of http/https'):
+      fetch_url('ftp://example.com/file')
+    assert fetch_file('ftp://example.com/file') == 'Fetching ftp://example.com/file'
 
   def test_url_without_scheme_allowed(self):
     """Test guard passes for URL without scheme when require_scheme=False."""
@@ -124,7 +137,7 @@ class TestValidUrlGuard:
     def fetch_url(url: str):
       return f'Fetching {url}'
 
-    with pytest.raises(GuardClauseError, match='must include a scheme'):
+    with pytest.raises(GuardClauseError, match='must use one of http/https'):
       fetch_url('   ')
 
 
