@@ -1,7 +1,9 @@
-"""Infrastructure layer - concrete guard runtime, registry, and AST transformer.
+"""Infrastructure layer - port adapters and shared infrastructure helpers.
 
-This is a pure container package and intentionally re-exports nothing. Import
-each implementation from the leaf feature subpackage that owns it, e.g.
-``from modgud.infrastructure.guarded_expr import GuardRuntime, CommonGuards`` or
-``from modgud.infrastructure.implicit_ret import ImplicitReturnTransformer``.
+This is a pure container package and intentionally re-exports nothing:
+
+- ``modgud.infrastructure.adapters`` - ``GuardRuntime`` and ``ImplicitReturnTransformer``, the
+  ``@Adapter`` implementations Idunn injects into the app decorators.
+- ``modgud.infrastructure.common`` - ``CommonGuards`` and ``GuardRegistry`` (public), plus the
+  AST helpers the transformer adapter uses.
 """

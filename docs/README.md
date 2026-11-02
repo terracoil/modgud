@@ -95,7 +95,7 @@ pip install -e ".[dev]"
 ### Requirements
 
 - Python 3.11 or higher
-- No external runtime dependencies (uses only Python standard library)
+- One runtime dependency: [Idunn](https://pypi.org/project/idunn), for port/adapter wiring
 
 
 Below is a quick overview. For detailed documentation including all parameters, return values, and examples, see the [full API reference](api-reference.md).
@@ -176,7 +176,7 @@ Ensures parameter is not None.
 **Example:**
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(CommonGuards.not_none('user_id'))
@@ -202,7 +202,7 @@ Ensures collection/string parameter is not empty.
 **Example:**
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(CommonGuards.not_empty('items', position=1))
@@ -228,7 +228,7 @@ Ensures numeric parameter is positive (> 0).
 **Example:**
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(CommonGuards.positive('amount'))
@@ -256,7 +256,7 @@ Ensures parameter is within inclusive range [min_val, max_val].
 **Example:**
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(CommonGuards.in_range(1, 100, 'page'))
@@ -283,7 +283,7 @@ Ensures parameter matches expected type.
 **Example:**
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(CommonGuards.type_check(dict, 'config'))
@@ -310,7 +310,7 @@ Ensures string parameter matches regex pattern.
 **Example:**
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -337,7 +337,7 @@ Default exception raised when guards fail under `ERROR_RAISE` (the default `on_f
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardClauseError
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(CommonGuards.positive('x'))
@@ -476,7 +476,7 @@ print(double(5))  # Returns 10
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(CommonGuards.not_none('value'))
@@ -514,7 +514,7 @@ When you need traditional Python return behavior:
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -540,7 +540,7 @@ Every failure mode is selected by the `strategy` argument (a `GuardFailureEnum`)
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Return None on failure
@@ -575,7 +575,7 @@ print(process_data(''))  # Returns {'success': False, 'error': 'Invalid input'}
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class ValidationError(Exception):
@@ -603,7 +603,7 @@ The handler is invoked as `on_failure(errors, *args, **kwargs)`, where `errors` 
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 def log_and_default(errors, *args, **kwargs):
@@ -636,7 +636,7 @@ Guard validators intelligently extract parameters from both positional and keywo
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -662,7 +662,7 @@ create_transaction(123, amount=50.0, description='Payment')
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -691,7 +691,7 @@ By default a guarded function stops at the first failing guard. Set `continuance
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -717,7 +717,7 @@ except* Exception as eg:
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Define reusable guard combinations (guards accept the full argument tuple)
@@ -743,7 +743,7 @@ def get_user_posts(api_key, page=1, limit=10):
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 def max_length(max_len, param_name='param', position=0):
@@ -768,7 +768,7 @@ def create_profile(username, bio=''):
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 def conditional_guard(condition, guard):
@@ -1225,7 +1225,7 @@ For async functions, guards are still synchronous (evaluated before the async fu
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -1258,7 +1258,7 @@ async def fetch_secure(url):
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -1288,7 +1288,7 @@ def expression_oriented(x):
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 DEFAULT_USER = {'id': 0, 'name': 'Guest'}
 
@@ -1307,7 +1307,7 @@ def get_user(user_id):
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 def audit_handler(errors, *args, **kwargs):
@@ -1329,7 +1329,7 @@ def sensitive_operation(sensitive_data):
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -1378,7 +1378,7 @@ import pytest
 
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardClauseError
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(CommonGuards.positive('x'))
@@ -1400,7 +1400,7 @@ def test_guard_failure():
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -1463,7 +1463,7 @@ By default guards stop at the first failure, so later guards never run. `continu
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardClauseError
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 @guarded_expression(
@@ -1507,33 +1507,38 @@ modgud follows clean architecture with clear separation of concerns:
 
 ### Module Structure
 
-Dependencies flow downward only: `app → domain.<feature>`, `app → infrastructure.<feature>`, `infrastructure.<feature> → domain.<feature>`. `guarded_expression` and `implicit_return` are **functions**, not classes.
+Dependencies flow downward only: `app → domain.<feature>` (and its `ports`), `infrastructure.adapters → domain.<feature>` / `infrastructure.common`, `infrastructure.common → domain.<feature>`. The app layer never imports infrastructure: `guarded_expression` and `implicit_return` are **decorator classes** whose `@Invert()` constructors receive their implementations (adapters) through [Idunn](https://pypi.org/project/idunn), discovered on first use via `Idunn().bootstrap('modgud')`.
 
 ```
 modgud/
   app/                                 # public decorators (entry points)
-    guarded_expression.py              # @guarded_expression (function)
-    implicit_return.py                 # @implicit_return (function)
+    wiring.py                          # Wiring.ensure() — the single Idunn composition root
+    guarded_expression.py              # @guarded_expression(...) (class, @Invert() __init__)
+    implicit_return.py                 # @implicit_return() (class, @Invert() __init__)
   domain/                              # passive types/enums/exceptions (no re-exports)
     guarded_expr/
       enums/guard_failure_enum.py      # GuardFailureEnum (IntEnum)
       errors/guard_clause_error.py     # GuardClauseError
       types.py                         # GuardFunction
-      ports/                           # GuardRuntimePort
+      ports/                           # GuardRuntimePort (@Port)
     implicit_ret/
-      errors/                         # one exception per module
-        implicit_return_error.py      # ImplicitReturnError (base)
+      errors/                          # one exception per module
+        implicit_return_error.py       # ImplicitReturnError (base)
         explicit_return_disallowed_error.py
         missing_implicit_return_error.py
         unsupported_construct_error.py
-      ports/                           # ImplicitReturnTransformerPort
-  infrastructure/                      # runtime + AST transform (no re-exports)
-    guarded_expr/
+      ports/                           # ImplicitReturnTransformerPort (@Port)
+  infrastructure/                      # container package (no re-exports)
+    adapters/                          # @Adapter implementations, discovered by Idunn
       guard_runtime.py                 # GuardRuntime — guard eval + dispatch
+      implicit_return_transformer.py   # ImplicitReturnTransformer — AST rewriter
+    common/
       common_guards.py                 # CommonGuards — pre-built validators
       guard_registry.py                # GuardRegistry — custom guard registration
-    implicit_ret/
-      implicit_return_transformer.py   # ImplicitReturnTransformer — AST rewriter
+    ast/
+      _no_explicit_return_checker.py  # internal AST helpers used by the transformer adapter
+      _tail_rewriter.py
+      _top_level_transformer.py
 ```
 
 ### AST Transformation Process
@@ -1564,7 +1569,7 @@ For implicit returns, the transformation process:
 - **Single Decorator**: Reduced overhead vs. stacked decorators
 - **Fail Fast**: Guards stop at the first failure by default (`continuance=0`)
 - **Lazy Compilation**: AST transformation happens once at decoration time
-- **Zero Runtime Dependencies**: Uses only Python standard library
+- **One Tiny Runtime Dependency**: Idunn, used once per process to wire ports to adapters
 
 ### Type Safety
 

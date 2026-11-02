@@ -2,23 +2,47 @@
 
 Ruby-style implicit returns: the last expression in each branch is the
 function's return value. Explicit `return` statements are not allowed.
+Apply it with parentheses: ``@implicit_return()``.
 """
+
+from __future__ import annotations
 
 from typing import Any, Callable, TypeVar, cast
 
-from modgud.infrastructure.implicit_ret import ImplicitReturnTransformer
+from idunn import Invert
+
+from modgud.domain.implicit_ret.ports import ImplicitReturnTransformerPort
+
+from .wiring import Wiring
 
 F = TypeVar('F', bound=Callable[..., Any])
 
 
-def implicit_return(func: F) -> F:
-  """Transform `func` to use implicit returns.
+class implicit_return:
+  """Transform a function to use implicit returns.
+
+  ``transformer`` is injected by Idunn; pass it explicitly to substitute a
+  different implementation (e.g. a test fake).
 
   :raises ExplicitReturnDisallowedError: if explicit return statements are found.
   :raises MissingImplicitReturnError: if a code path doesn't yield a value.
   :raises UnsupportedConstructError: if an unsupported construct is at tail position.
   :raises ValueError: if the function source cannot be extracted.
   """
-  transformed = ImplicitReturnTransformer.transform_function(func)
-  transformed.__implicit_return__ = True  # type: ignore[attr-defined]
-  return cast(F, transformed)
+
+  transformer: ImplicitReturnTransformerPort  # assigned by @Invert
+
+  def __new__(cls, **options: Any) -> implicit_return:
+    """Discover modgud's adapters on first use (a cached no-op afterwards), then build."""
+    Wiring.ensure()
+    return super().__new__(cls)
+
+  @Invert()
+  def __init__(self, *, transformer: ImplicitReturnTransformerPort) -> None:
+    """Receive the transformer port from Idunn (or from the caller)."""
+
+  def __call__(self, func: F) -> F:
+    """Rewrite ``func`` so the last expression in each branch is returned."""
+    transformed: Callable[..., Any] = self.transformer.transform_function(func)
+    transformed.__implicit_return__ = True  # type: ignore[attr-defined]
+    return cast(F, transformed)

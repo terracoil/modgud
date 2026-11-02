@@ -8,7 +8,7 @@ import asyncio
 
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Simple implicit return

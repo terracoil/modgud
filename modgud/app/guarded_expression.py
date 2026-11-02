@@ -8,20 +8,20 @@ unavailable, unsupported construct, etc.), the exception propagates from
 the decoration site.
 """
 
+from __future__ import annotations
+
 from typing import Any, Callable
 
+from idunn import Invert
+
 from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum, GuardFunction
-from modgud.infrastructure.guarded_expr import GuardRuntime
-from modgud.infrastructure.implicit_ret import ImplicitReturnTransformer
+from modgud.domain.guarded_expr.ports import GuardRuntimePort
+from modgud.domain.implicit_ret.ports import ImplicitReturnTransformerPort
+
+from .wiring import Wiring
 
 
-def guarded_expression(
-  *guards: GuardFunction,
-  implicit_return: bool = True,
-  strategy: GuardFailureEnum = GuardFailureEnum.ERROR_RAISE,
-  on_failure: Any = GuardClauseError,
-  continuance: int = 0,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+class guarded_expression:
   """Guard a function and, by default, enable implicit returns.
 
   Guards return ``True`` (pass) or an error message string (fail).
@@ -34,18 +34,47 @@ def guarded_expression(
   - ``CALL_HANDLER``: ``on_failure(errors, *args, **kwargs)`` is called.
 
   ``continuance`` caps how many guards past the first failure are evaluated.
+  ``runtime`` and ``transformer`` are injected by Idunn; pass either explicitly to
+  substitute a different implementation (e.g. a test fake).
   """
 
-  def _decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-    already_transformed = getattr(func, '__implicit_return__', False)
-    target = (
-      ImplicitReturnTransformer.transform_function(func)
-      if implicit_return and not already_transformed
+  runtime: GuardRuntimePort  # assigned by @Invert
+  transformer: ImplicitReturnTransformerPort  # assigned by @Invert
+
+  def __new__(cls, *guards: GuardFunction, **options: Any) -> guarded_expression:
+    """Discover modgud's adapters on first use (a cached no-op afterwards), then build."""
+    Wiring.ensure()
+    return super().__new__(cls)
+
+  @Invert()
+  def __init__(
+    self,
+    *guards: GuardFunction,
+    implicit_return: bool = True,
+    strategy: GuardFailureEnum = GuardFailureEnum.ERROR_RAISE,
+    on_failure: Any = GuardClauseError,
+    continuance: int = 0,
+    runtime: GuardRuntimePort,
+    transformer: ImplicitReturnTransformerPort,
+  ) -> None:
+    """Capture the guard configuration; ``runtime`` and ``transformer`` are injected by Idunn."""
+    self._guards: tuple[GuardFunction, ...] = guards
+    self._implicit_return: bool = implicit_return
+    self._strategy: GuardFailureEnum = strategy
+    self._on_failure: Any = on_failure
+    self._continuance: int = continuance
+
+  def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
+    """Apply the (optional) implicit-return rewrite, then wrap ``func`` with guard dispatch."""
+    already_transformed: bool = getattr(func, '__implicit_return__', False)
+    target: Callable[..., Any] = (
+      self.transformer.transform_function(func)
+      if self._implicit_return and not already_transformed
       else func
     )
-    wrapped = GuardRuntime.wrap_function(target, guards, strategy, on_failure, continuance)
-    if implicit_return:
+    wrapped: Callable[..., Any] = self.runtime.wrap_function(
+      target, self._guards, self._strategy, self._on_failure, self._continuance
+    )
+    if self._implicit_return:
       wrapped.__implicit_return__ = True  # type: ignore[attr-defined]
     return wrapped
-
-  return _decorator

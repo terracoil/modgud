@@ -11,7 +11,7 @@ This is `modgud`, a Python library that provides guard clause decorators for imp
 - **Expression decorator**: `implicit_return` (standalone)
 - **Guard system**: Pre-built guards + `GuardRegistry` for custom validators
 - **Failure handling**: Single `GuardFailureEnum` enum (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload; `continuance: int` caps how many guards past the first failure are evaluated. Multiple collected failures produce an `ExceptionGroup` for the error strategies.
-- **Architecture**: Clean separation across `app/` (decorators), `infrastructure/` (runtime + AST transform), `domain/` (passive types/enums/exceptions).
+- **Architecture**: Clean separation across `app/` (decorators wired by Idunn), `infrastructure/` (`adapters/` + `common/` + internal `ast/`), `domain/` (passive types/enums/exceptions + `@Port` protocols).
 
 ## Development Commands
 
@@ -93,41 +93,45 @@ poetry run twine check dist/*
 
 ## Code Architecture
 
-Per-feature decomposition (see `project.md` at the repo root). Dependencies flow downward only: `app → domain.<feature>`, `app → infrastructure.<feature>`, `infrastructure.<feature> → domain.<feature>`. The `domain` layer is self-contained (its shared `GuardFunction` type lives in `domain/guarded_expr/types.py`).
+Per-feature decomposition (see `project.md` at the repo root for the full dependency table, enforced by `tests/test_architecture.py`). Dependencies flow downward only: `app → domain.<feature>` and `domain.<feature>.ports`; `infrastructure.adapters → domain.<feature>`, its `ports`, `infrastructure.common` and `infrastructure.ast`; `infrastructure.common → domain.<feature>`; `infrastructure.ast → domain.<feature>`. The app layer never imports infrastructure, and infrastructure never imports app. The `domain` layer is self-contained (its shared `GuardFunction` type lives in `domain/guarded_expr/types.py`); its only third-party import is `idunn.Port`, and only inside `ports/` modules.
 
 ```
 modgud/
   app/                                # public decorators (entry points)
-    guarded_expression.py             # @guarded_expression — plain function
-    implicit_return.py                # @implicit_return — plain function
+    wiring.py                         # Wiring.ensure() — the single Idunn composition root (not re-exported)
+    guarded_expression.py             # @guarded_expression(...) — class, @Invert() __init__
+    implicit_return.py                # @implicit_return() — class, @Invert() __init__
   domain/                             # container package — no re-exports
     guarded_expr/
       enums/guard_failure_enum.py     # GuardFailureEnum (IntEnum)
       errors/guard_clause_error.py    # GuardClauseError
       types.py                        # GuardFunction (used by app + infra)
-      ports/guard_runtime_port.py     # Protocol describing GuardRuntime
+      ports/guard_runtime_port.py     # @Port GuardRuntimePort
     implicit_ret/
       errors/                         # one exception per module
         implicit_return_error.py      # ImplicitReturnError (base)
         explicit_return_disallowed_error.py
         missing_implicit_return_error.py
         unsupported_construct_error.py
-      ports/implicit_return_transformer_port.py
+      ports/implicit_return_transformer_port.py  # @Port ImplicitReturnTransformerPort
   infrastructure/                     # container package — no re-exports
-    guarded_expr/
-      guard_runtime.py                # GuardRuntime — guard eval + dispatch
+    adapters/                         # @Adapter implementations, discovered by Idunn
+      guard_runtime.py                # GuardRuntime(GuardRuntimePort) — guard eval + dispatch
+      implicit_return_transformer.py  # ImplicitReturnTransformer(ImplicitReturnTransformerPort) — AST rewriter
+    common/
       common_guards.py                # CommonGuards (pre-built validators)
       guard_registry.py               # GuardRegistry (custom guard registration)
-    implicit_ret/
-      implicit_return_transformer.py  # AST rewriter (public)
-      _no_explicit_return_checker.py  # private helper
-      _tail_rewriter.py               # private helper
-      _top_level_transformer.py       # private helper
+    ast/                              # internal AST helpers, re-exported by its __init__ only
+      _no_explicit_return_checker.py  # NoExplicitReturnChecker
+      _tail_rewriter.py               # TailRewriter
+      _top_level_transformer.py       # TopLevelTransformer
 ```
 
-**Ports**: `GuardRuntimePort` and `ImplicitReturnTransformerPort` document the contract the app decorators consume. The decorators currently import the concrete classes directly; the ports exist so the wiring can flip to IoC injection (via `gleipnyr`) without surface changes.
+**Ports**: `GuardRuntimePort` and `ImplicitReturnTransformerPort` are `@Port` Protocols, and the app decorators depend on them only. Both adapters subclass their port and are `@Adapter(..., lifecycle=SINGLETON)`. On the first decoration, `__new__` calls `Wiring.ensure()` → `Idunn().bootstrap('modgud')`, which discovers `modgud.domain.*.ports` and `modgud.infrastructure.adapters`. `@Invert()` on each decorator's `__init__` then injects `runtime` / `transformer`; a caller-supplied `runtime=` / `transformer=` wins, which is the test seam. `Idunn(` appears only in `modgud/app/wiring.py`. `Idunn().reset()` clears the bootstrap cache, so the next decoration re-discovers.
 
-**Public API**: the package structure *is* the API — there is no flat top-level re-export. `modgud/__init__.py`, `modgud/domain/__init__.py`, and `modgud/infrastructure/__init__.py` are pure containers (docstring only; `modgud/__init__.py` also holds `__version__`). Import each symbol from the leaf subpackage that owns it: decorators from `modgud.app`; `GuardFailureEnum`/`GuardClauseError`/`GuardFunction` from `modgud.domain.guarded_expr`; the implicit-return errors from `modgud.domain.implicit_ret`; `CommonGuards`/`GuardRegistry`/`GuardRuntime` from `modgud.infrastructure.guarded_expr`; `ImplicitReturnTransformer` from `modgud.infrastructure.implicit_ret`. The guard validators are static methods on `CommonGuards` (e.g. `CommonGuards.positive('x')`).
+**Ports import exception**: ports are imported from the 4-level path `modgud.domain.<feature>.ports`, not re-exported by the feature package, because re-exporting them there creates a circular import (each port module imports from its feature package). This is the one sanctioned exception to the 3-level import rule; don't "fix" it.
+
+**Public API**: the package structure *is* the API — there is no flat top-level re-export. `modgud/__init__.py`, `modgud/domain/__init__.py`, and `modgud/infrastructure/__init__.py` are pure containers (docstring only; `modgud/__init__.py` also holds `__version__`). Import each symbol from the leaf subpackage that owns it: decorators from `modgud.app`; `GuardFailureEnum`/`GuardClauseError`/`GuardFunction` from `modgud.domain.guarded_expr`; the implicit-return errors from `modgud.domain.implicit_ret`; `CommonGuards`/`GuardRegistry` from `modgud.infrastructure.common`. `GuardRuntime`/`ImplicitReturnTransformer` live in `modgud.infrastructure.adapters`, which nothing in `modgud/` imports; only tests do. The guard validators are static methods on `CommonGuards` (e.g. `CommonGuards.positive('x')`). `@implicit_return()` takes parentheses.
 
 ### Key Design Patterns
 
@@ -168,6 +172,7 @@ modgud/
 - pytest configured for `tests/` directory with coverage for `modgud/`
 - mypy configured with reports output to `reports/mypy/`
 - Requires Python >=3.11
+- Runtime dependency: `idunn (>=1.0.1,<2.0.0)` from PyPI.
 
 ## Testing Strategy
 
@@ -178,6 +183,8 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 - `tests/test_ast_transform.py` - Unit tests for AST transformation logic
 - `tests/test_guard_runtime.py` - Unit tests for `check_guards` / `handle_failure` / `wrap_function`
 - `tests/test_fixtures.py` - Module-level test fixtures for implicit return tests
+- `tests/test_ioc_wiring.py` - Idunn wiring: bootstrap report, port injection, singletons, `reset()`, fake `runtime=`/`transformer=` seam
+- `tests/test_architecture.py` - AST-walks `modgud/` and enforces the dependency table in `project.md` (with probe self-checks)
 
 **IMPORTANT:** Functions decorated with `implicit_return=True` must be defined at module level (not inside test functions) because `inspect.getsource()` cannot extract source from nested functions. Use `tests/test_fixtures.py` for these cases.
 
@@ -196,9 +203,9 @@ Tests should be placed in `tests/` directory following pytest conventions (`test
 
 ### Clean Architecture Principles
 
-The v0.2.0 refactoring implements clean architecture with clear separation of concerns:
+The layering is ports-and-adapters wired by Idunn:
 
-1. **Pure Functions**: AST transformation (`ast_transform.py`) and guard checking (`guard_runtime.py`) are pure, composable functions with no decorator-specific logic
+1. **Ports and adapters**: the app decorators depend only on the `@Port` protocols in `modgud.domain.<feature>.ports`; the `@Adapter` classes in `modgud.infrastructure.adapters` (`GuardRuntime`, `ImplicitReturnTransformer`) are discovered by `Wiring.ensure()` and injected through `@Invert()`, so no decorator-specific logic leaks into infrastructure
 2. **Immutability**: All transformed functions preserve original function metadata
 3. **Functional Composition**: Guard functions are composable - they're pure functions returning True or error messages
 
@@ -209,7 +216,7 @@ The v0.2.0 refactoring implements clean architecture with clear separation of co
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Defaults: ERROR_RAISE, on_failure=GuardClauseError, continuance=0, implicit_return=True

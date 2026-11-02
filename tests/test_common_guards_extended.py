@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardClauseError
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 from .helpers import create_temp_file
 

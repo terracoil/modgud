@@ -1,19 +1,19 @@
-"""Protocol describing the GuardRuntime contract.
+"""Port describing the guard runtime the ``guarded_expression`` decorator consumes.
 
-The concrete implementation lives in `modgud.infrastructure.guarded_expr`.
-This Protocol exists so the app layer can be wired through IoC (gleipnyr)
-without depending on the infrastructure module directly. For now the
-decorators still import the concrete class; the Protocol just documents
-the shape they consume.
+The implementation lives in ``modgud.infrastructure.adapters`` and is injected into the
+decorator by Idunn (``@Invert``), so the app layer never imports infrastructure.
 """
 
 from __future__ import annotations
 
 from typing import Any, Callable, Protocol
 
+from idunn import Port
+
 from modgud.domain.guarded_expr import GuardFailureEnum, GuardFunction
 
 
+@Port
 class GuardRuntimePort(Protocol):
   """Wrap a callable with guard evaluation + failure dispatch."""
 

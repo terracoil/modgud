@@ -2,16 +2,21 @@
 
 GuardRuntime encapsulates guard evaluation (with optional `continuance`
 budget for collecting additional failures) and dispatches the collected
-failures through the chosen `GuardFailurEnum`.
+failures through the chosen `GuardFailureEnum`. It is the Idunn adapter for
+`GuardRuntimePort`.
 """
 
 import functools
 from typing import Any, Callable
 
+from idunn import Adapter, LifecycleEnum
+
 from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum, GuardFunction
+from modgud.domain.guarded_expr.ports import GuardRuntimePort
 
 
-class GuardRuntime:
+@Adapter(GuardRuntimePort, lifecycle=LifecycleEnum.SINGLETON)
+class GuardRuntime(GuardRuntimePort):
   """Runtime guard checking and failure handling."""
 
   @classmethod
@@ -103,7 +108,9 @@ class GuardRuntime:
   @staticmethod
   def _build_exception(errors: list[str], exc_class: Any) -> BaseException:
     """Build a single exception or ExceptionGroup from collected errors."""
-    cls_to_use = exc_class if isinstance(exc_class, type) else GuardClauseError
-    if len(errors) == 1:
-      return cls_to_use(errors[0])
-    return ExceptionGroup('Guards failed', [cls_to_use(m) for m in errors])
+    cls_to_use: type[Exception] = exc_class if isinstance(exc_class, type) else GuardClauseError
+    return (
+      cls_to_use(errors[0])
+      if len(errors) == 1
+      else ExceptionGroup('Guards failed', [cls_to_use(m) for m in errors])
+    )

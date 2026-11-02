@@ -5,7 +5,7 @@ import ast
 from modgud.domain.implicit_ret import MissingImplicitReturnError, UnsupportedConstructError
 
 
-class _TailRewriter:
+class TailRewriter:
   """Rewrite tail positions to assign to implicit result variable.
 
   Rewrites *tail positions* (the final statement of a block that determines the
@@ -21,7 +21,11 @@ class _TailRewriter:
   """
 
   def __init__(self, result_name: str) -> None:
-    self.result_name = result_name
+    """Remember the hidden variable each tail position assigns to.
+
+    :param result_name: Name of the variable the appended single ``return`` reads.
+    """
+    self.result_name: str = result_name
 
   def _assign(self, value: ast.expr) -> ast.Assign:
     return ast.Assign(targets=[ast.Name(id=self.result_name, ctx=ast.Store())], value=value)
@@ -85,6 +89,11 @@ class _TailRewriter:
     )
 
   def rewrite_block(self, body: list[ast.stmt]) -> list[ast.stmt]:
+    """Rewrite the last statement of ``body`` so the block yields its value.
+
+    :param body: Statements of one block (function body, branch, handler or case).
+    :returns: The block with its tail rewritten; an empty block yields ``None``.
+    """
     if not body:
       # Empty block yields None (mimics Python's implicit return None)
       return [self._assign(ast.Constant(value=None))]

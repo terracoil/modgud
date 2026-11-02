@@ -107,7 +107,7 @@ from enum import Enum
 
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class PaymentMethod(Enum):
@@ -164,7 +164,7 @@ class Account:
 **After:**
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class AccountGuards:
@@ -210,7 +210,7 @@ class UserClassifier:
 **After:**
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class UserClassifier:
@@ -239,7 +239,7 @@ Stop writing the same validations over and over:
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class Registration:
@@ -273,7 +273,7 @@ Register your own reusable guards. Guard factories live as static methods (no lo
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import GuardRegistry
+from modgud.infrastructure.common import GuardRegistry
 
 
 class AgeGuards:
@@ -311,7 +311,7 @@ Your code, your rules. A single `GuardFailureEnum` enum, paired with an `on_fail
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class Billing:
@@ -328,7 +328,7 @@ class Billing:
 **Raise exceptions (`ERROR_RAISE`, the default):**
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class Accounts:
@@ -346,7 +346,7 @@ class Accounts:
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class SecurityAudit:
@@ -367,14 +367,14 @@ class SensitiveOps:
     perform_operation()
 ```
 
-### 6. 📦 Zero Dependencies
+### 6. 📦 One Tiny Dependency
 
-Built entirely on Python's standard library. No bloat. No version conflicts. Just clean, fast Python.
+Apart from the standard library, modgud depends only on [Idunn](https://pypi.org/project/idunn), a tiny constructor-time IoC toolkit that wires the decorators to their implementations. No other bloat, no version tangles.
 
 ### 7. ✅ Battle-Tested & Type-Safe
 
 - Full mypy type checking support (strict settings)
-- Comprehensive test suite (110 passing tests)
+- Comprehensive test suite (135 passing tests)
 - Clean architecture with separation of concerns
 - Thread-safe decorators
 - Preserves all function metadata for debugging
@@ -395,7 +395,7 @@ pip install modgud
 
 ```python
 from modgud.app import guarded_expression, implicit_return
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Option 1: Unified approach (recommended for simple cases)
@@ -420,7 +420,7 @@ class DiscountCalculatorV2:
     CommonGuards.in_range(1, 100, 'x'),
     implicit_return=False,
   )
-  @implicit_return
+  @implicit_return()
   def calculate(x):
     if x >= 50:
       x * 0.2
@@ -447,10 +447,10 @@ DiscountCalculator.calculate(25)  # Returns 2.5
 - **🎛️ Configurable Failure Strategies** - Raise, return an exception, return a value, or call a handler
 - **📊 Failure Collection** - `continuance` gathers multiple failures into an `ExceptionGroup`
 - **🏛️ Clean Architecture** - Per-feature decomposition with ports + adapters
-- **📦 Zero Dependencies** - Uses only Python standard library
+- **📦 One Tiny Dependency** - Standard library plus [Idunn](https://pypi.org/project/idunn) for port/adapter wiring
 - **✅ Type-Safe** - Full mypy support with proper type hints
 - **🔒 Thread-Safe** - No shared mutable state
-- **🧪 Well-Tested** - 110 passing tests across the guard runtime and AST transformer
+- **🧪 Well-Tested** - 135 passing tests across the guard runtime, AST transformer, wiring and architecture
 
 ---
 
@@ -494,7 +494,7 @@ class UserApi:
 ```python
 from modgud.app import guarded_expression
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class UserGuards:
@@ -623,7 +623,7 @@ With modgud, Python developers can finally write in an expression-oriented style
 ```python
 # Complex business logic, expression style
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 class Pricing:
@@ -680,7 +680,7 @@ Your functions should focus on *what they do*, not on validating *what they rece
 ### Pattern 1: Unified Parameter (Simple, All-in-One)
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Everything configured in one decorator (implicit_return=True is the default)
@@ -704,7 +704,7 @@ class Processor:
 ### Pattern 2: Separate Decorators (Flexible, Composable)
 ```python
 from modgud.app import guarded_expression, implicit_return
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Separate concerns with multiple decorators
@@ -715,7 +715,7 @@ class Processor:
     CommonGuards.positive('x'),
     implicit_return=False,
   )
-  @implicit_return
+  @implicit_return()
   def process(x):
     result = x * 2
     result  # Clean implicit return
@@ -729,18 +729,18 @@ class Processor:
 
 ### ⚠️ Composition Order Warning
 
-When stacking `@guarded_expression` (with `implicit_return=False`) on top of `@implicit_return`, **order matters** — guards go on the outside, the implicit-return transform closest to the `def`:
+When stacking `@guarded_expression` (with `implicit_return=False`) on top of `@implicit_return()`, **order matters** — guards go on the outside, the implicit-return transform closest to the `def`:
 
 ```python
 # ✅ CORRECT: Guards wrap the implicit-return transform
 # illustrative — shows correct vs incorrect stacking order
 @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
-@implicit_return
+@implicit_return()
 def correct(x):
   x * 2
 
 # ❌ PROBLEMATIC: Implicit-return outermost may bypass guards
-@implicit_return
+@implicit_return()
 @guarded_expression(CommonGuards.positive('x'))
 def problematic(x):
   x * 2
@@ -749,7 +749,7 @@ def problematic(x):
 ### Individual Use Cases
 ```python
 from modgud.app import guarded_expression, implicit_return
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Guards only (traditional explicit returns)
@@ -767,7 +767,7 @@ class Calc:
 # Expression-orientation only (no guards)
 class Classifier:
   @staticmethod
-  @implicit_return
+  @implicit_return()
   def classify(status):
     if status == 'active':
       'user_active'
@@ -790,6 +790,15 @@ poetry add modgud
 ```
 
 **Requirements:** Python 3.11+
+
+### 🔌 Idunn Interop
+
+modgud wires its decorators to their implementations through [Idunn](https://pypi.org/project/idunn). A few things follow from that:
+
+- The first `@guarded_expression(...)` or `@implicit_return()` lazily creates the process-wide `Idunn()` singleton and discovers modgud's ports and adapters. Later `Idunn(environment=...)` arguments are ignored, so pick an environment with `IDUNN_ENV` or `Idunn().reset(environment=...)` *before* the first decoration. modgud re-discovers itself on the next decoration after any `reset()`.
+- An invalid `IDUNN_ENV` (Idunn accepts `[a-z0-9][a-z0-9.-]*` after normalising) makes decoration fail with Idunn's error.
+- `@implicit_return()` now takes parentheses, like `@guarded_expression(...)`; the bare `@implicit_return` form is gone.
+- Both decorators accept their implementation as a keyword (`transformer=`, and `runtime=` on `guarded_expression`) so tests can pass a fake.
 
 ---
 

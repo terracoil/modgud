@@ -1,19 +1,20 @@
-"""Protocol describing the ImplicitReturnTransformer contract.
+"""Port describing the AST transformer behind implicit returns.
 
-The concrete implementation lives in `modgud.infrastructure.implicit_ret`.
-This Protocol exists so the app layer can be wired through IoC (gleipnyr)
-without depending on the infrastructure module directly. For now the
-decorators still import the concrete class; the Protocol just documents
-the shape they consume.
+The implementation lives in ``modgud.infrastructure.adapters`` and is injected into the
+``guarded_expression`` and ``implicit_return`` decorators by Idunn (``@Invert``), so the
+app layer never imports infrastructure.
 """
 
 from __future__ import annotations
 
 from typing import Callable, Protocol, TypeVar
 
+from idunn import Port
+
 T = TypeVar('T')
 
 
+@Port
 class ImplicitReturnTransformerPort(Protocol):
   """Transform a function so its tail expressions become implicit returns."""
 

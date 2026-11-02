@@ -3,7 +3,7 @@
 import ast
 
 
-class _NoExplicitReturnChecker(ast.NodeVisitor):
+class NoExplicitReturnChecker(ast.NodeVisitor):
   """Check for explicit return statements in top-level function body.
 
   Ensures no explicit `return` appears in the *top-level* body of the decorated
@@ -12,18 +12,23 @@ class _NoExplicitReturnChecker(ast.NodeVisitor):
   """
 
   def __init__(self) -> None:
+    """Start with no explicit ``return`` found."""
     self.found: tuple[int, int] | None = None  # (lineno, col)
 
   def visit_Return(self, node: ast.Return) -> None:
+    """Record the position of a top-level ``return``."""
     # If we are called, it means we're at top-level (we never recurse into nested defs)
     self.found = (getattr(node, 'lineno', 0), getattr(node, 'col_offset', 0))
 
   # Block traversal into nested defs/lambdas - they retain standard Python semantics
   def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+    """Skip nested function bodies; they may use explicit ``return``."""
     return
 
   def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+    """Skip nested coroutine bodies; they may use explicit ``return``."""
     return
 
   def visit_Lambda(self, node: ast.Lambda) -> None:
+    """Skip lambda bodies; they are expressions with their own result."""
     return

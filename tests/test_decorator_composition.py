@@ -1,4 +1,4 @@
-"""Test decorator composition patterns with @implicit_return and @guarded_expression.
+"""Test decorator composition patterns with @implicit_return() and @guarded_expression.
 
 Tests various composition patterns to ensure decorators work together correctly
 without interference.
@@ -9,12 +9,12 @@ import warnings
 import pytest
 from modgud.app import guarded_expression, implicit_return
 from modgud.domain.guarded_expr import GuardClauseError
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Module-level functions for implicit return tests
 @guarded_expression(CommonGuards.positive('x'))
-@implicit_return
+@implicit_return()
 def composed_guards_then_implicit(x):
   """Recommended composition: guards then implicit_return."""
   result = x * 2
@@ -22,9 +22,9 @@ def composed_guards_then_implicit(x):
 
 
 # This composition pattern is dangerous because it bypasses guards!
-# When @implicit_return wraps a guarded function, it re-transforms the original
+# When @implicit_return() wraps a guarded function, it re-transforms the original
 # source, effectively removing the guard wrapper
-@implicit_return
+@implicit_return()
 @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
 def composed_implicit_then_guards(x):
   """Invalid composition: bypasses guards due to source retrieval behavior."""
@@ -32,7 +32,7 @@ def composed_implicit_then_guards(x):
   result  # noqa: B018 - implicit return
 
 
-@implicit_return
+@implicit_return()
 def standalone_implicit(x, y):
   """Standalone implicit return without guards."""
   if x > y:
@@ -68,7 +68,7 @@ class TestDecoratorComposition:
 
   def test_implicit_then_guards_bypasses_guards(self):
     """Test that implicit_return wrapping guards bypasses the guards (BUG)."""
-    # This is a known issue: when @implicit_return wraps a guarded function,
+    # This is a known issue: when @implicit_return() wraps a guarded function,
     # it re-transforms the original source, bypassing the guard wrapper
     result = composed_implicit_then_guards(5)
     assert result == 10

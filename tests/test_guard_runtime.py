@@ -2,7 +2,7 @@
 
 import pytest
 from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum
-from modgud.infrastructure.guarded_expr import GuardRuntime
+from modgud.infrastructure.adapters import GuardRuntime
 
 
 class TestCheckGuards:
@@ -77,7 +77,7 @@ class TestCheckGuards:
 
 
 class TestHandleFailure:
-  """Tests for failure dispatch through GuardFailurEnum."""
+  """Tests for failure dispatch through GuardFailureEnum."""
 
   def test_error_raise_single(self):
     """ERROR_RAISE with one failure raises the on_failure class."""

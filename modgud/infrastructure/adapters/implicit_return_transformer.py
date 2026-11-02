@@ -7,17 +7,18 @@ import inspect
 import textwrap
 from typing import Any, Callable, TypeVar
 
-from modgud.domain.implicit_ret import ExplicitReturnDisallowedError
+from idunn import Adapter, LifecycleEnum
 
-from ._no_explicit_return_checker import _NoExplicitReturnChecker
-from ._tail_rewriter import _TailRewriter
-from ._top_level_transformer import _TopLevelTransformer
+from modgud.domain.implicit_ret import ExplicitReturnDisallowedError
+from modgud.domain.implicit_ret.ports import ImplicitReturnTransformerPort
+from modgud.infrastructure.ast import NoExplicitReturnChecker, TailRewriter, TopLevelTransformer
 
 T = TypeVar('T')
 
 
-class ImplicitReturnTransformer:
-  """AST transformation for implicit return functionality."""
+@Adapter(ImplicitReturnTransformerPort, lifecycle=LifecycleEnum.SINGLETON)
+class ImplicitReturnTransformer(ImplicitReturnTransformerPort):
+  """AST transformation for implicit return functionality; Idunn's adapter for the port."""
 
   @classmethod
   def transform_function(cls, func: Callable[..., T]) -> Callable[..., T]:
@@ -26,16 +27,10 @@ class ImplicitReturnTransformer:
     Extracts source, applies the implicit-return AST rewrite, recompiles
     in the function's original global namespace, and preserves metadata.
 
-    Args:
-        func: Function to transform
-
-    Returns:
-        Transformed function with implicit return semantics
-
-    Raises:
-        ValueError: If source cannot be extracted
-        ImplicitReturnError: If transformation fails
-
+    :param func: Function to transform.
+    :returns: Transformed function with implicit return semantics.
+    :raises ValueError: If source cannot be extracted.
+    :raises ImplicitReturnError: If transformation fails.
     """
     try:
       source = inspect.getsource(func)
@@ -66,24 +61,18 @@ class ImplicitReturnTransformer:
       2. Rewrite tail of the function body to assign to a hidden result var
       3. Append a single `return __implicit_result`
 
-    Args:
-        fn_node: The function AST node to transform
-        func_name: Name of the function (for error messages)
-
-    Returns:
-        The transformed AST node with implicit return semantics
-
-    Raises:
-        ExplicitReturnDisallowedError: If explicit return found at top level
-        MissingImplicitReturnError: If a block cannot yield a name
-        UnsupportedConstructError: If an unsupported construct is found
-
+    :param fn_node: The function AST node to transform.
+    :param func_name: Name of the function (for error messages).
+    :returns: The transformed AST node with implicit return semantics.
+    :raises ExplicitReturnDisallowedError: If explicit return found at top level.
+    :raises MissingImplicitReturnError: If a block cannot yield a name.
+    :raises UnsupportedConstructError: If an unsupported construct is found.
     """
     assert isinstance(fn_node, (ast.FunctionDef, ast.AsyncFunctionDef))
     body = fn_node.body
 
     # Check for explicit return at top-level
-    checker = _NoExplicitReturnChecker()
+    checker = NoExplicitReturnChecker()
     # Visit only top-level statements
     for stmt in body:
       checker.visit(stmt)
@@ -96,7 +85,7 @@ class ImplicitReturnTransformer:
       )
 
     result_name = '__implicit_result'
-    rewriter = _TailRewriter(result_name)
+    rewriter = TailRewriter(result_name)
 
     # Preserve docstrings - they're metadata, not executable code to transform
     actual_body = body
@@ -133,21 +122,15 @@ class ImplicitReturnTransformer:
   ) -> tuple[ast.Module, str]:
     """Apply implicit return transformation to function source code.
 
-    Args:
-        func_source: The source code of the function (dedented)
-        func_name: The name of the function to transform
-
-    Returns:
-        Tuple of (transformed_ast, compiled_code_object)
-
-    Raises:
-        ExplicitReturnDisallowedError: If explicit return found
-        MissingImplicitReturnError: If a block cannot yield a name
-        UnsupportedConstructError: If an unsupported construct is found
-
+    :param func_source: The source code of the function (dedented).
+    :param func_name: The name of the function to transform.
+    :returns: Tuple of (transformed_ast, compiled_code_object).
+    :raises ExplicitReturnDisallowedError: If explicit return found.
+    :raises MissingImplicitReturnError: If a block cannot yield a name.
+    :raises UnsupportedConstructError: If an unsupported construct is found.
     """
     tree = ast.parse(func_source)
-    transformer = _TopLevelTransformer(func_name, cls)
+    transformer = TopLevelTransformer(func_name, cls.transform_function_ast)
     new_tree = transformer.visit(tree)
     ast.fix_missing_locations(new_tree)
     return new_tree, f'<{func_name}-implicit>'

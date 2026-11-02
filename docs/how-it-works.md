@@ -69,7 +69,7 @@ from modgud.app import guarded_expression, implicit_return
 
 
 @guarded_expression(implicit_return=False)
-@implicit_return
+@implicit_return()
 def get_status(user):
   if user.is_active:
     'premium' if user.is_premium else 'standard'
@@ -83,39 +83,45 @@ But how does this work? Let's dive in.
 
 ## 🏛️ The Architecture: Clean, Functional, Powerful
 
-Modgud follows clean architecture principles with a per-feature decomposition across three layers. Dependencies flow downward only.
+Modgud follows clean architecture principles with a per-feature decomposition across three layers. Dependencies flow downward only, and the app layer never imports infrastructure: it depends on `@Port` protocols in the domain, and [Idunn](https://pypi.org/project/idunn) injects the `@Adapter` implementations at construction time.
 
 ```
-┌───────────────────────────────────────────┐
-│                app/                        │
+┌────────────────────────────────────────────┐
+│                  app/                      │
 │   guarded_expression + implicit_return     │
-│            (public functions)              │
-├───────────────────────────────────────────┤
-│            infrastructure/                 │
-│  GuardRuntime, CommonGuards, GuardRegistry │
-│      ImplicitReturnTransformer (AST)       │
-├───────────────────────────────────────────┤
+│   (decorator classes wired by Idunn;       │
+│    Wiring.ensure() is the one bootstrap)   │
+├────────────────────────────────────────────┤
+│             infrastructure/                │
+│  adapters/: GuardRuntime,                  │
+│             ImplicitReturnTransformer      │
+│  common/:   CommonGuards, GuardRegistry,   │
+│             AST helpers                    │
+├────────────────────────────────────────────┤
 │                 domain/                    │
-│  GuardFailureEnum, GuardClauseError,   │
-│   GuardFunction, ImplicitReturn errors     │
-└───────────────────────────────────────────┘
+│  GuardFailureEnum, GuardClauseError,       │
+│  GuardFunction, ImplicitReturn errors,     │
+│  @Port protocols                           │
+└────────────────────────────────────────────┘
 ```
 
 ### Layer Responsibilities
 
 **App layer (`modgud/app/`)**
-- `guarded_expression.py`: the guard-validation decorator (a plain function) with optional implicit returns
-- `implicit_return.py`: the standalone expression-oriented transform (a plain function)
+- `guarded_expression.py`: the guard-validation decorator (a class whose `@Invert()` constructor receives the runtime and transformer ports) with optional implicit returns
+- `implicit_return.py`: the standalone expression-oriented transform (a class, applied as `@implicit_return()`)
+- `wiring.py`: `Wiring.ensure()`, the single composition root that calls `Idunn().bootstrap('modgud')` on first decoration
 
 **Infrastructure layer (`modgud/infrastructure/`)**
-- `guarded_expr/guard_runtime.py`: guard evaluation + failure dispatch (`GuardRuntime`)
-- `guarded_expr/common_guards.py`: pre-built validators (`CommonGuards`)
-- `guarded_expr/guard_registry.py`: custom guard management (`GuardRegistry`)
-- `implicit_ret/implicit_return_transformer.py`: the AST transformation engine
+- `adapters/guard_runtime.py`: guard evaluation + failure dispatch (`GuardRuntime`, adapter for `GuardRuntimePort`)
+- `adapters/implicit_return_transformer.py`: the AST transformation engine (`ImplicitReturnTransformer`, adapter for `ImplicitReturnTransformerPort`)
+- `common/common_guards.py`: pre-built validators (`CommonGuards`)
+- `common/guard_registry.py`: custom guard management (`GuardRegistry`)
+- `ast/_no_explicit_return_checker.py`, `_tail_rewriter.py`, `_top_level_transformer.py`: internal AST helpers used by the transformer adapter, re-exported only by `modgud.infrastructure.ast`
 
 **Domain layer (`modgud/domain/`)**
-- `guarded_expr/`: `GuardFailureEnum`, `GuardClauseError`, the `GuardFunction` type, and a runtime port
-- `implicit_ret/`: the `ImplicitReturnError` hierarchy and a transformer port
+- `guarded_expr/`: `GuardFailureEnum`, `GuardClauseError`, the `GuardFunction` type, and the `@Port` `GuardRuntimePort`
+- `implicit_ret/`: the `ImplicitReturnError` hierarchy and the `@Port` `ImplicitReturnTransformerPort`
 
 ### Why Clean Architecture?
 
@@ -132,7 +138,7 @@ When you decorate a function with `@guarded_expression`, here's what happens at 
 
 ```python
 from modgud.app import guarded_expression, implicit_return
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # User code
@@ -141,7 +147,7 @@ from modgud.infrastructure.guarded_expr import CommonGuards
   on_failure=ValueError,
   implicit_return=False,
 )
-@implicit_return
+@implicit_return()
 def divide_100_by(x):
   100 / x
 
@@ -408,16 +414,24 @@ This raises `MissingImplicitReturnError` at decoration time, not runtime.
 
 ## ⚡ Runtime Composition: Putting It All Together
 
-The `guarded_expression` decorator is a function that orchestrates the entire process. Conceptually it applies the implicit-return transform first (when enabled), then wraps the result with guard checking:
+The `guarded_expression` decorator is a class that orchestrates the entire process. Constructing it bootstraps Idunn once and receives the runtime and transformer through `@Invert()`; calling it applies the implicit-return transform first (when enabled), then wraps the result with guard checking:
 
 ```python
 # illustrative — conceptual decorator body
-def guarded_expression(*guards, implicit_return=True, strategy=..., on_failure=..., continuance=0):
-  def decorator(func):
-    target = ImplicitReturnTransformer.transform_function(func) if implicit_return else func
-    return GuardRuntime.wrap_function(target, guards, strategy, on_failure, continuance)
+class guarded_expression:
+  def __new__(cls, *guards, **options):
+    Wiring.ensure()  # Idunn().bootstrap('modgud'), once per process
+    return super().__new__(cls)
 
-  return decorator
+  @Invert()
+  def __init__(self, *guards, implicit_return=True, strategy=..., on_failure=..., continuance=0,
+               runtime: GuardRuntimePort, transformer: ImplicitReturnTransformerPort):
+    ...  # store the configuration; Idunn has already set self.runtime / self.transformer
+
+  def __call__(self, func):
+    target = self.transformer.transform_function(func) if self._implicit_return else func
+    return self.runtime.wrap_function(target, self._guards, self._strategy, self._on_failure,
+                                      self._continuance)
 ```
 
 ### Execution Order
@@ -449,11 +463,11 @@ Modgud is thread-safe:
 
 ### The Composition Pattern
 
-**Separation of Concerns:** modgud provides separate decorators that can be composed. When stacking, set `implicit_return=False` on the outer `@guarded_expression` and let the inner `@implicit_return` own the AST rewrite:
+**Separation of Concerns:** modgud provides separate decorators that can be composed. When stacking, set `implicit_return=False` on the outer `@guarded_expression` and let the inner `@implicit_return()` own the AST rewrite:
 
 ```python
 from modgud.app import guarded_expression, implicit_return
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Recommended pattern: Guard validation + expression transformation
@@ -462,7 +476,7 @@ from modgud.infrastructure.guarded_expr import CommonGuards
   CommonGuards.positive('x'),
   implicit_return=False,
 )
-@implicit_return
+@implicit_return()
 def process(x):
   result = x * 2
   result
@@ -475,7 +489,7 @@ def calculate(x):
 
 
 # Expression transformation only
-@implicit_return
+@implicit_return()
 def classify(status):
   'active' if status else 'inactive'
 ```
@@ -519,7 +533,7 @@ You can provide custom handling logic via the `CALL_HANDLER` strategy. The handl
 ```python
 from modgud.app import guarded_expression, implicit_return
 from modgud.domain.guarded_expr import GuardFailureEnum
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 def my_error_handler(errors, *args, **kwargs):
@@ -533,7 +547,7 @@ def my_error_handler(errors, *args, **kwargs):
   on_failure=my_error_handler,
   implicit_return=False,
 )
-@implicit_return
+@implicit_return()
 def process_payment(amount):
   amount * 1.1  # With tax
 ```
@@ -549,7 +563,7 @@ Register reusable guards in namespaces. Keep all imports at module top:
 ```python
 import re
 
-from modgud.infrastructure.guarded_expr import GuardRegistry
+from modgud.infrastructure.common import GuardRegistry
 
 
 # Define custom guard
@@ -570,7 +584,7 @@ GuardRegistry.register('valid_email', valid_email, namespace='validators')
 import re
 
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import GuardRegistry
+from modgud.infrastructure.common import GuardRegistry
 
 
 def valid_email(param_name='email', position=0):
@@ -597,7 +611,7 @@ def send_newsletter(user_email):
 Organize guards by domain. The built-in `CommonGuards` live under the `'common'` namespace:
 
 ```python
-from modgud.infrastructure.guarded_expr import CommonGuards, GuardRegistry
+from modgud.infrastructure.common import CommonGuards, GuardRegistry
 
 
 # Register domain-specific guards under their own namespaces.
@@ -642,7 +656,7 @@ assert my_function(-5) == 0
 
 ```python
 from modgud.app import guarded_expression
-from modgud.infrastructure.guarded_expr import CommonGuards
+from modgud.infrastructure.common import CommonGuards
 
 
 # Optimized guard ordering

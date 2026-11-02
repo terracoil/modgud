@@ -25,7 +25,7 @@ Architecture:
 _GLOBAL_REGISTRY = GuardRegistry()
 
 # Registration with namespaces
-from modgud.infrastructure.guarded_expr import CommonGuards, GuardRegistry
+from modgud.infrastructure.common import CommonGuards, GuardRegistry
 GuardRegistry.register("positive", CommonGuards.positive)  # Default namespace
 GuardRegistry.register("email", validators.email, namespace="validators")
 

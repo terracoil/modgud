@@ -4,7 +4,7 @@ import ast
 
 import pytest
 from modgud.domain.implicit_ret import ExplicitReturnDisallowedError, MissingImplicitReturnError
-from modgud.infrastructure.implicit_ret import ImplicitReturnTransformer
+from modgud.infrastructure.adapters import ImplicitReturnTransformer
 
 
 class TestBasicTransformations:
