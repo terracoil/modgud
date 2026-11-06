@@ -1,9 +1,9 @@
 """Guard checking logic for runtime validation.
 
-GuardRuntime encapsulates guard evaluation (with optional `continuance`
+GuardAdapter encapsulates guard evaluation (with optional `continuance`
 budget for collecting additional failures) and dispatches the collected
 failures through the chosen `GuardFailureEnum`. It is the Idunn adapter for
-`GuardRuntimePort`.
+`GuardPort`.
 """
 
 import functools
@@ -12,12 +12,16 @@ from typing import Any, Callable
 
 from idunn import Adapter, LifecycleEnum
 
-from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum, GuardFunction
-from modgud.domain.guarded_expr.ports import GuardRuntimePort
+from modgud.domain.guarded_expr import (
+  GuardClauseError,
+  GuardFailureEnum,
+  GuardFunction,
+  GuardPort,
+)
 
 
-@Adapter(GuardRuntimePort, lifecycle=LifecycleEnum.SINGLETON)
-class GuardRuntime(GuardRuntimePort):
+@Adapter(GuardPort, lifecycle=LifecycleEnum.SINGLETON)
+class GuardAdapter(GuardPort):
   """Runtime guard checking and failure handling."""
 
   def wrap_function(

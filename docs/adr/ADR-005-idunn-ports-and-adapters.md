@@ -9,16 +9,18 @@
 ## Status
 Accepted (2026-11-02)
 
+> **Update 2026-11-05.** Idunn 2.0 added `@Invert(bootstrap=...)`. The `Wiring` composition root and the decorators' `__new__` hooks are gone; the decision below describes the wiring as it now stands.
+
 ## Context
-The decorators used to import `GuardRuntime` and `ImplicitReturnTransformer` directly. Tests that wanted a fake runtime had to monkeypatch a module attribute, and the "app never imports infrastructure" rule was a comment rather than a fact. A library whose whole pitch is discipline at function boundaries was wiring its own internals by hand.
+The decorators used to import `GuardAdapter` and `ImplicitReturnAdapter` directly. Tests that wanted a fake runtime had to monkeypatch a module attribute, and the "app never imports infrastructure" rule was a comment rather than a fact. A library whose whole pitch is discipline at function boundaries was wiring its own internals by hand.
 
 ## Decision
 Ports and adapters, wired by [Idunn](https://pypi.org/project/idunn):
 
-- `GuardRuntimePort` and `ImplicitReturnTransformerPort` are `@Port` Protocols in `modgud.domain.<feature>.ports`. The decorators depend on them only.
-- `GuardRuntime` and `ImplicitReturnTransformer` subclass their port as `@Adapter(..., lifecycle=SINGLETON)` in `modgud.infrastructure.adapters`.
-- `Wiring.ensure()` calls `Idunn().bootstrap('modgud')` on the first decoration, not at import. `@Invert()` on each decorator's `__init__` injects `runtime` / `transformer`; a caller-supplied value wins.
-- Idunn imports are fenced: `Invert` in `app`, `Adapter` / `LifecycleEnum` in `adapters`, `Port` in `ports` modules, and `Idunn` / `ReportMap` only in `modgud/app/wiring.py`. `tests/test_architecture.py` enforces the fence.
+- `GuardPort` and `ImplicitReturnPort` are `@Port` Protocols in `modgud.domain.<feature>.ports`. The decorators depend on them only.
+- `GuardAdapter` and `ImplicitReturnAdapter` subclass their port as `@Adapter(..., lifecycle=SINGLETON)` in `modgud.infrastructure.adapters`.
+- `@Invert(bootstrap='modgud')` on each decorator's `__init__` runs `Idunn().bootstrap('modgud')` on the first decoration that leaves a port to injection, not at import, then injects `runtime` / `transformer`. A caller-supplied value wins, and a decoration that supplies every port discovers nothing.
+- Idunn imports are fenced: `Invert` in `app`, `Adapter` / `LifecycleEnum` in `adapters`, `Port` in `ports` modules. `Idunn` is constructed nowhere under `modgud/`. `tests/test_architecture.py` enforces the fence.
 
 ## Consequences
 
@@ -31,8 +33,8 @@ Ports and adapters, wired by [Idunn](https://pypi.org/project/idunn):
 - One runtime dependency, after a long stretch of none. `import modgud` imports `idunn`.
 - Discovery imports every module under `modgud/`, so nothing runnable may live there; examples sit in `examples/`.
 - The Idunn container is a process-wide singleton shared with the host application; `Idunn().reset()` clears the host's registrations too and costs a re-discovery.
-- `@Invert()` hides the decorators' real signatures from type checkers and `inspect.signature`; fixing that belongs upstream in Idunn.
-- Supplying both `runtime=` and `transformer=` does not skip the bootstrap; `__new__` still discovers the adapters.
+- `@Invert()` hides the decorators' real signatures from type checkers (`inspect.signature` follows `__wrapped__` since Idunn 2.0); fixing the static side belongs upstream in Idunn.
+- The root name `'modgud'` is spelled once per decorator instead of once in a wiring module.
 
 ## Alternatives Considered
 1. **Hand-written wiring** (a module-level registry of port → adapter). Rejected: it reinvents the half of a container that is easy and skips the half that is tested.

@@ -8,7 +8,7 @@ Guidance for Claude Code (claude.ai/code) working in this repository. Humans are
 
 - **Guards**: callables that return `True` or an error string. `CommonGuards` ships nine; `GuardRegistry` holds custom ones.
 - **Failure handling**: `GuardFailureEnum` (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload. `continuance: int` caps how many guards past the first failure still run; several failures become an `ExceptionGroup`.
-- **Layers**: `app/` (decorators, wired by Idunn), `domain/` (passive types, enums, errors, `@Port` protocols), `infrastructure/` (`adapters/`, `common/`, internal `ast/`). The full tree and the dependency table live in `project.md`.
+- **Layers**: `app/` (decorators, wired by Idunn, plus `CommonGuards` and `GuardRegistry`), `domain/` (passive types, enums, errors, `@Port` protocols), `infrastructure/` (`adapters/`, internal `ast/`). The full tree and the dependency table live in `project.md`.
 
 ## ⚙️ Development Commands
 
@@ -35,24 +35,23 @@ poetry build && poetry run twine check dist/*
 
 Everything a user needs is `from modgud import ...`. Exactly 13 names, pinned by `tests/test_public_api.py`:
 
-`CommonGuards`, `ExplicitReturnDisallowedError`, `GuardClauseError`, `GuardFailureEnum`, `GuardFunction`, `GuardRegistry`, `GuardRuntimePort`, `ImplicitReturnError`, `ImplicitReturnTransformerPort`, `MissingImplicitReturnError`, `UnsupportedConstructError`, `guarded_expression`, `implicit_return`.
+`CommonGuards`, `ExplicitReturnDisallowedError`, `GuardClauseError`, `GuardFailureEnum`, `GuardFunction`, `GuardRegistry`, `GuardPort`, `ImplicitReturnError`, `ImplicitReturnPort`, `MissingImplicitReturnError`, `UnsupportedConstructError`, `guarded_expression`, `implicit_return`.
 
 | Tier | What | Where |
 |---|---|---|
-| Public | the 13 names above | `modgud` (also `modgud.domain`, 7 names, and `modgud.infrastructure`, 2 names) |
-| Integration seam | the two ports, `runtime=` / `transformer=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud` or `modgud.domain.<feature>.ports` |
-| Internal | `GuardRuntime`, `ImplicitReturnTransformer`, the `ast` helpers, `Wiring` | `modgud.infrastructure.adapters`, `modgud.infrastructure.ast`, `modgud.app` |
+| Public | the 13 names above | `modgud` (also `modgud.domain`, 9 names, and `modgud.app`, 4 names) |
+| Integration seam | the two ports, `runtime=` / `transformer=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud`, `modgud.domain` or `modgud.domain.<feature>.ports` |
+| Internal | `GuardAdapter`, `ImplicitReturnAdapter`, the `ast` helpers | `modgud.infrastructure.adapters`, `modgud.infrastructure.ast` |
 
 Rules, and what enforces them (`test_architecture.py` checks import edges; `test_public_api.py` checks `__all__` and identity; the import style is convention, reviewed by hand):
-- Facades (`modgud`, `modgud.domain`, `modgud.infrastructure`) use absolute imports and an explicit `__all__`. Leaf packages re-export with single-dot relative imports and `__all__`.
+- The root facade uses absolute imports and an explicit `__all__`. `modgud.domain`, `modgud.app` and the leaf packages re-export with single-dot relative imports and `__all__`. `modgud.infrastructure` exports nothing: re-exporting the guards from it would point infrastructure at `app`.
 - **Nothing inside `modgud/` imports a facade.** Inner modules import from the feature package that owns the symbol. That rule is what makes import cycles impossible.
-- Ports are imported from the 4-level path `modgud.domain.<feature>.ports`, never re-exported by the feature package (each port imports from its feature package, so that would be a cycle). The sanctioned exception to the 3-level cap; don't "fix" it.
-- `Wiring` is re-exported from `modgud.app` so tests never import from a module filename. It stays out of the top-level `__all__`.
-- Tests import public names from `modgud`. Leaf imports stay only where the leaf is the subject: the two adapter unit tests, `test_public_api.py` (identity checks), `test_ioc_wiring.py` (`Wiring` from `modgud.app`) and the architecture probes.
+- Ports are re-exported by their feature package and by `modgud.domain`, so a port module must never import its own feature package; it imports the feature's `enums`, `errors` or `types` directly. Going through the feature package only works while `.types` loads before `.ports` in its `__init__`, and ruff's import sort puts `.ports` first. This is the sanctioned exception to never importing from filenames; don't "fix" it. Only the feature's `__init__` imports the `ports` subpackage; everything else under `modgud/` takes a port from `modgud.domain.<feature>`, which keeps it inside the 3-level cap.
+- Tests import public names from `modgud`. Leaf imports stay only where the leaf is the subject: the two adapter unit tests, `test_public_api.py` (identity checks) and the architecture probes.
 
 ## 🔌 Ports, Adapters and Idunn
 
-`GuardRuntimePort` and `ImplicitReturnTransformerPort` are `@Port` Protocols; the decorators depend on them only. `GuardRuntime` and `ImplicitReturnTransformer` subclass their port as `@Adapter(..., lifecycle=SINGLETON)`. On the first decoration, `__new__` calls `Wiring.ensure()` → `Idunn().bootstrap('modgud')`, which discovers `modgud.domain.*.ports` and `modgud.infrastructure.adapters`; `@Invert()` injects `runtime` / `transformer`. A caller-supplied `runtime=` / `transformer=` wins, which is the test seam. `Idunn(` appears only in `modgud/app/wiring.py`. `Idunn().reset()` clears the bootstrap so the next decoration re-discovers.
+`GuardPort` and `ImplicitReturnPort` are `@Port` Protocols; the decorators depend on them only. `GuardAdapter` and `ImplicitReturnAdapter` subclass their port as `@Adapter(..., lifecycle=SINGLETON)`. Each decorator's `__init__` wears `@Invert(bootstrap='modgud')`: the first decoration that leaves a port to injection runs `Idunn().bootstrap('modgud')`, which discovers `modgud.domain.*.ports` and `modgud.infrastructure.adapters`, then `runtime` / `transformer` are injected. A caller-supplied `runtime=` / `transformer=` wins, which is the test seam; supply every port and nothing is discovered. There is no composition-root module: `Idunn(` appears nowhere under `modgud/`, and the architecture test keeps it that way. `Idunn().reset()` clears the bootstrap so the next decoration re-discovers.
 
 Import-time side effects, so nobody is surprised: `import modgud` imports `idunn`, and `CommonGuards` registers its guards into the global `GuardRegistry`. Bootstrap itself waits for the first decoration.
 
@@ -77,10 +76,10 @@ Tests live in `tests/` (`test_*.py`). Decorated functions with implicit returns 
 | File | Covers |
 |---|---|
 | `test_basic_guards.py`, `test_implicit_returns.py`, `test_edge_cases.py` | decorator behaviour end to end |
-| `test_guard_runtime.py` | `GuardRuntime.check_guards` / `handle_failure` / `wrap_function`, continuance, cascade safety |
+| `test_guard_adapter.py` | `GuardAdapter.check_guards` / `handle_failure` / `wrap_function`, continuance, cascade safety |
 | `test_ast_transform.py` | the AST rewrite, unit level |
 | `test_method_decoration.py` + `method_fixtures.py` | every method shape, metadata, the README classes verbatim |
-| `test_ioc_wiring.py` | bootstrap report, injection, singletons, `reset()`, the fake `runtime=` / `transformer=` seam |
+| `test_ioc_wiring.py` | discovery on first use, injection, singletons, `reset()`, the fake `runtime=` / `transformer=` seam, no discovery when every port is supplied |
 | `test_architecture.py` | AST-walks `modgud/` against the dependency table in `project.md`, with probe self-checks |
 | `test_public_api.py` | the `__all__` lists, identity with the leaf objects, two fresh-process checks |
 | `test_examples.py` | runs every file under `examples/` in a subprocess, checks the index and the classy rules |
@@ -93,7 +92,7 @@ Tests live in `tests/` (`test_*.py`). Decorated functions with implicit returns 
 ## 📜 Configuration
 
 - `ruff.toml`: Python 3.11 target, 2-space indent, 100 columns, single quotes; `src = ["modgud", "tests", "examples"]`.
-- `pyproject.toml`: PEP 621 metadata, Poetry build, pytest with coverage on `modgud/`, strict mypy (`[tool.mypy]`), runtime dependency `idunn (>=1.0.1,<2.0.0)`, Python >=3.11.
+- `pyproject.toml`: PEP 621 metadata, Poetry build, pytest with coverage on `modgud/`, strict mypy (`[tool.mypy]`), runtime dependency `idunn (>=2.0.0,<3.0.0)`, Python >=3.11. Until Idunn 2.0 is on PyPI, `[tool.poetry.dependencies]` points `idunn` at the sibling checkout `../idunn`; drop that table and re-lock before release.
 
 ## 📜 Import Examples
 

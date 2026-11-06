@@ -1,8 +1,8 @@
-"""Unit tests for GuardRuntime: check_guards + handle_failure."""
+"""Unit tests for GuardAdapter: check_guards + handle_failure."""
 
 import pytest
 from modgud import CommonGuards, GuardClauseError, GuardFailureEnum
-from modgud.infrastructure.adapters import GuardRuntime
+from modgud.infrastructure.adapters import GuardAdapter
 
 
 class TestCheckGuards:
@@ -14,7 +14,7 @@ class TestCheckGuards:
       lambda x: x > 0 or 'Must be positive',
       lambda x: x < 100 or 'Must be less than 100',
     )
-    result = GuardRuntime.check_guards(guards, (50,), {}, continuance=0)
+    result = GuardAdapter.check_guards(guards, (50,), {}, continuance=0)
     assert result == []
 
   def test_fail_fast_stops_at_first_failure(self):
@@ -29,7 +29,7 @@ class TestCheckGuards:
       seen.append('b')
       return x < 100 or 'Must be less than 100'
 
-    result = GuardRuntime.check_guards((guard_a, guard_b), (-5,), {}, continuance=0)
+    result = GuardAdapter.check_guards((guard_a, guard_b), (-5,), {}, continuance=0)
     assert result == ['Must be positive']
     assert seen == ['a']  # guard_b never invoked
 
@@ -41,19 +41,19 @@ class TestCheckGuards:
       lambda x: 'third fail',
       lambda x: 'fourth fail',
     )
-    result = GuardRuntime.check_guards(guards, (0,), {}, continuance=2)
+    result = GuardAdapter.check_guards(guards, (0,), {}, continuance=2)
     assert result == ['first fail', 'second fail', 'third fail']
 
   def test_continuance_zero_collects_only_first(self):
     """continuance=0 (default) caps the list at a single failure."""
     guards = tuple(lambda x, _i=i: f'fail {_i}' for i in range(5))
-    result = GuardRuntime.check_guards(guards, (0,), {}, continuance=0)
+    result = GuardAdapter.check_guards(guards, (0,), {}, continuance=0)
     assert result == ['fail 0']
 
   def test_non_string_failure_normalised(self):
     """A guard returning a non-True non-string yields the generic message."""
     guards = (lambda x: False,)
-    result = GuardRuntime.check_guards(guards, (5,), {}, continuance=0)
+    result = GuardAdapter.check_guards(guards, (5,), {}, continuance=0)
     assert result == ['Guard clause failed']
 
   def test_raising_guard_propagates_when_no_prior_failure(self):
@@ -63,7 +63,7 @@ class TestCheckGuards:
       raise RuntimeError('guard exploded')
 
     with pytest.raises(RuntimeError, match='guard exploded'):
-      GuardRuntime.check_guards((bad,), (1,), {}, continuance=3)
+      GuardAdapter.check_guards((bad,), (1,), {}, continuance=3)
 
   def test_raising_guard_stops_collection_after_first_failure(self):
     """During the continuance window, a raising guard halts collection (cascade safety)."""
@@ -72,7 +72,7 @@ class TestCheckGuards:
       lambda x: (_ for _ in ()).throw(AttributeError('cascade')),
     )
     # Should not raise; just stops collecting and returns what we have.
-    result = GuardRuntime.check_guards(guards, (None,), {}, continuance=2)
+    result = GuardAdapter.check_guards(guards, (None,), {}, continuance=2)
     assert result == ['first fail']
 
 
@@ -82,12 +82,12 @@ class TestHandleFailure:
   def test_error_raise_single(self):
     """ERROR_RAISE with one failure raises the on_failure class."""
     with pytest.raises(GuardClauseError, match='boom'):
-      GuardRuntime.handle_failure(['boom'], GuardFailureEnum.ERROR_RAISE, GuardClauseError, (), {})
+      GuardAdapter.handle_failure(['boom'], GuardFailureEnum.ERROR_RAISE, GuardClauseError, (), {})
 
   def test_error_raise_multiple_uses_exception_group(self):
     """ERROR_RAISE with multiple failures raises an ExceptionGroup."""
     with pytest.raises(ExceptionGroup) as exc:
-      GuardRuntime.handle_failure(
+      GuardAdapter.handle_failure(
         ['a', 'b', 'c'], GuardFailureEnum.ERROR_RAISE, GuardClauseError, (), {}
       )
     assert exc.value.message == 'Guards failed'
@@ -98,11 +98,11 @@ class TestHandleFailure:
   def test_error_raise_custom_exception_class(self):
     """ERROR_RAISE respects a custom exception class in on_failure."""
     with pytest.raises(ValueError, match='nope'):
-      GuardRuntime.handle_failure(['nope'], GuardFailureEnum.ERROR_RAISE, ValueError, (), {})
+      GuardAdapter.handle_failure(['nope'], GuardFailureEnum.ERROR_RAISE, ValueError, (), {})
 
   def test_error_return_single_returns_instance(self):
     """ERROR_RETURN with one failure returns the exception instance."""
-    result = GuardRuntime.handle_failure(
+    result = GuardAdapter.handle_failure(
       ['err'], GuardFailureEnum.ERROR_RETURN, GuardClauseError, (), {}
     )
     assert isinstance(result, GuardClauseError)
@@ -110,7 +110,7 @@ class TestHandleFailure:
 
   def test_error_return_multiple_returns_group(self):
     """ERROR_RETURN with multiple failures returns an ExceptionGroup."""
-    result = GuardRuntime.handle_failure(
+    result = GuardAdapter.handle_failure(
       ['a', 'b'], GuardFailureEnum.ERROR_RETURN, GuardClauseError, (), {}
     )
     assert isinstance(result, ExceptionGroup)
@@ -119,14 +119,14 @@ class TestHandleFailure:
   def test_return_value_returns_payload_as_is(self):
     """RETURN_VALUE returns on_failure verbatim."""
     sentinel = {'error': 'custom'}
-    result = GuardRuntime.handle_failure(
+    result = GuardAdapter.handle_failure(
       ['ignored'], GuardFailureEnum.RETURN_VALUE, sentinel, (), {}
     )
     assert result is sentinel
 
   def test_return_value_none(self):
     """RETURN_VALUE handles None payload."""
-    result = GuardRuntime.handle_failure(['ignored'], GuardFailureEnum.RETURN_VALUE, None, (), {})
+    result = GuardAdapter.handle_failure(['ignored'], GuardFailureEnum.RETURN_VALUE, None, (), {})
     assert result is None
 
   def test_call_handler_passes_errors_args_kwargs(self):
@@ -139,7 +139,7 @@ class TestHandleFailure:
       captured['kwargs'] = kwargs
       return 'handled'
 
-    result = GuardRuntime.handle_failure(
+    result = GuardAdapter.handle_failure(
       ['boom'], GuardFailureEnum.CALL_HANDLER, handler, (1, 2), {'k': 'v'}
     )
     assert result == 'handled'
@@ -155,7 +155,7 @@ class TestHandleFailure:
       received.append(errors)
       return None
 
-    GuardRuntime.handle_failure(['only one'], GuardFailureEnum.CALL_HANDLER, handler, (), {})
+    GuardAdapter.handle_failure(['only one'], GuardFailureEnum.CALL_HANDLER, handler, (), {})
     assert received == [['only one']]
 
 
@@ -168,7 +168,7 @@ class TestWrapFunctionIntegration:
     def f(x):
       return x * 2
 
-    wrapped = GuardRuntime().wrap_function(
+    wrapped = GuardAdapter().wrap_function(
       f,
       (lambda x: x > 0 or 'positive',),
       GuardFailureEnum.ERROR_RAISE,
@@ -187,7 +187,7 @@ class TestWrapFunctionIntegration:
       calls.append(x)
       return x
 
-    wrapped = GuardRuntime().wrap_function(
+    wrapped = GuardAdapter().wrap_function(
       f,
       (lambda x: 'fail',),
       GuardFailureEnum.RETURN_VALUE,
@@ -203,7 +203,7 @@ class TestWrapFunctionIntegration:
     def f(x):
       return x
 
-    wrapped = GuardRuntime().wrap_function(
+    wrapped = GuardAdapter().wrap_function(
       f,
       (lambda x: 'fail-a', lambda x: 'fail-b', lambda x: 'fail-c'),
       GuardFailureEnum.ERROR_RAISE,
@@ -222,7 +222,7 @@ class TestDefaultsSeenByGuards:
     def f(x=5):
       return x
 
-    wrapped = GuardRuntime().wrap_function(
+    wrapped = GuardAdapter().wrap_function(
       f, (CommonGuards.positive('x'),), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
     )
     assert wrapped() == 5
@@ -234,7 +234,7 @@ class TestDefaultsSeenByGuards:
     def f(x=0):
       return x
 
-    wrapped = GuardRuntime().wrap_function(
+    wrapped = GuardAdapter().wrap_function(
       f, (CommonGuards.positive('x'),), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
     )
     with pytest.raises(GuardClauseError, match='x must be positive'):
@@ -250,7 +250,7 @@ class TestDefaultsSeenByGuards:
     def f(a, b=2, *, c=3):
       return a + b + c
 
-    wrapped = GuardRuntime().wrap_function(
+    wrapped = GuardAdapter().wrap_function(
       f, (spy,), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
     )
     assert wrapped(1) == 6

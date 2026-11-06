@@ -1,10 +1,7 @@
-"""Infrastructure layer: re-exports the public guard toolkit.
+"""Infrastructure layer: nothing here is public.
 
-``CommonGuards`` (pre-built validators) and ``GuardRegistry`` (custom guard
-registration) are public and also re-exported from ``modgud``. The ``adapters``
-(injected by Idunn) and ``ast`` (transformer helpers) subpackages are internal.
+The ``adapters`` (injected by Idunn) and ``ast`` (transformer helpers) subpackages are
+internal, so this package re-exports neither.
 """
 
-from modgud.infrastructure.common import CommonGuards, GuardRegistry
-
-__all__ = ['CommonGuards', 'GuardRegistry']
+__all__: list[str] = []

@@ -1,14 +1,13 @@
-"""Domain layer: re-exports the passive types, enum and errors.
+"""Domain layer: re-exports the passive types, enum, errors and ports.
 
-Ports are deliberately not re-exported here: import them from ``modgud`` or from
-``modgud.domain.<feature>.ports``. Modules inside ``modgud`` import from the owning
-feature package, never from this facade.
+Modules inside ``modgud`` import from the owning feature package, never from this facade.
 """
 
-from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum, GuardFunction
-from modgud.domain.implicit_ret import (
+from .guarded_expr import GuardClauseError, GuardFailureEnum, GuardFunction, GuardPort
+from .implicit_ret import (
   ExplicitReturnDisallowedError,
   ImplicitReturnError,
+  ImplicitReturnPort,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
@@ -18,7 +17,9 @@ __all__ = [
   'GuardClauseError',
   'GuardFailureEnum',
   'GuardFunction',
+  'GuardPort',
   'ImplicitReturnError',
+  'ImplicitReturnPort',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
 ]

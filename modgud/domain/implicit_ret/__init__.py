@@ -6,10 +6,12 @@ from .errors import (
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
+from .ports import ImplicitReturnPort
 
 __all__ = [
   'ExplicitReturnDisallowedError',
   'ImplicitReturnError',
+  'ImplicitReturnPort',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
 ]

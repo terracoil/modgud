@@ -4,8 +4,8 @@ Import everything you need from here::
 
   from modgud import CommonGuards, GuardFailureEnum, guarded_expression
 
-The names in ``__all__`` are the supported public API. ``GuardRuntimePort`` and
-``ImplicitReturnTransformerPort`` are the integration seam for the decorators'
+The names in ``__all__`` are the supported public API. ``GuardPort`` and
+``ImplicitReturnPort`` are the integration seam for the decorators'
 ``runtime=`` / ``transformer=`` parameters. Leaf packages remain importable, but
 their layout may change between releases. Examples:
 https://github.com/terracoil/modgud/tree/main/examples
@@ -13,17 +13,20 @@ https://github.com/terracoil/modgud/tree/main/examples
 
 from importlib.metadata import PackageNotFoundError, version
 
-from modgud.app import guarded_expression, implicit_return
-from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum, GuardFunction
-from modgud.domain.guarded_expr.ports import GuardRuntimePort
+from modgud.app import CommonGuards, GuardRegistry, guarded_expression, implicit_return
+from modgud.domain.guarded_expr import (
+  GuardClauseError,
+  GuardFailureEnum,
+  GuardFunction,
+  GuardPort,
+)
 from modgud.domain.implicit_ret import (
   ExplicitReturnDisallowedError,
   ImplicitReturnError,
+  ImplicitReturnPort,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from modgud.domain.implicit_ret.ports import ImplicitReturnTransformerPort
-from modgud.infrastructure import CommonGuards, GuardRegistry
 
 try:
   __version__: str = version('modgud')  # single-sourced from pyproject.toml
@@ -37,9 +40,9 @@ __all__ = [
   'GuardFailureEnum',
   'GuardFunction',
   'GuardRegistry',
-  'GuardRuntimePort',
+  'GuardPort',
   'ImplicitReturnError',
-  'ImplicitReturnTransformerPort',
+  'ImplicitReturnPort',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
   'guarded_expression',

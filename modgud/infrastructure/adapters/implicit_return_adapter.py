@@ -10,15 +10,18 @@ from typing import Any, Callable, ParamSpec, TypeVar, TypeVarTuple
 
 from idunn import Adapter, LifecycleEnum
 
-from modgud.domain.implicit_ret import ExplicitReturnDisallowedError, UnsupportedConstructError
-from modgud.domain.implicit_ret.ports import ImplicitReturnTransformerPort
+from modgud.domain.implicit_ret import (
+  ExplicitReturnDisallowedError,
+  ImplicitReturnPort,
+  UnsupportedConstructError,
+)
 from modgud.infrastructure.ast import NoExplicitReturnChecker, TailRewriter, TopLevelTransformer
 
 T = TypeVar('T')
 
 
-@Adapter(ImplicitReturnTransformerPort, lifecycle=LifecycleEnum.SINGLETON)
-class ImplicitReturnTransformer(ImplicitReturnTransformerPort):
+@Adapter(ImplicitReturnPort, lifecycle=LifecycleEnum.SINGLETON)
+class ImplicitReturnAdapter(ImplicitReturnPort):
   """AST transformation for implicit return functionality; Idunn's adapter for the port."""
 
   def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
@@ -38,9 +41,9 @@ class ImplicitReturnTransformer(ImplicitReturnTransformerPort):
       raise ValueError(f'Cannot extract source from {func.__name__}: {str(e)}') from e
 
     class_path: tuple[str, ...] = self._class_path(func)
-    dedented_source = textwrap.dedent(source)
+    dedented_src = textwrap.dedent(source)
     transformed_ast, _ = self.apply_implicit_return_transform(
-      dedented_source, func.__name__, class_path, self._enclosing_type_params(func)
+      dedented_src, func.__name__, class_path, self._enclosing_type_params(func)
     )
     self._strip_signature_expressions(transformed_ast, func.__name__)
     code = compile(transformed_ast, f'<implicit_return:{func.__qualname__}>', 'exec')

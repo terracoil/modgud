@@ -10,11 +10,13 @@ from typing import Any, Callable, Protocol
 
 from idunn import Port
 
-from modgud.domain.guarded_expr import GuardFailureEnum, GuardFunction
+# Not from the feature package: its __init__ re-exports this port.
+from modgud.domain.guarded_expr.enums import GuardFailureEnum
+from modgud.domain.guarded_expr.types import GuardFunction
 
 
 @Port
-class GuardRuntimePort(Protocol):
+class GuardPort(Protocol):
   """Wrap a callable with guard evaluation + failure dispatch."""
 
   def wrap_function(

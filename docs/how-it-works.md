@@ -8,16 +8,16 @@ Signatures and rules live in the [API reference](api-reference.md). This page is
 
 ## 🏛️ Layers
 
-Three layers, dependencies pointing down. `app/` holds the two decorators and `Wiring`. `domain/` holds the passive parts — `GuardFailureEnum`, the errors, the `GuardFunction` type and the two `@Port` protocols. `infrastructure/` holds the adapters behind those ports, the public `CommonGuards` and `GuardRegistry`, and the internal AST helpers in `infrastructure/ast/`.
+Three layers, dependencies pointing down. `app/` holds the two decorators and the public `CommonGuards` and `GuardRegistry`. `domain/` holds the passive parts — `GuardFailureEnum`, the errors, the `GuardFunction` type and the two `@Port` protocols. `infrastructure/` holds the adapters behind those ports and the internal AST helpers in `infrastructure/ast/`.
 
 The app layer never imports infrastructure. It knows the ports and nothing else. The package tree, the tiers and the dependency table are in [project.md](../project.md), and `tests/test_architecture.py` fails the run when an import crosses a line. Architecture diagrams drift; an AST walk in the test suite doesn't.
 
 ## 🔌 Ports, adapters and Idunn
 
-Applying `@guarded_expression(...)` takes three steps.
+Applying `@guarded_expression(...)` takes three steps. The first two happen inside `@Invert(bootstrap='modgud')` on the decorator's `__init__`.
 
-1. `__new__` calls `Wiring.ensure()`, which calls `Idunn().bootstrap('modgud')`. The first call in a process discovers `modgud.domain.*.ports` and `modgud.infrastructure.adapters` and registers `GuardRuntime` and `ImplicitReturnTransformer` as singleton adapters. Later calls return the cached report.
-2. `@Invert()` on `__init__` injects `runtime` and `transformer`, unless the caller passed their own.
+1. If the caller left `runtime` or `transformer` out, Idunn runs `Idunn().bootstrap('modgud')`. The first call in a process discovers `modgud.domain.*.ports` and `modgud.infrastructure.adapters` and registers `GuardAdapter` and `ImplicitReturnAdapter` as singleton adapters. Later calls are a cache hit. A caller who passes both skips discovery altogether.
+2. Idunn injects whichever of `runtime` and `transformer` the caller did not pass.
 3. `__call__(func)` unwraps a `staticmethod` / `classmethod` if it got one, rewrites the function when `implicit_return=True`, wraps it with `runtime.wrap_function(...)`, sets an `__implicit_return__` marker, and puts the descriptor back.
 
 `@implicit_return()` takes the same path with only the transformer. The marker is how `guarded_expression` knows a function was already rewritten, so a stacked pair never rewrites twice.
@@ -34,7 +34,7 @@ Importing modgud isn't free. Here's the whole receipt:
 
 ## 🛡️ The guard pipeline
 
-`GuardRuntime.wrap_function` builds one `functools.wraps` wrapper per decorated function, and every call goes through it:
+`GuardAdapter.wrap_function` builds one `functools.wraps` wrapper per decorated function, and every call goes through it:
 
 ```
 call(*args, **kwargs)
@@ -53,7 +53,7 @@ call(*args, **kwargs)
 
 Python decided long ago that `if` is a statement. The rewrite disagrees, one function at a time.
 
-`ImplicitReturnTransformer.transform_function` does the work. It's an `@Adapter` subclass of `ImplicitReturnTransformerPort`, not an `ast.NodeTransformer`; the tree walking lives in three helpers under `infrastructure/ast/`.
+`ImplicitReturnAdapter.transform_function` does the work. It's an `@Adapter` subclass of `ImplicitReturnPort`, not an `ast.NodeTransformer`; the tree walking lives in three helpers under `infrastructure/ast/`.
 
 1. Read the source with `inspect.getsource` and dedent it. No source means `ValueError`.
 2. Parse it. `TopLevelTransformer` finds the `def` by name and strips its decorators, so recompiling doesn't apply them twice.
@@ -101,7 +101,7 @@ What's shared between threads, plainly:
 
 - Decoration and guard evaluation keep no per-call shared state. The wrapper reads its closure, and `CommonGuards` guards are closures over their arguments.
 - `GuardRegistry` and the Idunn container are process-wide singletons.
-- Idunn's bootstrap runs under a lock, so concurrent first decorations wire once.
+- Idunn's bootstrap is thread-safe: concurrent first decorations share one discovery, and a decoration that runs while a module is being imported discovers on its own rather than waiting, so it can't deadlock against another importing thread. Each adapter singleton is built once, under its own lock.
 - `GuardRegistry` has no lock. Register guards at import time, before any threads start.
 - Your own guards and handlers are yours: if they touch shared state, they need their own lock.
 

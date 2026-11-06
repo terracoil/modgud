@@ -12,8 +12,8 @@ from typing import Any, Callable, TypeVar
 from modgud import (
   GuardFailureEnum,
   GuardFunction,
-  GuardRuntimePort,
-  ImplicitReturnTransformerPort,
+  GuardPort,
+  ImplicitReturnPort,
   guarded_expression,
 )
 
@@ -60,8 +60,8 @@ class RecordingTransformer:
 
 AUDIT = AuditingRuntime()
 RECORDER = RecordingTransformer()
-RUNTIME: GuardRuntimePort = AUDIT  # mypy checks each fake against its port here
-TRANSFORMER: ImplicitReturnTransformerPort = RECORDER
+RUNTIME: GuardPort = AUDIT  # mypy checks each fake against its port here
+TRANSFORMER: ImplicitReturnPort = RECORDER
 
 
 @guarded_expression(

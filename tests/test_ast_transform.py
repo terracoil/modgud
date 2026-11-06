@@ -4,7 +4,7 @@ import ast
 
 import pytest
 from modgud import ExplicitReturnDisallowedError, MissingImplicitReturnError
-from modgud.infrastructure.adapters import ImplicitReturnTransformer
+from modgud.infrastructure.adapters import ImplicitReturnAdapter
 
 
 class TestBasicTransformations:
@@ -17,9 +17,7 @@ def foo():
     x = 10
     x + 5
 """
-    tree, filename = ImplicitReturnTransformer.apply_implicit_return_transform(
-      source.strip(), 'foo'
-    )
+    tree, filename = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
     assert filename == '<foo-implicit>'
 
@@ -32,7 +30,7 @@ def foo(x):
     else:
         "negative"
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
 
   def test_try_except_transform(self):
@@ -44,7 +42,7 @@ def foo(x):
     except ZeroDivisionError:
         0
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
 
 
@@ -58,7 +56,7 @@ def foo():
     return 10
 """
     with pytest.raises(ExplicitReturnDisallowedError):
-      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+      ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
 
   def test_if_without_else_raises_error(self):
     """Test that if without else at tail raises error."""
@@ -68,7 +66,7 @@ def foo(x):
         "positive"
 """
     with pytest.raises(MissingImplicitReturnError):
-      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+      ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
 
 
 class TestEdgeCases:
@@ -80,7 +78,7 @@ class TestEdgeCases:
 def foo():
     pass
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     # Should transform successfully and return None
     assert isinstance(tree, ast.Module)
 
@@ -94,7 +92,7 @@ def outer():
     x + 5
 """
     with pytest.raises(ExplicitReturnDisallowedError) as exc_info:
-      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'outer')
+      ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'outer')
     assert (exc_info.value.lineno, exc_info.value.offset) == (3, 8)
 
   def test_nested_async_def_and_method_returns_refused(self):
@@ -114,7 +112,7 @@ def outer():
 """
     for source in (async_source, class_source):
       with pytest.raises(ExplicitReturnDisallowedError):
-        ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'outer')
+        ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'outer')
 
   def test_first_return_is_reported(self):
     """With several returns, the error points at the first one in source order."""
@@ -125,7 +123,7 @@ def outer(x):
     return inner
 """
     with pytest.raises(ExplicitReturnDisallowedError) as exc_info:
-      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'outer')
+      ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'outer')
     assert exc_info.value.lineno == 3
 
   def test_nested_lambda_not_transformed(self):
@@ -136,7 +134,7 @@ def foo(x):
     result = f(x)
     result * 2
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
     # Verify it compiles and works
     code = compile(tree, '<test>', 'exec')
@@ -152,7 +150,7 @@ async def foo(x):
     x + 1
 """
     # async functions should work but not be transformed
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
 
 
@@ -169,7 +167,7 @@ def foo(x):
         case _:
             "other"
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     code = compile(tree, '<test>', 'exec')
     env = {}
     exec(code, env)
@@ -191,7 +189,7 @@ def foo(x):
             "two"
 """
     with pytest.raises(MissingImplicitReturnError, match='must end in a wildcard case') as exc_info:
-      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+      ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     assert exc_info.value.lineno == 2
 
   def test_nested_tail_match_without_wildcard_refused(self):
@@ -206,7 +204,7 @@ def foo(x, flag):
         "flag off"
 """
     with pytest.raises(MissingImplicitReturnError, match='must end in a wildcard case'):
-      ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+      ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
 
   def test_match_not_at_tail_needs_no_wildcard(self):
     """A match earlier in the body is ordinary code; only tail positions must yield a value."""
@@ -218,7 +216,7 @@ def foo(x):
             label = "one"
     label
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     code = compile(tree, '<test>', 'exec')
     env = {}
     exec(code, env)
@@ -245,7 +243,7 @@ def foo(x):
         {last_case}
             {body}
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     code = compile(tree, '<test>', 'exec')
     env = {}
     exec(code, env)
@@ -264,7 +262,7 @@ def foo(x):
         case _:
             "other"
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     # Compile and verify it works
     code = compile(tree, '<test>', 'exec')
     env = {}
@@ -290,7 +288,7 @@ def foo(x):
     finally:
         pass
 """
-    tree, _ = ImplicitReturnTransformer.apply_implicit_return_transform(source.strip(), 'foo')
+    tree, _ = ImplicitReturnAdapter.apply_implicit_return_transform(source.strip(), 'foo')
     assert isinstance(tree, ast.Module)
     # Verify it compiles and works
     code = compile(tree, '<test>', 'exec')

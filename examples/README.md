@@ -49,7 +49,7 @@ poetry run python examples/classy/01_quick_start.py
 |---|---|---|---|
 | 10 | [10_decorator_composition.py](free_range/10_decorator_composition.py) | [10_decorator_composition.py](classy/10_decorator_composition.py) | Free-range: stacking order, the right one and the `TypeError` for the wrong one, and the metadata that survives. Classy: every method shape, modgud on either side of `@staticmethod`/`@classmethod`, zero-argument `super()` refused, and `@implicit_return()` refused above a guarded method. |
 | 11 | [11_decoration_errors.py](free_range/11_decoration_errors.py) | | The three `ImplicitReturnError` subclasses, raised when the decorator is applied. |
-| 12 | [12_swapping_the_runtime.py](free_range/12_swapping_the_runtime.py) | | Fakes typed against `GuardRuntimePort` and `ImplicitReturnTransformerPort`, passed as `runtime=` / `transformer=`. |
+| 12 | [12_swapping_the_runtime.py](free_range/12_swapping_the_runtime.py) | | Fakes typed against `GuardPort` and `ImplicitReturnPort`, passed as `runtime=` / `transformer=`. |
 
 ## Conventions
 

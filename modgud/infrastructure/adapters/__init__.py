@@ -1,13 +1,14 @@
 """Idunn adapters: the concrete implementations of modgud's ports.
 
-Idunn discovers these through ``Idunn().bootstrap('modgud')`` and injects them into the app
-decorators via ``@Invert``. Nothing outside this package and its unit tests imports them.
+Idunn discovers these the first time an app decorator needs a port, through
+``@Invert(bootstrap='modgud')``, and injects them. Nothing outside this package and its unit
+tests imports them.
 """
 
-from .guard_runtime import GuardRuntime
-from .implicit_return_transformer import ImplicitReturnTransformer
+from .guard_adapter import GuardAdapter
+from .implicit_return_adapter import ImplicitReturnAdapter
 
 __all__ = [
-  'GuardRuntime',
-  'ImplicitReturnTransformer',
+  'GuardAdapter',
+  'ImplicitReturnAdapter',
 ]

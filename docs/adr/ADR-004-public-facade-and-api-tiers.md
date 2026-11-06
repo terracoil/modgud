@@ -7,19 +7,19 @@
 ---
 
 ## Status
-Accepted (2026-11-02)
+Accepted (2026-11-02), amended 2026-11-06
 
 ## Context
 The package layout was tried as the API: no top-level re-exports, and every symbol imported from the leaf package that owns it. It kept the containers honest and it made a quick start four import lines long. Three of those lines named a layer (`app`, `domain`, `infrastructure`) that a user has no reason to know about. Every reorganisation of the tree was also a change to the public API, which is the wrong coupling in the wrong direction.
 
 ## Decision
-`modgud/__init__.py` re-exports exactly 13 names, with absolute imports and an explicit `__all__`. `modgud.domain` (7 passive names) and `modgud.infrastructure` (`CommonGuards`, `GuardRegistry`) are secondary facades. The API has three tiers:
+`modgud/__init__.py` re-exports exactly 13 names, with absolute imports and an explicit `__all__`. `modgud.domain` (the 7 passive names and the 2 ports) and `modgud.app` (the decorators, `CommonGuards`, `GuardRegistry`) are secondary paths to the same objects; `modgud.infrastructure` exports nothing. The API has three tiers:
 
 - **Public**: the 13 names, imported from `modgud`.
-- **Integration seam**: the two ports (also reachable at `modgud.domain.<feature>.ports`), the `runtime=` / `transformer=` parameters, `IDUNN_ENV` and `Idunn().reset()`.
-- **Internal**: the adapters, the `ast` helpers and `Wiring`. Importable, not promised.
+- **Integration seam**: the two ports (also reachable at `modgud.domain` and `modgud.domain.<feature>.ports`), the `runtime=` / `transformer=` parameters, `IDUNN_ENV` and `Idunn().reset()`.
+- **Internal**: the adapters and the `ast` helpers. Importable, not promised.
 
-Two rules keep this from collapsing back into a cycle: nothing inside `modgud/` imports a facade, and ports are never re-exported by their feature package. The docs teach one import path. The leaf paths keep working, but their layout may change between releases.
+Two rules keep this from collapsing back into a cycle: nothing inside `modgud/` imports a facade, and a port module never imports its own feature package, which re-exports it. The docs teach one import path. The leaf paths keep working, but their layout may change between releases.
 
 ## Consequences
 

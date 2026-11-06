@@ -15,7 +15,7 @@ T = TypeVar('T')
 
 
 @Port
-class ImplicitReturnTransformerPort(Protocol):
+class ImplicitReturnPort(Protocol):
   """Transform a function so its tail expressions become implicit returns."""
 
   def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:

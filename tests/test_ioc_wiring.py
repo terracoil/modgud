@@ -1,4 +1,4 @@
-"""Idunn wiring: bootstrap, injection of the two ports, singletons, reset, and the fake seam."""
+"""Idunn wiring: discovery on first use, injection of the two ports, singletons, reset, fakes."""
 
 from __future__ import annotations
 
@@ -9,12 +9,26 @@ import pytest
 from idunn import Idunn
 from modgud import (
   GuardClauseError,
-  GuardRuntimePort,
-  ImplicitReturnTransformerPort,
+  GuardPort,
+  ImplicitReturnPort,
   guarded_expression,
   implicit_return,
 )
-from modgud.app import Wiring
+
+
+class PassthroughRuntime:
+  """Runtime fake: wraps nothing, so the decorated function is the one it was handed."""
+
+  def wrap_function(
+    self,
+    func: Callable[..., Any],
+    guards: tuple[Any, ...],
+    strategy: Any,
+    on_failure: Any,
+    continuance: int,
+  ) -> Callable[..., Any]:
+    """Hand ``func`` back unguarded."""
+    return func
 
 
 class RecordingTransformer:
@@ -39,29 +53,37 @@ def _reset_idunn() -> Iterator[None]:
 
 
 class TestBootstrap:
-  """``Wiring.ensure()`` discovers modgud's ports and adapters once."""
+  """The first decoration that needs a port discovers modgud's ports and adapters, once."""
 
-  def test_report_lists_both_adapters_and_both_ports(self) -> None:
-    report = Wiring.ensure()
+  def test_nothing_is_wired_before_the_first_decoration(self) -> None:
+    assert 'modgud' not in Idunn().describe()
+
+  def test_the_first_decoration_discovers_both_adapters_and_both_ports(self) -> None:
+    guarded_expression()
+    report = Idunn().bootstrap('modgud')  # a cache hit: the decoration already discovered
 
     assert report['root_package'] == 'modgud'
     assert set(report['registered_adapters']) == {
-      'modgud.infrastructure.adapters.guard_runtime.GuardRuntime',
-      'modgud.infrastructure.adapters.implicit_return_transformer.ImplicitReturnTransformer',
+      'modgud.infrastructure.adapters.guard_adapter.GuardAdapter',
+      'modgud.infrastructure.adapters.implicit_return_adapter.ImplicitReturnAdapter',
     }
     assert set(report['registered_ports']) == {
-      'modgud.domain.guarded_expr.ports.guard_runtime_port.GuardRuntimePort',
-      'modgud.domain.implicit_ret.ports.implicit_return_transformer_port.'
-      'ImplicitReturnTransformerPort',
+      'modgud.domain.guarded_expr.ports.guard_port.GuardPort',
+      'modgud.domain.implicit_ret.ports.implicit_return_port.ImplicitReturnPort',
     }
 
-  def test_second_bootstrap_returns_the_cached_report(self) -> None:
+  def test_implicit_return_alone_discovers_too(self) -> None:
+    implicit_return()
+
+    assert 'ImplicitReturnAdapter' in Idunn().describe()
+
+  def test_later_decorations_reuse_the_first_discovery(self) -> None:
+    guarded_expression()
     first = Idunn().bootstrap('modgud')
+    implicit_return()
+    guarded_expression()
 
     assert Idunn().bootstrap('modgud') is first
-
-  def test_wiring_ensure_twice_returns_the_same_report(self) -> None:
-    assert Wiring.ensure() is Wiring.ensure()
 
 
 class TestInjection:
@@ -70,11 +92,11 @@ class TestInjection:
   def test_guarded_expression_receives_both_ports(self) -> None:
     decorator = guarded_expression()
 
-    assert isinstance(decorator.runtime, GuardRuntimePort)
-    assert isinstance(decorator.transformer, ImplicitReturnTransformerPort)
+    assert isinstance(decorator.runtime, GuardPort)
+    assert isinstance(decorator.transformer, ImplicitReturnPort)
 
   def test_implicit_return_receives_the_transformer_port(self) -> None:
-    assert isinstance(implicit_return().transformer, ImplicitReturnTransformerPort)
+    assert isinstance(implicit_return().transformer, ImplicitReturnPort)
 
   def test_adapters_are_singletons_shared_across_decorators(self) -> None:
     first, second = guarded_expression(), guarded_expression()
@@ -125,3 +147,23 @@ class TestFakeSeam:
 
     assert fake.seen == [identity]
     assert decorated is identity
+
+  def test_supplying_every_port_discovers_nothing(self) -> None:
+    def double(x: int) -> int:
+      return x * 2
+
+    def identity(x: int) -> int:
+      return x
+
+    guarded = guarded_expression(runtime=PassthroughRuntime(), transformer=RecordingTransformer())
+    plain = implicit_return(transformer=RecordingTransformer())
+
+    assert guarded(double)(2) == 4
+    assert plain(identity)(2) == 2
+    assert 'modgud' not in Idunn().describe()
+
+  def test_supplying_one_port_of_two_still_discovers_the_other(self) -> None:
+    decorator = guarded_expression(transformer=RecordingTransformer())
+
+    assert isinstance(decorator.runtime, GuardPort)
+    assert 'GuardAdapter' in Idunn().describe()

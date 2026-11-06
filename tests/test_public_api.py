@@ -16,7 +16,6 @@ import modgud.domain.guarded_expr.ports
 import modgud.domain.implicit_ret
 import modgud.domain.implicit_ret.ports
 import modgud.infrastructure
-import modgud.infrastructure.common
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_NAMES = {
@@ -26,9 +25,9 @@ PUBLIC_NAMES = {
   'GuardFailureEnum',
   'GuardFunction',
   'GuardRegistry',
-  'GuardRuntimePort',
+  'GuardPort',
   'ImplicitReturnError',
-  'ImplicitReturnTransformerPort',
+  'ImplicitReturnPort',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
   'guarded_expression',
@@ -39,14 +38,21 @@ DOMAIN_NAMES = {
   'GuardClauseError',
   'GuardFailureEnum',
   'GuardFunction',
+  'GuardPort',
   'ImplicitReturnError',
+  'ImplicitReturnPort',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
 }
+APP_NAMES = {
+  'CommonGuards',
+  'GuardRegistry',
+  'guarded_expression',
+  'implicit_return',
+}
 INTERNAL_NAMES = {
-  'GuardRuntime',
-  'ImplicitReturnTransformer',
-  'Wiring',
+  'GuardAdapter',
+  'ImplicitReturnAdapter',
   'NoExplicitReturnChecker',
   'TailRewriter',
   'TopLevelTransformer',
@@ -58,19 +64,18 @@ class TestFacadeExports:
     assert len(modgud.__all__) == len(set(modgud.__all__))
     assert set(modgud.__all__) == PUBLIC_NAMES
 
-  def test_domain_facade_exports_the_passive_types(self) -> None:
+  def test_domain_facade_exports_the_passive_types_and_ports(self) -> None:
     assert set(modgud.domain.__all__) == DOMAIN_NAMES
 
-  def test_infrastructure_facade_exports_the_guard_toolkit(self) -> None:
-    assert modgud.infrastructure.__all__ == ['CommonGuards', 'GuardRegistry']
+  def test_infrastructure_facade_exports_nothing(self) -> None:
+    assert modgud.infrastructure.__all__ == []
 
-  def test_wiring_is_reachable_from_the_app_package(self) -> None:
-    assert 'Wiring' in modgud.app.__all__
+  def test_app_package_exports_the_decorators_and_the_guard_toolkit(self) -> None:
+    assert set(modgud.app.__all__) == APP_NAMES
 
   def test_internals_are_not_exported_by_any_facade(self) -> None:
-    for facade in (modgud, modgud.domain, modgud.infrastructure):
+    for facade in (modgud, modgud.app, modgud.domain):
       assert not INTERNAL_NAMES & set(facade.__all__)
-    assert not {'GuardRuntimePort', 'ImplicitReturnTransformerPort'} & set(modgud.domain.__all__)
 
 
 class TestVersion:
@@ -86,26 +91,22 @@ class TestFacadeIdentity:
       'GuardFailureEnum': modgud.domain.guarded_expr.GuardFailureEnum,
       'GuardClauseError': modgud.domain.guarded_expr.GuardClauseError,
       'GuardFunction': modgud.domain.guarded_expr.GuardFunction,
-      'GuardRuntimePort': modgud.domain.guarded_expr.ports.GuardRuntimePort,
+      'GuardPort': modgud.domain.guarded_expr.ports.GuardPort,
       'ImplicitReturnError': modgud.domain.implicit_ret.ImplicitReturnError,
       'ExplicitReturnDisallowedError': modgud.domain.implicit_ret.ExplicitReturnDisallowedError,
       'MissingImplicitReturnError': modgud.domain.implicit_ret.MissingImplicitReturnError,
       'UnsupportedConstructError': modgud.domain.implicit_ret.UnsupportedConstructError,
-      'ImplicitReturnTransformerPort': (
-        modgud.domain.implicit_ret.ports.ImplicitReturnTransformerPort
-      ),
-      'CommonGuards': modgud.infrastructure.common.CommonGuards,
-      'GuardRegistry': modgud.infrastructure.common.GuardRegistry,
+      'ImplicitReturnPort': modgud.domain.implicit_ret.ports.ImplicitReturnPort,
+      'CommonGuards': modgud.app.CommonGuards,
+      'GuardRegistry': modgud.app.GuardRegistry,
     }
     assert set(leaves) == PUBLIC_NAMES
     for name, leaf in leaves.items():
       assert getattr(modgud, name) is leaf, name
 
-  def test_domain_and_infrastructure_names_are_the_root_objects(self) -> None:
+  def test_domain_names_are_the_root_objects(self) -> None:
     for name in DOMAIN_NAMES:
       assert getattr(modgud.domain, name) is getattr(modgud, name), name
-    for name in modgud.infrastructure.__all__:
-      assert getattr(modgud.infrastructure, name) is getattr(modgud, name), name
 
 
 class TestFreshProcess:

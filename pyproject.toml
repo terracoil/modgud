@@ -8,7 +8,7 @@ license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.11.0,<4.0.0"
 version = "2.0.0"
-dependencies = ["idunn (>=1.0.1,<2.0.0)"]
+dependencies = ["idunn (>=2.0.0,<3.0.0)"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
@@ -35,6 +35,10 @@ Idunn = "https://pypi.org/project/idunn"
 include = ["LICENSE", "README.md", "modgud/py.typed"]
 packages = [{ include = "modgud" }]
 
+# Temporary: develop against the sibling checkout. Drop this table (and re-lock) before release.
+[tool.poetry.dependencies]
+idunn = { path = "../idunn", develop = true }
+
 [dependency-groups]
 test = [
     "pytest (>=8.4.2,<9.0.0)",
@@ -47,7 +51,8 @@ dev = [
     "mypy[reports] (>=1.18.2,<2.0.0)",
     "pre-commit (>=4.3.0,<5.0.0)",
     "poetry-dynamic-versioning (>=1.9.1,<2.0.0)",
-    "twine (>=6.0)"
+    "twine (>=6.0)",
+    "freyja (>=2.0.2,<3.0.0)"
 ]
 
 [tool.pytest.ini_options]

@@ -14,12 +14,15 @@ from typing import Any, Callable
 
 from idunn import Invert
 
-from modgud.domain.guarded_expr import GuardClauseError, GuardFailureEnum, GuardFunction
-from modgud.domain.guarded_expr.ports import GuardRuntimePort
-from modgud.domain.implicit_ret.ports import ImplicitReturnTransformerPort
+from modgud.domain.guarded_expr import (
+  GuardClauseError,
+  GuardFailureEnum,
+  GuardFunction,
+  GuardPort,
+)
+from modgud.domain.implicit_ret import ImplicitReturnPort
 
 from .method_descriptors import MethodDescriptors
-from .wiring import Wiring
 
 
 class guarded_expression:
@@ -35,19 +38,15 @@ class guarded_expression:
   - ``CALL_HANDLER``: ``on_failure(errors, *args, **kwargs)`` is called.
 
   ``continuance`` caps how many guards past the first failure are evaluated.
-  ``runtime`` and ``transformer`` are injected by Idunn; pass either explicitly to
-  substitute a different implementation (e.g. a test fake).
+  ``runtime`` and ``transformer`` are injected by Idunn, which discovers modgud's adapters the
+  first time a decoration leaves either one to it. Pass either explicitly to substitute a
+  different implementation (e.g. a test fake); pass both and nothing is discovered at all.
   """
 
-  runtime: GuardRuntimePort  # assigned by @Invert
-  transformer: ImplicitReturnTransformerPort  # assigned by @Invert
+  runtime: GuardPort  # assigned by @Invert
+  transformer: ImplicitReturnPort  # assigned by @Invert
 
-  def __new__(cls, *guards: GuardFunction, **options: Any) -> guarded_expression:
-    """Discover modgud's adapters on first use (a cached no-op afterwards), then build."""
-    Wiring.ensure()
-    return super().__new__(cls)
-
-  @Invert()
+  @Invert(bootstrap='modgud')
   def __init__(
     self,
     *guards: GuardFunction,
@@ -55,8 +54,8 @@ class guarded_expression:
     strategy: GuardFailureEnum = GuardFailureEnum.ERROR_RAISE,
     on_failure: Any = GuardClauseError,
     continuance: int = 0,
-    runtime: GuardRuntimePort,
-    transformer: ImplicitReturnTransformerPort,
+    runtime: GuardPort,
+    transformer: ImplicitReturnPort,
   ) -> None:
     """Capture the guard configuration; ``runtime`` and ``transformer`` are injected by Idunn."""
     self._guards: tuple[GuardFunction, ...] = guards

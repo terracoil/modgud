@@ -11,10 +11,9 @@ from typing import Any, Callable, TypeVar, cast
 
 from idunn import Invert
 
-from modgud.domain.implicit_ret.ports import ImplicitReturnTransformerPort
+from modgud.domain.implicit_ret import ImplicitReturnPort
 
 from .method_descriptors import MethodDescriptors
-from .wiring import Wiring
 
 F = TypeVar('F', bound=Callable[..., Any])
 
@@ -22,8 +21,9 @@ F = TypeVar('F', bound=Callable[..., Any])
 class implicit_return:
   """Transform a function to use implicit returns.
 
-  ``transformer`` is injected by Idunn; pass it explicitly to substitute a
-  different implementation (e.g. a test fake).
+  ``transformer`` is injected by Idunn, which discovers modgud's adapters the first time a
+  decoration leaves it to injection. Pass it explicitly to substitute a different
+  implementation (e.g. a test fake), and nothing is discovered.
 
   :raises ExplicitReturnDisallowedError: if explicit return statements are found.
   :raises MissingImplicitReturnError: if a code path doesn't yield a value.
@@ -32,15 +32,10 @@ class implicit_return:
   :raises TypeError: if applied above ``@guarded_expression``, whose guards the rewrite would drop.
   """
 
-  transformer: ImplicitReturnTransformerPort  # assigned by @Invert
+  transformer: ImplicitReturnPort  # assigned by @Invert
 
-  def __new__(cls, **options: Any) -> implicit_return:
-    """Discover modgud's adapters on first use (a cached no-op afterwards), then build."""
-    Wiring.ensure()
-    return super().__new__(cls)
-
-  @Invert()
-  def __init__(self, *, transformer: ImplicitReturnTransformerPort) -> None:
+  @Invert(bootstrap='modgud')
+  def __init__(self, *, transformer: ImplicitReturnPort) -> None:
     """Receive the transformer port from Idunn (or from the caller)."""
 
   def __call__(self, func: F) -> F:
