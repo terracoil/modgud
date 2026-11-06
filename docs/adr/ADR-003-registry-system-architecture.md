@@ -1,4 +1,4 @@
-**Parent**: [📋 ADR Index](README.md) | [📖 ADR-002](ADR-002-guard-pattern-design-rationale.md) | [📚 Documentation Hub](../README.md)
+**Parent**: [📋 ADR Index](README.md) | [📖 ADR-002](ADR-002-guard-pattern-design-rationale.md) | [📚 Documentation Hub](../ADVANCED.md)
 
 # ADR-003: Registry System Architecture
 

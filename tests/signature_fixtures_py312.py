@@ -14,6 +14,7 @@ def accept_all(*args: object, **kwargs: object) -> bool:
   return True
 
 
+# noinspection PyStatementEffect
 @guarded_expression(accept_all)
 def identity[T](x: T) -> T:
   """Return x unchanged."""
@@ -26,15 +27,16 @@ def identity_twin[T](x: T) -> T:
 
 
 # Every kind of type parameter: bound, constrained, TypeVarTuple, ParamSpec.
+# noinspection PyStatementEffect
 @implicit_return()
 def pair[K: str, V: (int, bytes), *Ts, **P](key: K, value: V, *rest: *Ts) -> tuple[K, V]:
   """Pair key with value and ignore the rest."""
-  (key, value)  # noqa: B018
+  key, value  # noqa: B018
 
 
 def pair_twin[K: str, V: (int, bytes), *Ts, **P](key: K, value: V, *rest: *Ts) -> tuple[K, V]:
   """Pair key with value and ignore the rest."""
-  return (key, value)
+  return key, value
 
 
 @guarded_expression(accept_all, implicit_return=False)
@@ -49,6 +51,7 @@ def first_twin[T](items: list[T], default: T | None = None) -> T | None:
 
 
 # The body itself names its type parameter, so the re-compiled body must see the same object.
+# noinspection PyStatementEffect
 @guarded_expression(accept_all)
 def own_type_param[T](x: T) -> object:
   """Return the type parameter T as the body sees it."""
@@ -67,6 +70,7 @@ class Box[T]:
     """Hold one item."""
     self.item: T = item
 
+  # noinspection PyStatementEffect
   @guarded_expression(accept_all)
   def get[D](self, default: D | None = None) -> T | D | None:
     """Return the item, or default when the item is None."""
@@ -76,6 +80,7 @@ class Box[T]:
     """Return the item, or default when the item is None."""
     return self.item if self.item is not None else default
 
+  # noinspection PyStatementEffect
   @guarded_expression(accept_all)
   def item_type(self) -> object:
     """Return the class type parameter T as the method body sees it."""

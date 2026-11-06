@@ -7,17 +7,21 @@ app layer never imports infrastructure.
 
 from __future__ import annotations
 
-from typing import Callable, Protocol, TypeVar
+from typing import Callable, Protocol
 
 from idunn import Port
 
-T = TypeVar('T')
+from modgud.domain.types import F, T
 
 
 @Port
 class ImplicitReturnPort(Protocol):
   """Transform a function so its tail expressions become implicit returns."""
 
+  def transform(self, func: F) -> F:
+    """Return ``func`` rewritten for implicit returns, as the ``implicit_return`` decorator sees it."""
+    ...
+
   def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
-    """Return `func` rewritten so the tail expressions become implicit returns."""
+    """Return the plain function `func` rewritten so the tail expressions become implicit returns."""
     ...

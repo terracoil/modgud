@@ -6,20 +6,39 @@ import ast
 import inspect
 import textwrap
 import types
-from typing import Any, Callable, ParamSpec, TypeVar, TypeVarTuple
+from typing import Any, Callable, ParamSpec, TypeVar, TypeVarTuple, cast
 
 from idunn import Adapter, LifecycleEnum
 
 from modgud.domain.errors import ExplicitReturnDisallowedError, UnsupportedConstructError
 from modgud.domain.ports import ImplicitReturnPort
+from modgud.domain.types import F, T
 from modgud.infrastructure.ast import NoExplicitReturnChecker, TailRewriter, TopLevelTransformer
-
-T = TypeVar('T')
+from modgud.infrastructure.internal import MethodDescriptors
 
 
 @Adapter(ImplicitReturnPort, lifecycle=LifecycleEnum.SINGLETON)
 class ImplicitReturnAdapter(ImplicitReturnPort):
   """AST transformation for implicit return functionality; Idunn's adapter for the port."""
+
+  def transform(self, func: F) -> F:
+    """Transform a function so the last expression in each branch is returned.
+
+    ``func`` may also be a ``staticmethod`` / ``classmethod`` object; the result is then a
+    descriptor of the same kind.
+
+    :raises TypeError: if ``func`` is already a ``guarded_expression`` wrapper. The rewrite
+      re-reads the original source, so the guards would silently disappear.
+    """
+    plain, kind = MethodDescriptors.unwrap(func)
+    if getattr(plain, '__modgud_guarded__', False):
+      raise TypeError(
+        '@implicit_return() must sit below @guarded_expression; put it closer to the def, '
+        'or pass implicit_return=True'
+      )
+    transformed: Callable[..., Any] = self.transform_function(plain)
+    transformed.__implicit_return__ = True  # type: ignore[attr-defined]
+    return cast(F, MethodDescriptors.rewrap(transformed, kind))
 
   def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
     """Transform a function to use implicit returns.

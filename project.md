@@ -5,7 +5,6 @@
 ```bash
 modgud/                            # Facade: the 13 public names, absolute imports + __all__, __version__
   app/                             # Decorators and guard toolkit (re-exports all four)
-    method_descriptors.py          # MethodDescriptors: unwrap/rewrap staticmethod & classmethod around the decorators
     guarded_expression.py          # class guarded_expression, @Invert(bootstrap='modgud') __init__
     implicit_return.py             # class implicit_return, same @Invert (applied as @implicit_return())
     common_guards.py               # CommonGuards
@@ -14,10 +13,11 @@ modgud/                            # Facade: the 13 public names, absolute impor
     enums/guard_failure_enum.py    # GuardFailureEnum
     errors/                        # GuardClauseError, ImplicitReturnError + 3 children, one per module
     ports/                         # @Port protocols (GuardPort, ImplicitReturnPort)
-    types.py                       # GuardFunction (shared with app and infrastructure)
-  infrastructure/                  # Exports nothing; both subpackages are internal
+    types.py                       # GuardFunction, and the T / F type variables the ports use
+  infrastructure/                  # Exports nothing; all three subpackages are internal
     adapters/                      # @Adapter implementations of the ports, discovered and injected by Idunn
     ast/                           # Internal AST helpers for the transformer (underscore modules, re-exported by __init__ only)
+    internal/                      # MethodDescriptors: unwrap/rewrap staticmethod & classmethod around the adapters
 examples/
   free_range/                      # Module-level decorated functions; exempt from single-class-per-file / no-loose-functions
   classy/                          # One class per file, no module-level def, a demo() classmethod with the asserts
@@ -29,8 +29,8 @@ tests/                             # pytest; test_architecture.py enforces the t
 | Tier | Names | Import from |
 |---|---|---|
 | Public | `guarded_expression`, `implicit_return`, `GuardFailureEnum`, `GuardClauseError`, `GuardFunction`, `ImplicitReturnError` and its 3 children, `CommonGuards`, `GuardRegistry` (11 names; plus the two ports below, 13 in `__all__`) | `modgud` |
-| Integration seam | `GuardPort`, `ImplicitReturnPort`; the `runtime=` / `transformer=` parameters; `IDUNN_ENV`; `Idunn().reset()` | `modgud`, `modgud.domain`, or `modgud.domain.ports` |
-| Internal | `GuardAdapter`, `ImplicitReturnAdapter`, `NoExplicitReturnChecker`, `TailRewriter`, `TopLevelTransformer` | `modgud.infrastructure.adapters`, `modgud.infrastructure.ast` |
+| Integration seam | `GuardPort`, `ImplicitReturnPort`; the `guard_port=` / `imp_return_port=` parameters; `IDUNN_ENV`; `Idunn().reset()` | `modgud`, `modgud.domain`, or `modgud.domain.ports` |
+| Internal | `GuardAdapter`, `ImplicitReturnAdapter`, `NoExplicitReturnChecker`, `TailRewriter`, `TopLevelTransformer`, `MethodDescriptors` | `modgud.infrastructure.adapters`, `modgud.infrastructure.ast`, `modgud.infrastructure.internal` |
 
 The structure used to be the API. It turned out people wanted one import line; see ADR-004.
 
@@ -55,12 +55,13 @@ Enforced by `tests/test_architecture.py`. No row may import a third-party packag
 | `modgud.domain` (facade) | `modgud.domain.<owner>` | none |
 | `modgud.infrastructure` (facade) | nothing | none |
 | `modgud.app` | `modgud.app.*`, `modgud.domain.<owner>` | `idunn` (`Invert` only) |
-| `modgud.infrastructure.adapters` | `modgud.domain.<owner>`, `modgud.infrastructure.ast` | `idunn` (`Adapter`, `LifecycleEnum`) |
+| `modgud.infrastructure.adapters` | `modgud.domain.<owner>`, `modgud.infrastructure.ast`, `modgud.infrastructure.internal` | `idunn` (`Adapter`, `LifecycleEnum`) |
 | `modgud.infrastructure.ast` | `modgud.domain.<owner>`, itself (package only; imported solely by `adapters`) | none |
+| `modgud.infrastructure.internal` | `modgud.domain.<owner>`, itself (package only; imported solely by `adapters`) | none |
 | `modgud.domain.ports` | itself, `modgud.domain.enums`, `.errors` and `.types`; never `modgud.domain` | `idunn.Port` only |
 | `modgud.domain.enums`, `.errors`, `.types` | itself only | none |
 
-Nothing in `modgud/` outside `modgud.infrastructure.adapters` imports the adapters; only tests do. `modgud.infrastructure.ast` is imported only by the adapters, as the package, never by module filename.
+Nothing in `modgud/` outside `modgud.infrastructure.adapters` imports the adapters; only tests do. `modgud.infrastructure.ast` and `modgud.infrastructure.internal` are imported only by the adapters, as the package, never by module filename.
 
 ## 🗂️ Example tree rules
 

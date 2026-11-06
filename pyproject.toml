@@ -27,7 +27,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/terracoil/modgud/blob/main/README.md"
 Repository = "https://github.com/terracoil/modgud"
-Documentation = "https://github.com/terracoil/modgud/blob/main/docs/README.md"
+Documentation = "https://github.com/terracoil/modgud/blob/main/docs/ADVANCED.md"
 Freyja = "https://pypi.org/project/freyja"
 Idunn = "https://pypi.org/project/idunn"
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar
 
 import pytest
 from idunn import Idunn
@@ -15,28 +15,37 @@ from modgud import (
   implicit_return,
 )
 
+F = TypeVar('F', bound=Callable[..., Any])
+
 
 class PassthroughRuntime:
-  """Runtime fake: wraps nothing, so the decorated function is the one it was handed."""
+  """Guard-port fake: wraps nothing, so the decorated function is the one it was handed."""
 
-  def wrap_function(
+  def transform(
     self,
     func: Callable[..., Any],
+    continuance: int,
+    imp_return_port: ImplicitReturnPort,
+    implicit_return: bool,
     guards: tuple[Any, ...],
     strategy: Any,
     on_failure: Any,
-    continuance: int,
   ) -> Callable[..., Any]:
-    """Hand ``func`` back unguarded."""
-    return func
+    """Hand ``func`` back unguarded; the transformer still sees it when the rewrite is on."""
+    return imp_return_port.transform_function(func) if implicit_return else func
 
 
 class RecordingTransformer:
-  """Transformer fake: records each function it is asked to transform and returns it as-is."""
+  """Implicit-return fake: records each function it is asked to transform and returns it as-is."""
 
   def __init__(self) -> None:
     """Start with nothing recorded."""
     self.seen: list[Callable[..., Any]] = []
+
+  def transform(self, func: F) -> F:
+    """Record ``func`` and hand it back unchanged."""
+    self.seen.append(func)
+    return func
 
   def transform_function(self, func: Callable[..., Any]) -> Callable[..., Any]:
     """Record ``func`` and hand it back unchanged."""
@@ -92,25 +101,25 @@ class TestInjection:
   def test_guarded_expression_receives_both_ports(self) -> None:
     decorator = guarded_expression()
 
-    assert isinstance(decorator.runtime, GuardPort)
-    assert isinstance(decorator.transformer, ImplicitReturnPort)
+    assert isinstance(decorator.guard_port, GuardPort)
+    assert isinstance(decorator.imp_return_port, ImplicitReturnPort)
 
   def test_implicit_return_receives_the_transformer_port(self) -> None:
-    assert isinstance(implicit_return().transformer, ImplicitReturnPort)
+    assert isinstance(implicit_return().imp_return_port, ImplicitReturnPort)
 
   def test_adapters_are_singletons_shared_across_decorators(self) -> None:
     first, second = guarded_expression(), guarded_expression()
 
-    assert first.runtime is second.runtime
-    assert first.transformer is second.transformer
-    assert implicit_return().transformer is first.transformer
+    assert first.guard_port is second.guard_port
+    assert first.imp_return_port is second.imp_return_port
+    assert implicit_return().imp_return_port is first.imp_return_port
 
 
 class TestReset:
   """``Idunn().reset()`` forgets the wiring; the next decoration re-discovers it."""
 
   def test_decoration_still_works_after_reset(self) -> None:
-    before = guarded_expression().runtime
+    before = guarded_expression().guard_port
     Idunn().reset(environment=Idunn().environment)
 
     @guarded_expression(lambda x: x > 0 or 'x must be positive', implicit_return=False)
@@ -120,7 +129,7 @@ class TestReset:
     assert double(2) == 4
     with pytest.raises(GuardClauseError, match='x must be positive'):
       double(-1)
-    assert guarded_expression().runtime is not before
+    assert guarded_expression().guard_port is not before
 
 
 class TestFakeSeam:
@@ -132,7 +141,7 @@ class TestFakeSeam:
     def triple(x: int) -> int:
       return x * 3
 
-    decorated = guarded_expression(transformer=fake)(triple)
+    decorated = guarded_expression(imp_return_port=fake)(triple)
 
     assert fake.seen == [triple]
     assert decorated(2) == 6
@@ -143,7 +152,7 @@ class TestFakeSeam:
     def identity(x: int) -> int:
       return x
 
-    decorated = implicit_return(transformer=fake)(identity)
+    decorated = implicit_return(imp_return_port=fake)(identity)
 
     assert fake.seen == [identity]
     assert decorated is identity
@@ -155,15 +164,17 @@ class TestFakeSeam:
     def identity(x: int) -> int:
       return x
 
-    guarded = guarded_expression(runtime=PassthroughRuntime(), transformer=RecordingTransformer())
-    plain = implicit_return(transformer=RecordingTransformer())
+    guarded = guarded_expression(
+      guard_port=PassthroughRuntime(), imp_return_port=RecordingTransformer()
+    )
+    plain = implicit_return(imp_return_port=RecordingTransformer())
 
     assert guarded(double)(2) == 4
     assert plain(identity)(2) == 2
     assert 'modgud' not in Idunn().describe()
 
   def test_supplying_one_port_of_two_still_discovers_the_other(self) -> None:
-    decorator = guarded_expression(transformer=RecordingTransformer())
+    decorator = guarded_expression(imp_return_port=RecordingTransformer())
 
-    assert isinstance(decorator.runtime, GuardPort)
+    assert isinstance(decorator.guard_port, GuardPort)
     assert 'GuardAdapter' in Idunn().describe()

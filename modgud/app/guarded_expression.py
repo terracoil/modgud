@@ -19,8 +19,6 @@ from modgud.domain.errors import GuardClauseError
 from modgud.domain.ports import GuardPort, ImplicitReturnPort
 from modgud.domain.types import GuardFunction
 
-from .method_descriptors import MethodDescriptors
-
 
 class guarded_expression:
   """Guard a function and, by default, enable implicit returns.
@@ -35,14 +33,17 @@ class guarded_expression:
   - ``CALL_HANDLER``: ``on_failure(errors, *args, **kwargs)`` is called.
 
   ``continuance`` caps how many guards past the first failure are evaluated.
-  ``runtime`` and ``transformer`` are injected by Idunn, which discovers modgud's adapters the
-  first time a decoration leaves either one to it. Pass either explicitly to substitute a
-  different implementation (e.g. a test fake); pass both and nothing is discovered at all.
+  ``guard_port`` and ``imp_return_port`` are injected by Idunn, which discovers modgud's
+  adapters the first time a decoration leaves either one to it. Pass either explicitly to
+  substitute a different implementation (e.g. a test fake); pass both and nothing is
+  discovered at all.
   """
 
-  runtime: GuardPort  # assigned by @Invert
-  transformer: ImplicitReturnPort  # assigned by @Invert
+  guard_port: GuardPort  # assigned by @Invert
+  imp_return_port: ImplicitReturnPort  # assigned by @Invert
 
+  # @Invert assigns the port parameters to self before the body runs.
+  # noinspection PyUnusedLocal
   @Invert(bootstrap='modgud')
   def __init__(
     self,
@@ -51,10 +52,10 @@ class guarded_expression:
     strategy: GuardFailureEnum = GuardFailureEnum.ERROR_RAISE,
     on_failure: Any = GuardClauseError,
     continuance: int = 0,
-    runtime: GuardPort,
-    transformer: ImplicitReturnPort,
+    guard_port: GuardPort,
+    imp_return_port: ImplicitReturnPort,
   ) -> None:
-    """Capture the guard configuration; ``runtime`` and ``transformer`` are injected by Idunn."""
+    """Capture the guard configuration; the two ports are injected by Idunn or passed by the caller."""
     self._guards: tuple[GuardFunction, ...] = guards
     self._implicit_return: bool = implicit_return
     self._strategy: GuardFailureEnum = strategy
@@ -62,23 +63,17 @@ class guarded_expression:
     self._continuance: int = continuance
 
   def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
-    """Apply the (optional) implicit-return rewrite, then wrap ``func`` with guard dispatch.
+    """Hand ``func`` to the guard port, which rewrites it (optionally) and wraps it with guards.
 
     ``func`` may also be a ``staticmethod`` / ``classmethod`` object (modgud applied outside
     the built-in); the result is then a descriptor of the same kind.
     """
-    plain, kind = MethodDescriptors.unwrap(func)
-    already_transformed: bool = getattr(plain, '__implicit_return__', False)
-    target: Callable[..., Any] = (
-      self.transformer.transform_function(plain)
-      if self._implicit_return and not already_transformed
-      else plain
+    return self.guard_port.transform(
+      func,
+      continuance=self._continuance,
+      imp_return_port=self.imp_return_port,
+      implicit_return=self._implicit_return,
+      guards=self._guards,
+      strategy=self._strategy,
+      on_failure=self._on_failure,
     )
-    wrapped: Callable[..., Any] = self.runtime.wrap_function(
-      target, self._guards, self._strategy, self._on_failure, self._continuance
-    )
-    # Lets @implicit_return() refuse to sit above this wrapper: its re-compile would drop the guards
-    wrapped.__modgud_guarded__ = True  # type: ignore[attr-defined]
-    if self._implicit_return:
-      wrapped.__implicit_return__ = True  # type: ignore[attr-defined]
-    return MethodDescriptors.rewrap(wrapped, kind)

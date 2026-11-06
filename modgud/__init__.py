@@ -6,7 +6,7 @@ Import everything you need from here::
 
 The names in ``__all__`` are the supported public API. ``GuardPort`` and
 ``ImplicitReturnPort`` are the integration seam for the decorators'
-``runtime=`` / ``transformer=`` parameters. Leaf packages remain importable, but
+``guard_port=`` / ``imp_return_port=`` parameters. Leaf packages remain importable, but
 their layout may change between releases. Examples:
 https://github.com/terracoil/modgud/tree/main/examples
 """
@@ -14,16 +14,17 @@ https://github.com/terracoil/modgud/tree/main/examples
 from importlib.metadata import PackageNotFoundError, version
 
 from modgud.app import CommonGuards, GuardRegistry, guarded_expression, implicit_return
-from modgud.domain.enums import GuardFailureEnum
-from modgud.domain.errors import (
+from modgud.domain import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
+  GuardFailureEnum,
+  GuardFunction,
+  GuardPort,
   ImplicitReturnError,
+  ImplicitReturnPort,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from modgud.domain.ports import GuardPort, ImplicitReturnPort
-from modgud.domain.types import GuardFunction
 
 try:
   __version__: str = version('modgud')  # single-sourced from pyproject.toml

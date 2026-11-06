@@ -1,4 +1,4 @@
-**Parent**: [📚 Documentation Hub](../README.md) | [🌉 Main README](../../README.md) | [📖 API Reference](../api-reference.md)
+**Parent**: [📚 Documentation Hub](../ADVANCED.md) | [🌉 Main README](../../README.md) | [📖 API Reference](../api-reference.md)
 
 # Architecture Decision Records
 

@@ -23,7 +23,7 @@ DOCS: list[Path] = sorted(
   ]
   if path.exists()
 )
-USER_FACING: list[Path] = [REPO_ROOT / 'README.md', REPO_ROOT / 'docs' / 'README.md']
+USER_FACING: list[Path] = [REPO_ROOT / 'README.md', REPO_ROOT / 'docs' / 'ADVANCED.md']
 API_REFERENCE = REPO_ROOT / 'docs' / 'api-reference.md'
 REPO_URL = 'https://github.com/terracoil/modgud/'
 FENCE = re.compile(r'^```(\w*)\n(.*?)^```', re.M | re.S)

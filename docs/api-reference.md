@@ -1,4 +1,4 @@
-**Parent**: [📚 Documentation Hub](README.md) | [🌉 Main README](../README.md) | [⚙️ How It Works](how-it-works.md)
+**Parent**: [📚 Documentation Hub](ADVANCED.md) | [🌉 Main README](../README.md) | [⚙️ How It Works](how-it-works.md)
 
 # API reference
 
@@ -19,7 +19,7 @@ Those 13 names are the public API. Everything else sits in a lower tier:
 | Tier | What | Where | Promise |
 |---|---|---|---|
 | Public | the 13 names above | `modgud` | Documented on this page |
-| Integration seam | the two ports, `runtime=` / `transformer=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud` (ports also at `modgud.domain` and `modgud.domain.ports`) | For fakes and Idunn users; see [Integration seam](#integration-seam) |
+| Integration seam | the two ports, `guard_port=` / `imp_return_port=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud` (ports also at `modgud.domain` and `modgud.domain.ports`) | For fakes and Idunn users; see [Integration seam](#integration-seam) |
 | Internal | `GuardAdapter`, `ImplicitReturnAdapter`, `modgud.infrastructure.ast` | leaf packages | May move between releases |
 
 `modgud.domain` (nine names) and `modgud.app` (four) are secondary paths to the same objects, there for the package's layering. `modgud.infrastructure` exports nothing. These docs teach one import path.
@@ -35,8 +35,8 @@ guarded_expression(
   strategy: GuardFailureEnum = GuardFailureEnum.ERROR_RAISE,
   on_failure: Any = GuardClauseError,
   continuance: int = 0,
-  runtime: GuardPort,                   # injected by Idunn
-  transformer: ImplicitReturnPort,  # injected by Idunn
+  guard_port: GuardPort,                 # injected by Idunn
+  imp_return_port: ImplicitReturnPort,   # injected by Idunn
 )
 ```
 
@@ -47,8 +47,8 @@ guarded_expression(
 | `strategy` | `GuardFailureEnum` | `ERROR_RAISE` | What a failure turns into; see [GuardFailureEnum](#guardfailureenum) |
 | `on_failure` | `Any` | `GuardClauseError` | The payload paired with `strategy` |
 | `continuance` | `int` | `0` | How many more failures to collect after the first |
-| `runtime` | `GuardPort` | injected | Pass one only to substitute a fake |
-| `transformer` | `ImplicitReturnPort` | injected | Pass one only to substitute a fake |
+| `guard_port` | `GuardPort` | injected | Pass one only to substitute a fake |
+| `imp_return_port` | `ImplicitReturnPort` | injected | Pass one only to substitute a fake |
 
 Always applied with parentheses, even with no guards.
 
@@ -124,7 +124,7 @@ Full version: [examples/free_range/03_failure_strategies.py](../examples/free_ra
 ```python
 implicit_return(
   *,
-  transformer: ImplicitReturnPort,  # injected by Idunn
+  imp_return_port: ImplicitReturnPort,  # injected by Idunn
 )
 ```
 
@@ -293,36 +293,40 @@ from modgud import GuardPort, ImplicitReturnPort
 from modgud.domain.ports import GuardPort, ImplicitReturnPort  # same objects
 ```
 
-The ports declare `wrap_function(self, func, guards, strategy, on_failure, continuance)` and `transform_function(self, func)` as ordinary instance methods, so a fake is a plain object that may keep state on `self`. Pass it as `runtime=` or `transformer=` and it beats the injected adapter, for that decorator only. Swapping the adapters process-wide isn't supported.
+The ports declare ordinary instance methods, so a fake is a plain object that may keep state on `self`. `ImplicitReturnPort` has `transform_function(self, func)`, the bare rewrite of a plain function, and `transform(self, func)`, what `@implicit_return()` calls: it also unwraps a `staticmethod` / `classmethod`, marks the result and refuses a `guarded_expression` wrapper. `GuardPort` has one method, `transform(self, func, continuance, imp_return_port, implicit_return, guards, strategy, on_failure)`: it rewrites through `imp_return_port.transform_function` when asked, then wraps with the guards. Pass a fake as `guard_port=` or `imp_return_port=` and it beats the injected adapter, for that decorator only. Swapping the adapters process-wide isn't supported.
 
 ```python
 class RecordingTransformer:
   def __init__(self) -> None:
     self.seen: list[str] = []
 
+  def transform(self, func: F) -> F:
+    self.seen.append(func.__name__)
+    return func
+
   def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
     self.seen.append(func.__name__)
     return func
 
 RECORDER = RecordingTransformer()
-TRANSFORMER: ImplicitReturnPort = RECORDER  # mypy checks the fake here
+IMP_RETURN_PORT: ImplicitReturnPort = RECORDER  # mypy checks the fake here
 
-@guarded_expression(lambda x: x > 0 or 'x must be positive', runtime=RUNTIME, transformer=TRANSFORMER)
+@guarded_expression(lambda x: x > 0 or 'x must be positive', guard_port=GUARD_PORT, imp_return_port=IMP_RETURN_PORT)
 def halve(x: int) -> float:
   return x / 2
 ```
 
-`RUNTIME`, in the full file, is an auditing fake that logs every verdict and blocks nothing: a bouncer who only takes notes.
+`GUARD_PORT`, in the full file, is an auditing fake that logs every verdict and blocks nothing: a bouncer who only takes notes.
 
 Full version: [examples/free_range/12_swapping_the_runtime.py](../examples/free_range/12_swapping_the_runtime.py)
 
 How the wiring behaves:
 
 - The first decoration in a process that leaves a port to injection, not the import, runs `Idunn().bootstrap('modgud')`. The decorators declare that with `@Invert(bootstrap='modgud')`; modgud itself never constructs `Idunn()`.
-- A decoration that passes every port it takes (`runtime=` and `transformer=` for `guarded_expression`, `transformer=` for `implicit_return`) triggers no discovery.
+- A decoration that passes every port it takes (`guard_port=` and `imp_return_port=` for `guarded_expression`, `imp_return_port=` for `implicit_return`) triggers no discovery.
 - Idunn reads `IDUNN_ENV` when its container is first created. modgud's adapters declare no environment, so it matters only to your own.
 - `Idunn().reset()` clears the whole container, yours included. The next decoration re-discovers modgud; earlier functions keep working. Fixtures call `Idunn().reset(environment=Idunn().environment)` to keep the environment.
 
 ---
 
-[← Back to Documentation Hub](README.md) | [How It Works →](how-it-works.md)
+[← Back to Documentation Hub](ADVANCED.md) | [How It Works →](how-it-works.md)

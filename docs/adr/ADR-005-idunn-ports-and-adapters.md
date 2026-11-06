@@ -1,4 +1,4 @@
-**Parent**: [📋 ADR Index](README.md) | [📖 ADR-004](ADR-004-public-facade-and-api-tiers.md) | [📚 Documentation Hub](../README.md)
+**Parent**: [📋 ADR Index](README.md) | [📖 ADR-004](ADR-004-public-facade-and-api-tiers.md) | [📚 Documentation Hub](../ADVANCED.md)
 
 # ADR-005: Idunn Ports and Adapters
 
@@ -12,6 +12,8 @@ Accepted (2026-11-02)
 > **Update 2026-11-05.** Idunn 2.0 added `@Invert(bootstrap=...)`. The `Wiring` composition root and the decorators' `__new__` hooks are gone; the decision below describes the wiring as it now stands.
 
 > **Update 2026-11-06.** The ports now live in `modgud.domain.ports`. The `modgud.domain.<feature>.ports` path below predates the flattening of `modgud.domain` (see ADR-004).
+
+> **Update 2026-11-06 (later).** The seam parameters are now `guard_port=` / `imp_return_port=` (formerly `runtime=` / `transformer=`), and each port exposes a single `transform` entry point that the decorator delegates to wholesale: descriptor handling, the markers and the stacking check moved from `modgud.app` into the adapters, and `MethodDescriptors` moved to `modgud.infrastructure.internal`. `GuardAdapter.wrap_function` survives as the adapter's guard-only step, no longer on the port.
 
 ## Context
 The decorators used to import `GuardAdapter` and `ImplicitReturnAdapter` directly. Tests that wanted a fake runtime had to monkeypatch a module attribute, and the "app never imports infrastructure" rule was a comment rather than a fact. A library whose whole pitch is discipline at function boundaries was wiring its own internals by hand.

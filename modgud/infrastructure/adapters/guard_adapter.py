@@ -6,6 +6,8 @@ failures through the chosen `GuardFailureEnum`. It is the Idunn adapter for
 `GuardPort`.
 """
 
+from __future__ import annotations
+
 import functools
 import inspect
 from typing import Any, Callable
@@ -14,13 +16,45 @@ from idunn import Adapter, LifecycleEnum
 
 from modgud.domain.enums import GuardFailureEnum
 from modgud.domain.errors import GuardClauseError
-from modgud.domain.ports import GuardPort
+from modgud.domain.ports import GuardPort, ImplicitReturnPort
 from modgud.domain.types import GuardFunction
+from modgud.infrastructure.internal import MethodDescriptors
 
 
 @Adapter(GuardPort, lifecycle=LifecycleEnum.SINGLETON)
 class GuardAdapter(GuardPort):
   """Runtime guard checking and failure handling."""
+
+  def transform(
+    self,
+    func: Callable[..., Any],
+    continuance: int,
+    imp_return_port: ImplicitReturnPort,
+    implicit_return: bool,
+    guards: tuple[GuardFunction, ...],
+    strategy: GuardFailureEnum,
+    on_failure: Any,
+  ) -> Callable[..., Any]:
+    """Apply the (optional) implicit-return rewrite, then wrap ``func`` with guard dispatch.
+
+    ``func`` may be a ``staticmethod`` / ``classmethod`` object; the result is then a descriptor
+    of the same kind. A function already marked ``__implicit_return__`` is not rewritten again.
+    """
+    plain, kind = MethodDescriptors.unwrap(func)
+    already_transformed: bool = getattr(plain, '__implicit_return__', False)
+    target: Callable[..., Any] = (
+      imp_return_port.transform_function(plain)
+      if implicit_return and not already_transformed
+      else plain
+    )
+    wrapped: Callable[..., Any] = self.wrap_function(
+      target, guards, strategy, on_failure, continuance
+    )
+    # Lets @implicit_return() refuse to sit above this wrapper: its re-compile would drop the guards
+    wrapped.__modgud_guarded__ = True  # type: ignore[attr-defined]
+    if implicit_return:
+      wrapped.__implicit_return__ = True  # type: ignore[attr-defined]
+    return MethodDescriptors.rewrap(wrapped, kind)
 
   def wrap_function(
     self,
@@ -30,7 +64,7 @@ class GuardAdapter(GuardPort):
     on_failure: Any,
     continuance: int,
   ) -> Callable[..., Any]:
-    """Wrap a function with guard checking.
+    """Wrap a plain function with guard checking; no implicit-return rewrite happens here.
 
     :param func: Function to wrap.
     :param guards: Guards evaluated before each call.

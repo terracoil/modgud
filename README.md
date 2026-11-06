@@ -160,7 +160,7 @@ In Norse myth, Móðguðr guards Gjallarbrú, the bridge over the river Gjöll o
 
 ## 📚 Documentation
 
-- [Docs hub](https://github.com/terracoil/modgud/blob/main/docs/README.md): which document covers what, and where to start.
+- [Docs hub](https://github.com/terracoil/modgud/blob/main/docs/ADVANCED.md): which document covers what, and where to start.
 - [API reference](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md): signatures, parameter tables, errors, and the integration seam for swapping the runtime in tests ([Integration seam](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#integration-seam)).
 - [How it works](https://github.com/terracoil/modgud/blob/main/docs/how-it-works.md): the guard pipeline, the AST rewrite and the Idunn wiring.
 

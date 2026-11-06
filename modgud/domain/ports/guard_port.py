@@ -14,24 +14,22 @@ from idunn import Port
 from modgud.domain.enums import GuardFailureEnum
 from modgud.domain.types import GuardFunction
 
+from .implicit_return_port import ImplicitReturnPort
+
 
 @Port
 class GuardPort(Protocol):
-  """Wrap a callable with guard evaluation + failure dispatch."""
+  """Rewrite a callable for implicit returns, then wrap it with guard evaluation + failure dispatch."""
 
-  def wrap_function(
+  def transform(
     self,
     func: Callable[..., Any],
+    continuance: int,
+    imp_return_port: ImplicitReturnPort,
+    implicit_return: bool,
     guards: tuple[GuardFunction, ...],
     strategy: GuardFailureEnum,
     on_failure: Any,
-    continuance: int,
   ) -> Callable[..., Any]:
-    """Return `func` wrapped with guard evaluation + failure dispatch.
-
-    Contract for methods: when ``func`` is defined in a class body and its first positional
-    parameter is named ``self`` or ``cls``, the guards receive the call's arguments without
-    that receiver. ``CALL_HANDLER`` handlers still receive the full argument list. A
-    coroutine function is wrapped in a coroutine function, so failures surface at ``await``.
-    """
+    """Apply the (optional) implicit-return rewrite, then wrap ``func`` with guard dispatch."""
     ...

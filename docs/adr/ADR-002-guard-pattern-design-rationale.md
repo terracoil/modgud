@@ -11,6 +11,8 @@ Accepted (2025-10-26)
 
 > **Update 2026-11-02.** One addition to the contract, decided while making methods work (ADR-004 era, plan decision S3): when the decorated callable is a method (defined in a class body, first positional parameter named `self` or `cls`), guards receive the call's arguments **without** the receiver, so `positive('x')` on `def m(self, x)` checks `x`. `CALL_HANDLER` handlers still get everything. The rule is stated on `GuardPort.wrap_function`, so a custom `runtime=` is expected to honour it. Detection is by name and defining scope, not by descriptor type: a `@staticmethod` whose first parameter is called `cls` has its first argument skipped too.
 
+> **Update 2026-11-06.** The port's only method is now `GuardPort.transform` and the parameter is `guard_port=`; a custom guard port is still expected to honour the rule above. `wrap_function` is an implementation step of `GuardAdapter`, and its docstring restates the rule.
+
 ## Context
 A validator that returns `False` has told you something went wrong and nothing else, which is also what a toddler does. Guard clauses need a consistent pattern for expressing validation success/failure. Traditional approaches use boolean returns with separate error handling, making guard functions less composable and requiring additional context for error messages.
 

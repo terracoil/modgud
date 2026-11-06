@@ -1,4 +1,4 @@
-**Parent**: [📋 ADR Index](README.md) | [📚 Documentation Hub](../README.md) | [📖 ADR-002](ADR-002-guard-pattern-design-rationale.md)
+**Parent**: [📋 ADR Index](README.md) | [📚 Documentation Hub](../ADVANCED.md) | [📖 ADR-002](ADR-002-guard-pattern-design-rationale.md)
 
 # ADR-001: Implicit Return Transformation Approach
 

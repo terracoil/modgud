@@ -412,7 +412,7 @@ class CommonGuards:
     return result
 
   @classmethod
-  def _register_to_global_registry(cls) -> None:
+  def register_to_global_registry(cls) -> None:
     """Auto-register all CommonGuards methods to global registry.
 
     This method is called once on module import to make all common guards
@@ -432,10 +432,10 @@ class CommonGuards:
     ]
 
     for name in guards_to_register:
-      method = getattr(cls, name, None)
+      method: Callable[..., GuardFunction] | None = getattr(cls, name, None)
       if callable(method):
         GuardRegistry.register(name, method, namespace='common')
 
 
 # Auto-register CommonGuards on module import
-CommonGuards._register_to_global_registry()
+CommonGuards.register_to_global_registry()

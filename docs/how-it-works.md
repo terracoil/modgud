@@ -1,4 +1,4 @@
-**Parent**: [📚 Documentation Hub](README.md) | [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md)
+**Parent**: [📚 Documentation Hub](ADVANCED.md) | [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md)
 
 # How it works
 
@@ -16,11 +16,11 @@ The app layer never imports infrastructure. It knows the ports and nothing else.
 
 Applying `@guarded_expression(...)` takes three steps. The first two happen inside `@Invert(bootstrap='modgud')` on the decorator's `__init__`.
 
-1. If the caller left `runtime` or `transformer` out, Idunn runs `Idunn().bootstrap('modgud')`. The first call in a process discovers `modgud.domain.ports` and `modgud.infrastructure.adapters` and registers `GuardAdapter` and `ImplicitReturnAdapter` as singleton adapters. Later calls are a cache hit. A caller who passes both skips discovery altogether.
-2. Idunn injects whichever of `runtime` and `transformer` the caller did not pass.
-3. `__call__(func)` unwraps a `staticmethod` / `classmethod` if it got one, rewrites the function when `implicit_return=True`, wraps it with `runtime.wrap_function(...)`, sets an `__implicit_return__` marker, and puts the descriptor back.
+1. If the caller left `guard_port` or `imp_return_port` out, Idunn runs `Idunn().bootstrap('modgud')`. The first call in a process discovers `modgud.domain.ports` and `modgud.infrastructure.adapters` and registers `GuardAdapter` and `ImplicitReturnAdapter` as singleton adapters. Later calls are a cache hit. A caller who passes both skips discovery altogether.
+2. Idunn injects whichever of `guard_port` and `imp_return_port` the caller did not pass.
+3. `__call__(func)` hands everything to `guard_port.transform(...)`. `GuardAdapter` unwraps a `staticmethod` / `classmethod` if it got one, rewrites the function through `imp_return_port.transform_function` when `implicit_return=True`, wraps it with the guards, sets the `__modgud_guarded__` and `__implicit_return__` markers, and puts the descriptor back.
 
-`@implicit_return()` takes the same path with only the transformer. The marker is how `guarded_expression` knows a function was already rewritten, so a stacked pair never rewrites twice.
+`@implicit_return()` takes the same path with only the implicit-return port: its `__call__` is one call to `imp_return_port.transform(func)`, and `ImplicitReturnAdapter.transform` does the unwrapping, the marking and the refusal to sit above `guarded_expression`. The marker is how `guarded_expression` knows a function was already rewritten, so a stacked pair never rewrites twice.
 
 The bootstrap waits for the first decoration on purpose. Run from `modgud/__init__.py`, it would re-enter a half-imported package and create Idunn's container — which reads `IDUNN_ENV` — before the application had a chance to set it. A library that configures your process at import time is a library you end up pinning around.
 
@@ -34,7 +34,7 @@ Importing modgud isn't free. Here's the whole receipt:
 
 ## 🛡️ The guard pipeline
 
-`GuardAdapter.wrap_function` builds one `functools.wraps` wrapper per decorated function, and every call goes through it:
+`GuardAdapter.wrap_function` (the guard-only step inside `transform`) builds one `functools.wraps` wrapper per decorated function, and every call goes through it:
 
 ```
 call(*args, **kwargs)
@@ -84,7 +84,7 @@ On Python 3.14, `functools.wraps` copies the lazy `__annotate__` hook rather tha
 
 Methods were the hard part. Four small mechanisms cover them, each pinned by `tests/test_method_decoration.py`.
 
-- **Descriptors.** `MethodDescriptors.unwrap` takes the function out of a `staticmethod` or `classmethod`, and `rewrap` puts the finished one back. That's what lets modgud sit on either side of them.
+- **Descriptors.** `MethodDescriptors.unwrap` (`infrastructure/internal/`) takes the function out of a `staticmethod` or `classmethod`, and `rewrap` puts the finished one back. Both adapters use it; that's what lets modgud sit on either side of them.
 - **Receiver.** The pipeline drops `self` / `cls` before calling the guards, as above.
 - **Class context.** The stand-in classes make `self.__secret` mangle to `_Cls__secret` as it did in the original class, and `__qualname__` is copied over. They exist only while compiling; at call time the body's globals are the module's, so the class's own name means the real class.
 - **Refusals.** Zero-argument `super()` needs a `__class__` cell, and a stand-in class would give it the wrong one. A default value that names something in the class body is evaluated in the throwaway namespace, where it doesn't exist. Both raise `UnsupportedConstructError` at decoration time, where they used to surface as a `RuntimeError` on the first call or a bare `NameError`.
@@ -121,4 +121,4 @@ The gaps, in one place.
 
 ---
 
-[← Back to Documentation Hub](README.md) | [API Reference →](api-reference.md)
+[← Back to Documentation Hub](ADVANCED.md) | [API Reference →](api-reference.md)

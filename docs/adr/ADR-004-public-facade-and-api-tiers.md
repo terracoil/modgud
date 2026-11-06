@@ -9,7 +9,7 @@
 ## Status
 Accepted (2026-11-02), amended 2026-11-06
 
-> **Update 2026-11-06.** The `guarded_expr` and `implicit_ret` feature packages are gone: `modgud.domain` now holds `enums/`, `errors/`, `ports/` and `types.py` directly. Read "feature package" below as one of those four, and `modgud.domain.<feature>.ports` as `modgud.domain.ports`. The facades and their names did not change.
+> **Update 2026-11-06.** The `guarded_expr` and `implicit_ret` feature packages are gone: `modgud.domain` now holds `enums/`, `errors/`, `ports/` and `types.py` directly. Read "feature package" below as one of those four, and `modgud.domain.<feature>.ports` as `modgud.domain.ports`. The seam parameters `runtime=` / `transformer=` below are now `guard_port=` / `imp_return_port=` (see the ADR-005 update), and `MethodDescriptors` under `modgud.infrastructure.internal` joined the internal tier. The facades and their names did not change.
 
 ## Context
 The package layout was tried as the API: no top-level re-exports, and every symbol imported from the leaf package that owns it. It kept the containers honest and it made a quick start four import lines long. Three of those lines named a layer (`app`, `domain`, `infrastructure`) that a user has no reason to know about. Every reorganisation of the tree was also a change to the public API, which is the wrong coupling in the wrong direction.

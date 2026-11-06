@@ -5,10 +5,12 @@ directly under ``modgud.domain``: ``enums``, ``errors``, ``ports`` or ``types``.
 
 - ``modgud.app`` imports ``modgud.domain.<owner>``; from idunn only ``Invert``. ``Idunn`` is never constructed anywhere under ``modgud/``:
   ``@Invert(bootstrap='modgud')`` on the decorators does the discovery.
-- ``modgud.infrastructure.adapters`` imports ``modgud.domain.<owner>`` and
-  ``modgud.infrastructure.ast``; from idunn only ``Adapter`` and ``LifecycleEnum``.
-- ``modgud.infrastructure.ast`` imports itself and ``modgud.domain.<owner>`` only; no idunn.
-  Only the adapters import it, and only as the package, never its underscore modules.
+- ``modgud.infrastructure.adapters`` imports ``modgud.domain.<owner>``,
+  ``modgud.infrastructure.ast`` and ``modgud.infrastructure.internal``; from idunn only
+  ``Adapter`` and ``LifecycleEnum``.
+- ``modgud.infrastructure.ast`` and ``modgud.infrastructure.internal`` each import themselves
+  and ``modgud.domain.<owner>`` only; no idunn. Only the adapters import them, and only as the
+  package, never their modules.
 - ``modgud.domain.ports`` imports itself and the other three owners, never ``modgud.domain``:
   that would hang on the order of the imports in its ``__init__``. It alone may import
   ``idunn.Port``. ``enums``, ``errors`` and ``types`` import only themselves, so nothing below
@@ -37,6 +39,8 @@ PACKAGE_ROOT = Path(__file__).resolve().parent.parent / 'modgud'
 ROOT_PACKAGE = 'modgud'
 ADAPTERS = 'modgud.infrastructure.adapters'
 AST_HELPERS = 'modgud.infrastructure.ast'
+INTERNAL = 'modgud.infrastructure.internal'
+FENCED = (AST_HELPERS, INTERNAL)  # adapter-only helper packages
 ROOT_FACADE = 'modgud'
 DOMAIN_FACADE = 'modgud.domain'
 INFRA_FACADE = 'modgud.infrastructure'
@@ -96,8 +100,8 @@ class ArchitectureProbe:
       role = 'app'
     elif module.startswith(ADAPTERS):
       role = 'adapters'
-    elif module.startswith(AST_HELPERS):
-      role = 'ast'
+    elif module.startswith(FENCED):
+      role = 'helpers'
     elif len(parts) >= 3 and parts[1] == 'domain':
       role = 'ports' if parts[2] == 'ports' else 'domain'
     return role
@@ -151,11 +155,9 @@ class ArchitectureProbe:
     elif role == 'app':
       allowed = target.startswith('modgud.app') or bool(DOMAIN_OWNER.match(target))
     elif role == 'adapters':
-      allowed = (
-        target.startswith(ADAPTERS) or target == AST_HELPERS or bool(DOMAIN_OWNER.match(target))
-      )
-    elif role == 'ast':
-      allowed = target.startswith(AST_HELPERS) or bool(DOMAIN_OWNER.match(target))
+      allowed = target.startswith(ADAPTERS) or target in FENCED or bool(DOMAIN_OWNER.match(target))
+    elif role == 'helpers':
+      allowed = in_own_package or bool(DOMAIN_OWNER.match(target))
     elif role == 'ports':
       allowed = in_own_package or bool(DOMAIN_OWNER.match(target))
     elif role == 'domain':
@@ -219,12 +221,13 @@ class TestDependencyTable:
     ]
     assert not importers
 
-  def test_only_the_adapters_import_the_ast_helpers(self) -> None:
+  @pytest.mark.parametrize('helpers', FENCED)
+  def test_only_the_adapters_import_the_helper_packages(self, helpers: str) -> None:
     importers = [
       ArchitectureProbe.module_of(path)
       for path in ArchitectureProbe.source_files()
-      if not ArchitectureProbe.module_of(path).startswith((ADAPTERS, AST_HELPERS))
-      and any(target.startswith(AST_HELPERS) for target, _ in ArchitectureProbe.edges(path))
+      if not ArchitectureProbe.module_of(path).startswith((ADAPTERS, helpers))
+      and any(target.startswith(helpers) for target, _ in ArchitectureProbe.edges(path))
     ]
     assert not importers
 
@@ -270,12 +273,12 @@ class TestProbeSelfChecks:
 
   def test_relative_imports_resolve_against_the_package(self) -> None:
     edges = ArchitectureProbe.edges_from_source(
-      'from .method_descriptors import MethodDescriptors\nfrom . import guarded_expression\nimport os, sys',
+      'from .guard_registry import GuardRegistry\nfrom . import guarded_expression\nimport os, sys',
       'modgud.app',
       is_package=True,
     )
     assert edges == [
-      ('modgud.app.method_descriptors', ('MethodDescriptors',)),
+      ('modgud.app.guard_registry', ('GuardRegistry',)),
       ('modgud.app', ('guarded_expression',)),
       ('os', ()),
       ('sys', ()),
@@ -287,7 +290,7 @@ class TestProbeSelfChecks:
 
   def test_app_importing_infrastructure_is_flagged(self) -> None:
     for module in ('guarded_expression', 'common_guards', 'guard_registry'):
-      for target in (ADAPTERS, AST_HELPERS, INFRA_FACADE):
+      for target in (ADAPTERS, AST_HELPERS, INTERNAL, INFRA_FACADE):
         assert ArchitectureProbe.violations(f'modgud.app.{module}', [(target, ('X',))])
 
   def test_ast_helpers_outside_their_fence_are_flagged(self) -> None:
@@ -303,6 +306,18 @@ class TestProbeSelfChecks:
     assert not ArchitectureProbe.violations(rewriter, [('modgud.domain.errors', ('X',))])
     assert not ArchitectureProbe.violations(AST_HELPERS, [(rewriter, ('TailRewriter',))])
 
+  def test_internal_helpers_outside_their_fence_are_flagged(self) -> None:
+    descriptors = f'{INTERNAL}.method_descriptors'
+    adapter = f'{ADAPTERS}.guard_adapter'
+    assert ArchitectureProbe.violations('modgud.app.guarded_expression', [(INTERNAL, ('X',))])
+    assert ArchitectureProbe.violations(adapter, [(descriptors, ('MethodDescriptors',))])
+    assert ArchitectureProbe.violations(descriptors, [(ADAPTERS, ('X',))])
+    assert ArchitectureProbe.violations(descriptors, [(AST_HELPERS, ('X',))])
+    assert ArchitectureProbe.violations(f'{AST_HELPERS}._tail_rewriter', [(INTERNAL, ('X',))])
+    assert ArchitectureProbe.violations(descriptors, [('idunn', ('Port',))])
+    assert not ArchitectureProbe.violations(adapter, [(INTERNAL, ('MethodDescriptors',))])
+    assert not ArchitectureProbe.violations(INTERNAL, [(descriptors, ('MethodDescriptors',))])
+
   def test_facade_edges_are_fenced(self) -> None:
     for target in (
       ADAPTERS,
@@ -310,11 +325,12 @@ class TestProbeSelfChecks:
       f'{DOMAIN_PORTS}.guard_port',
       INFRA_FACADE,
       AST_HELPERS,
+      INTERNAL,
     ):
       assert ArchitectureProbe.violations(ROOT_FACADE, [(target, ('X',))])
     for target in (f'{DOMAIN_PORTS}.guard_port', 'modgud.app'):
       assert ArchitectureProbe.violations(DOMAIN_FACADE, [(target, ('X',))])
-    for target in (ADAPTERS, AST_HELPERS, 'modgud.app'):
+    for target in (ADAPTERS, AST_HELPERS, INTERNAL, 'modgud.app'):
       assert ArchitectureProbe.violations(INFRA_FACADE, [(target, ('X',))])
     for facade in (ROOT_FACADE, DOMAIN_FACADE, INFRA_FACADE):
       assert ArchitectureProbe.violations(facade, [('idunn', ('Invert',))])
@@ -340,7 +356,7 @@ class TestProbeSelfChecks:
     assert ArchitectureProbe.violations(f'{AST_HELPERS}._tail_rewriter', [(AST_HELPERS, ('X',))])
     assert ArchitectureProbe.violations('modgud.app.guarded_expression', [('modgud.app', ('X',))])
     assert not ArchitectureProbe.violations(
-      'modgud.app', [('modgud.app.method_descriptors', ('MethodDescriptors',))]
+      'modgud.app', [('modgud.app.guard_registry', ('GuardRegistry',))]
     )
 
   def test_infrastructure_importing_app_is_flagged(self) -> None:
