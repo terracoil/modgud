@@ -37,7 +37,8 @@ packages = [{ include = "modgud" }]
 
 # Temporary: develop against the sibling checkout. Drop this table (and re-lock) before release.
 [tool.poetry.dependencies]
-idunn = { path = "../idunn", develop = true }
+idunn = ">=2.0.0, <3.0.0"
+#idunn = { path = "../idunn", develop = true }
 
 [dependency-groups]
 test = [
