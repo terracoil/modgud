@@ -14,19 +14,16 @@ https://github.com/terracoil/modgud/tree/main/examples
 from importlib.metadata import PackageNotFoundError, version
 
 from modgud.app import CommonGuards, GuardRegistry, guarded_expression, implicit_return
-from modgud.domain.guarded_expr import (
-  GuardClauseError,
-  GuardFailureEnum,
-  GuardFunction,
-  GuardPort,
-)
-from modgud.domain.implicit_ret import (
+from modgud.domain.enums import GuardFailureEnum
+from modgud.domain.errors import (
   ExplicitReturnDisallowedError,
+  GuardClauseError,
   ImplicitReturnError,
-  ImplicitReturnPort,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
+from modgud.domain.ports import GuardPort, ImplicitReturnPort
+from modgud.domain.types import GuardFunction
 
 try:
   __version__: str = version('modgud')  # single-sourced from pyproject.toml

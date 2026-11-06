@@ -11,7 +11,7 @@ from typing import Any, Callable, TypeVar, cast
 
 from idunn import Invert
 
-from modgud.domain.implicit_ret import ImplicitReturnPort
+from modgud.domain.ports import ImplicitReturnPort
 
 from .method_descriptors import MethodDescriptors
 

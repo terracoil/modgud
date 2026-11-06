@@ -1,22 +1,22 @@
 """Architecture tests: enforce modgud's layering and its fenced dependency on Idunn.
 
-Rows of the dependency table (see ``project.md``):
+Rows of the dependency table (see ``project.md``). An ``<owner>`` is one of the four names
+directly under ``modgud.domain``: ``enums``, ``errors``, ``ports`` or ``types``.
 
-- ``modgud.app`` imports ``modgud.domain.<feature>``; from idunn only ``Invert``. ``Idunn`` is never constructed anywhere under ``modgud/``:
+- ``modgud.app`` imports ``modgud.domain.<owner>``; from idunn only ``Invert``. ``Idunn`` is never constructed anywhere under ``modgud/``:
   ``@Invert(bootstrap='modgud')`` on the decorators does the discovery.
-- ``modgud.infrastructure.adapters`` imports ``modgud.domain.<feature>`` and
+- ``modgud.infrastructure.adapters`` imports ``modgud.domain.<owner>`` and
   ``modgud.infrastructure.ast``; from idunn only ``Adapter`` and ``LifecycleEnum``.
-- ``modgud.infrastructure.ast`` imports itself and ``modgud.domain.<feature>`` only; no idunn.
+- ``modgud.infrastructure.ast`` imports itself and ``modgud.domain.<owner>`` only; no idunn.
   Only the adapters import it, and only as the package, never its underscore modules.
-- ``modgud.domain.<feature>`` imports only its own feature; ``idunn.Port`` is allowed only in
-  ``ports`` modules. Only the feature's ``__init__`` imports the ``ports`` subpackage, to
-  re-export the port, so everything else takes a port from ``modgud.domain.<feature>`` and
-  ``ports`` modules import the feature's subpackages, never the feature itself: that would
-  hang on the order of the imports in the ``__init__``.
+- ``modgud.domain.ports`` imports itself and the other three owners, never ``modgud.domain``:
+  that would hang on the order of the imports in its ``__init__``. It alone may import
+  ``idunn.Port``. ``enums``, ``errors`` and ``types`` import only themselves, so nothing below
+  ``ports`` can reach it.
 - Nothing outside ``modgud.infrastructure.adapters`` imports the adapters.
 - No module imports an enclosing package (that re-enters a half-initialised ``__init__``).
-- Facades: ``modgud`` imports ``modgud.app``, ``modgud.domain`` and ``modgud.domain.<feature>``;
-  ``modgud.domain`` imports ``modgud.domain.<feature>``; ``modgud.infrastructure`` imports
+- Facades: ``modgud`` imports ``modgud.app``, ``modgud.domain`` and ``modgud.domain.<owner>``;
+  ``modgud.domain`` imports ``modgud.domain.<owner>``; ``modgud.infrastructure`` imports
   nothing. No facade imports idunn, and nothing inside
   ``modgud/`` imports a facade (that is what keeps cycles impossible).
 """
@@ -40,7 +40,8 @@ AST_HELPERS = 'modgud.infrastructure.ast'
 ROOT_FACADE = 'modgud'
 DOMAIN_FACADE = 'modgud.domain'
 INFRA_FACADE = 'modgud.infrastructure'
-DOMAIN_FEATURE = re.compile(r'^modgud\.domain\.([a-z_]+)$')
+DOMAIN_PORTS = 'modgud.domain.ports'
+DOMAIN_OWNER = re.compile(r'^modgud\.domain\.(enums|errors|ports|types)$')
 IDUNN_NAMES_ALLOWED = {
   'app': {('idunn', 'Invert')},
   'adapters': {('idunn', 'Adapter'), ('idunn', 'LifecycleEnum')},
@@ -98,7 +99,7 @@ class ArchitectureProbe:
     elif module.startswith(AST_HELPERS):
       role = 'ast'
     elif len(parts) >= 3 and parts[1] == 'domain':
-      role = 'ports' if len(parts) >= 4 and parts[3] == 'ports' else 'domain'
+      role = 'ports' if parts[2] == 'ports' else 'domain'
     return role
 
   @classmethod
@@ -137,34 +138,28 @@ class ArchitectureProbe:
   @classmethod
   def _internal_violations(cls, module: str, target: str) -> list[str]:
     role: str = cls.role_of(module)
-    feature_match = DOMAIN_FEATURE.match('.'.join(module.split('.')[:3]))
-    own_feature: str = feature_match.group(0) if feature_match else ''
-    in_own_feature: bool = bool(own_feature) and (
-      target == own_feature or target.startswith(f'{own_feature}.')
-    )
+    own_package: str = '.'.join(module.split('.')[:3])
+    in_own_package: bool = target == own_package or target.startswith(f'{own_package}.')
     is_ancestor: bool = module.startswith(f'{target}.')
     allowed = False
     if is_ancestor:
       allowed = False  # importing an enclosing package re-enters a half-initialised __init__
     elif role == 'facade':
-      allowed = target in ('modgud.app', DOMAIN_FACADE) or bool(DOMAIN_FEATURE.match(target))
+      allowed = target in ('modgud.app', DOMAIN_FACADE) or bool(DOMAIN_OWNER.match(target))
     elif role == 'domain_facade':
-      allowed = bool(DOMAIN_FEATURE.match(target))
+      allowed = bool(DOMAIN_OWNER.match(target))
     elif role == 'app':
-      allowed = target.startswith('modgud.app') or bool(DOMAIN_FEATURE.match(target))
+      allowed = target.startswith('modgud.app') or bool(DOMAIN_OWNER.match(target))
     elif role == 'adapters':
       allowed = (
-        target.startswith(ADAPTERS) or target == AST_HELPERS or bool(DOMAIN_FEATURE.match(target))
+        target.startswith(ADAPTERS) or target == AST_HELPERS or bool(DOMAIN_OWNER.match(target))
       )
     elif role == 'ast':
-      allowed = target.startswith(AST_HELPERS) or bool(DOMAIN_FEATURE.match(target))
+      allowed = target.startswith(AST_HELPERS) or bool(DOMAIN_OWNER.match(target))
     elif role == 'ports':
-      allowed = in_own_feature
+      allowed = in_own_package or bool(DOMAIN_OWNER.match(target))
     elif role == 'domain':
-      ports_package: str = f'{own_feature}.ports'
-      allowed = in_own_feature and (
-        not target.startswith(ports_package) or (module == own_feature and target == ports_package)
-      )
+      allowed = in_own_package
     return [] if allowed else [f'{module} ({role}) must not import {target}']
 
   @classmethod
@@ -211,8 +206,8 @@ class TestDependencyTable:
     }
     importers = {module: names for module, names in idunn_importers.items() if names}
     assert importers == {
-      'modgud.domain.guarded_expr.ports.guard_port': ['Port'],
-      'modgud.domain.implicit_ret.ports.implicit_return_port': ['Port'],
+      'modgud.domain.ports.guard_port': ['Port'],
+      'modgud.domain.ports.implicit_return_port': ['Port'],
     }
 
   def test_only_the_adapters_package_imports_the_adapters(self) -> None:
@@ -252,8 +247,8 @@ class TestIdunnMarkers:
   def test_ports_are_registered(self) -> None:
     registered = set(Idunn().bootstrap(ROOT_PACKAGE)['registered_ports'])
     for module, name in (
-      ('modgud.domain.guarded_expr.ports.guard_port', 'GuardPort'),
-      ('modgud.domain.implicit_ret.ports.implicit_return_port', 'ImplicitReturnPort'),
+      ('modgud.domain.ports.guard_port', 'GuardPort'),
+      ('modgud.domain.ports.implicit_return_port', 'ImplicitReturnPort'),
     ):
       assert f'{module}.{name}' in registered
 
@@ -261,12 +256,8 @@ class TestIdunnMarkers:
     registered = set(Idunn().bootstrap(ROOT_PACKAGE)['registered_adapters'])
     adapters = importlib.import_module(ADAPTERS)
     for adapter_name, port_module, port_name in (
-      ('GuardAdapter', 'modgud.domain.guarded_expr.ports', 'GuardPort'),
-      (
-        'ImplicitReturnAdapter',
-        'modgud.domain.implicit_ret.ports',
-        'ImplicitReturnPort',
-      ),
+      ('GuardAdapter', DOMAIN_PORTS, 'GuardPort'),
+      ('ImplicitReturnAdapter', DOMAIN_PORTS, 'ImplicitReturnPort'),
     ):
       adapter = getattr(adapters, adapter_name)
       port = getattr(importlib.import_module(port_module), port_name)
@@ -306,22 +297,22 @@ class TestProbeSelfChecks:
     assert ArchitectureProbe.violations(adapter, [(rewriter, ('TailRewriter',))])
     assert ArchitectureProbe.violations(rewriter, [(ADAPTERS, ('X',))])
     assert ArchitectureProbe.violations(rewriter, [('modgud.app', ('X',))])
-    assert ArchitectureProbe.violations(rewriter, [('modgud.domain.implicit_ret.ports', ('X',))])
+    assert ArchitectureProbe.violations(rewriter, [(f'{DOMAIN_PORTS}.guard_port', ('X',))])
     assert ArchitectureProbe.violations(rewriter, [('idunn', ('Port',))])
     assert not ArchitectureProbe.violations(adapter, [(AST_HELPERS, ('TailRewriter',))])
-    assert not ArchitectureProbe.violations(rewriter, [('modgud.domain.implicit_ret', ('X',))])
+    assert not ArchitectureProbe.violations(rewriter, [('modgud.domain.errors', ('X',))])
     assert not ArchitectureProbe.violations(AST_HELPERS, [(rewriter, ('TailRewriter',))])
 
   def test_facade_edges_are_fenced(self) -> None:
     for target in (
       ADAPTERS,
       'modgud.app.guarded_expression',
-      'modgud.domain.guarded_expr.ports',
+      f'{DOMAIN_PORTS}.guard_port',
       INFRA_FACADE,
       AST_HELPERS,
     ):
       assert ArchitectureProbe.violations(ROOT_FACADE, [(target, ('X',))])
-    for target in ('modgud.domain.guarded_expr.ports', 'modgud.app'):
+    for target in (f'{DOMAIN_PORTS}.guard_port', 'modgud.app'):
       assert ArchitectureProbe.violations(DOMAIN_FACADE, [(target, ('X',))])
     for target in (ADAPTERS, AST_HELPERS, 'modgud.app'):
       assert ArchitectureProbe.violations(INFRA_FACADE, [(target, ('X',))])
@@ -330,24 +321,22 @@ class TestProbeSelfChecks:
     for target in (
       'modgud.app',
       DOMAIN_FACADE,
-      'modgud.domain.guarded_expr',
+      'modgud.domain.errors',
     ):
       assert not ArchitectureProbe.violations(ROOT_FACADE, [(target, ('X',))])
-    assert not ArchitectureProbe.violations(DOMAIN_FACADE, [('modgud.domain.implicit_ret', ('X',))])
+    assert not ArchitectureProbe.violations(DOMAIN_FACADE, [('modgud.domain.errors', ('X',))])
 
   def test_inner_modules_importing_a_facade_are_flagged(self) -> None:
     assert ArchitectureProbe.violations('modgud.app.guarded_expression', [(ROOT_FACADE, ('X',))])
     assert ArchitectureProbe.violations('modgud.app.guarded_expression', [(DOMAIN_FACADE, ('X',))])
-    assert ArchitectureProbe.violations(
-      'modgud.domain.guarded_expr.types', [(DOMAIN_FACADE, ('X',))]
-    )
+    assert ArchitectureProbe.violations('modgud.domain.types', [(DOMAIN_FACADE, ('X',))])
     assert ArchitectureProbe.violations('modgud.app.guard_registry', [(INFRA_FACADE, ('X',))])
     assert ArchitectureProbe.violations(f'{ADAPTERS}.guard_adapter', [(ROOT_FACADE, ('X',))])
 
   def test_importing_an_ancestor_package_is_flagged(self) -> None:
-    enum_module = 'modgud.domain.guarded_expr.enums.guard_failure_enum'
-    assert ArchitectureProbe.violations(enum_module, [('modgud.domain.guarded_expr', ('X',))])
-    assert ArchitectureProbe.violations(enum_module, [('modgud.domain.guarded_expr.enums', ('X',))])
+    enum_module = 'modgud.domain.enums.guard_failure_enum'
+    assert ArchitectureProbe.violations(enum_module, [(DOMAIN_FACADE, ('X',))])
+    assert ArchitectureProbe.violations(enum_module, [('modgud.domain.enums', ('X',))])
     assert ArchitectureProbe.violations(f'{AST_HELPERS}._tail_rewriter', [(AST_HELPERS, ('X',))])
     assert ArchitectureProbe.violations('modgud.app.guarded_expression', [('modgud.app', ('X',))])
     assert not ArchitectureProbe.violations(
@@ -358,39 +347,41 @@ class TestProbeSelfChecks:
     assert ArchitectureProbe.violations(f'{ADAPTERS}.guard_adapter', [('modgud.app', ('X',))])
     assert ArchitectureProbe.violations(f'{AST_HELPERS}._tail_rewriter', [('modgud.app', ('X',))])
 
-  def test_a_port_importing_its_own_feature_package_is_flagged(self) -> None:
-    port = 'modgud.domain.guarded_expr.ports.guard_port'
-    assert ArchitectureProbe.violations(port, [('modgud.domain.guarded_expr', ('X',))])
-    assert not ArchitectureProbe.violations(port, [('modgud.domain.guarded_expr.types', ('X',))])
+  def test_a_port_importing_an_enclosing_package_is_flagged(self) -> None:
+    port = f'{DOMAIN_PORTS}.guard_port'
+    for target in (DOMAIN_FACADE, DOMAIN_PORTS):
+      assert ArchitectureProbe.violations(port, [(target, ('X',))])
+    for target in ('modgud.domain.enums', 'modgud.domain.errors', 'modgud.domain.types'):
+      assert not ArchitectureProbe.violations(port, [(target, ('X',))])
 
-  def test_ports_are_taken_from_the_feature_package(self) -> None:
-    feature = 'modgud.domain.guarded_expr'
+  def test_ports_are_taken_from_the_ports_package(self) -> None:
     for module in (ROOT_FACADE, 'modgud.app.guarded_expression', f'{ADAPTERS}.guard_adapter'):
-      assert ArchitectureProbe.violations(module, [(f'{feature}.ports', ('GuardPort',))])
-      assert not ArchitectureProbe.violations(module, [(feature, ('GuardPort',))])
+      assert ArchitectureProbe.violations(module, [(f'{DOMAIN_PORTS}.guard_port', ('GuardPort',))])
+      assert not ArchitectureProbe.violations(module, [(DOMAIN_PORTS, ('GuardPort',))])
 
-  def test_only_the_feature_init_imports_its_ports_package(self) -> None:
-    feature = 'modgud.domain.guarded_expr'
-    assert not ArchitectureProbe.violations(feature, [(f'{feature}.ports', ('X',))])
-    assert ArchitectureProbe.violations(feature, [(f'{feature}.ports.guard_port', ('X',))])
-    assert ArchitectureProbe.violations(f'{feature}.types', [(f'{feature}.ports', ('X',))])
+  def test_passive_owners_never_import_ports(self) -> None:
+    for module in ('modgud.domain.types', 'modgud.domain.errors.guard_clause_error'):
+      assert ArchitectureProbe.violations(module, [(DOMAIN_PORTS, ('X',))])
+    assert not ArchitectureProbe.violations(DOMAIN_PORTS, [(f'{DOMAIN_PORTS}.guard_port', ('X',))])
 
-  def test_domain_crossing_features_or_layers_is_flagged(self) -> None:
-    module = 'modgud.domain.guarded_expr.types'
-    assert ArchitectureProbe.violations(module, [('modgud.domain.implicit_ret', ('X',))])
+  def test_domain_crossing_owners_or_layers_is_flagged(self) -> None:
+    module = 'modgud.domain.types'
+    assert ArchitectureProbe.violations(module, [('modgud.domain.errors', ('X',))])
     assert ArchitectureProbe.violations(module, [('modgud.app', ('X',))])
-    assert ArchitectureProbe.violations(module, [('modgud.domain.guarded_expr.ports', ('X',))])
-    assert ArchitectureProbe.violations(module, [('modgud.domain.guarded_exprs', ('X',))])
-    assert not ArchitectureProbe.violations(module, [('modgud.domain.guarded_expr.enums', ('X',))])
-    assert ArchitectureProbe.violations(
-      module, [('modgud.domain.guarded_expr', ('X',))]
-    )  # ancestor
+    assert ArchitectureProbe.violations(module, [('modgud.domain.typesx', ('X',))])
+    assert ArchitectureProbe.violations(module, [(DOMAIN_FACADE, ('X',))])  # ancestor
+    assert not ArchitectureProbe.violations(
+      'modgud.domain.errors.missing_implicit_return_error',
+      [('modgud.domain.errors.implicit_return_error', ('ImplicitReturnError',))],
+    )
+
+  def test_only_the_four_owners_are_importable_targets(self) -> None:
+    for retired in ('modgud.domain.guarded_expr', 'modgud.domain.implicit_ret'):
+      assert ArchitectureProbe.violations('modgud.app.guard_registry', [(retired, ('X',))])
 
   def test_idunn_outside_its_fence_is_flagged(self) -> None:
-    assert ArchitectureProbe.violations('modgud.domain.guarded_expr.types', [('idunn', ('Port',))])
-    assert ArchitectureProbe.violations(
-      'modgud.domain.guarded_expr.ports.guard_port', [('idunn', ('Idunn',))]
-    )
+    assert ArchitectureProbe.violations('modgud.domain.types', [('idunn', ('Port',))])
+    assert ArchitectureProbe.violations(f'{DOMAIN_PORTS}.guard_port', [('idunn', ('Idunn',))])
     assert ArchitectureProbe.violations('modgud.app.common_guards', [('idunn', ('Port',))])
     assert ArchitectureProbe.violations('modgud.app.guarded_expression', [('idunn', ('Idunn',))])
     assert ArchitectureProbe.violations('modgud.app.implicit_return', [('idunn', ())])
@@ -398,9 +389,7 @@ class TestProbeSelfChecks:
     assert not ArchitectureProbe.violations(
       'modgud.app.guarded_expression', [('idunn', ('Invert',))]
     )
-    assert not ArchitectureProbe.violations(
-      'modgud.domain.guarded_expr.ports.guard_port', [('idunn', ('Port',))]
-    )
+    assert not ArchitectureProbe.violations(f'{DOMAIN_PORTS}.guard_port', [('idunn', ('Port',))])
 
   def test_third_party_imports_are_flagged(self) -> None:
     assert ArchitectureProbe.violations('modgud.app.common_guards', [('requests', ())])

@@ -1,4 +1,4 @@
-"""Guarded-expression enums."""
+"""Domain enums."""
 
 from .guard_failure_enum import GuardFailureEnum
 

@@ -68,8 +68,8 @@ class TestBootstrap:
       'modgud.infrastructure.adapters.implicit_return_adapter.ImplicitReturnAdapter',
     }
     assert set(report['registered_ports']) == {
-      'modgud.domain.guarded_expr.ports.guard_port.GuardPort',
-      'modgud.domain.implicit_ret.ports.implicit_return_port.ImplicitReturnPort',
+      'modgud.domain.ports.guard_port.GuardPort',
+      'modgud.domain.ports.implicit_return_port.ImplicitReturnPort',
     }
 
   def test_implicit_return_alone_discovers_too(self) -> None:

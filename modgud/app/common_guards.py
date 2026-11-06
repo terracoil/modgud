@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlparse
 
-from modgud.domain.guarded_expr import GuardFunction
+from modgud.domain.types import GuardFunction
 
 from .guard_registry import GuardRegistry
 

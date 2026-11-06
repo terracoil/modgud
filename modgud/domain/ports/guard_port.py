@@ -10,9 +10,9 @@ from typing import Any, Callable, Protocol
 
 from idunn import Port
 
-# Not from the feature package: its __init__ re-exports this port.
-from modgud.domain.guarded_expr.enums import GuardFailureEnum
-from modgud.domain.guarded_expr.types import GuardFunction
+# Not from modgud.domain: its __init__ re-exports this port.
+from modgud.domain.enums import GuardFailureEnum
+from modgud.domain.types import GuardFunction
 
 
 @Port

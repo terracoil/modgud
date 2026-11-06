@@ -10,11 +10,8 @@ from typing import Any, Callable, ParamSpec, TypeVar, TypeVarTuple
 
 from idunn import Adapter, LifecycleEnum
 
-from modgud.domain.implicit_ret import (
-  ExplicitReturnDisallowedError,
-  ImplicitReturnPort,
-  UnsupportedConstructError,
-)
+from modgud.domain.errors import ExplicitReturnDisallowedError, UnsupportedConstructError
+from modgud.domain.ports import ImplicitReturnPort
 from modgud.infrastructure.ast import NoExplicitReturnChecker, TailRewriter, TopLevelTransformer
 
 T = TypeVar('T')

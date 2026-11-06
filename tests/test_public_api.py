@@ -11,10 +11,10 @@ from pathlib import Path
 import modgud
 import modgud.app
 import modgud.domain
-import modgud.domain.guarded_expr
-import modgud.domain.guarded_expr.ports
-import modgud.domain.implicit_ret
-import modgud.domain.implicit_ret.ports
+import modgud.domain.enums
+import modgud.domain.errors
+import modgud.domain.ports
+import modgud.domain.types
 import modgud.infrastructure
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -88,15 +88,15 @@ class TestFacadeIdentity:
     leaves = {
       'guarded_expression': modgud.app.guarded_expression,
       'implicit_return': modgud.app.implicit_return,
-      'GuardFailureEnum': modgud.domain.guarded_expr.GuardFailureEnum,
-      'GuardClauseError': modgud.domain.guarded_expr.GuardClauseError,
-      'GuardFunction': modgud.domain.guarded_expr.GuardFunction,
-      'GuardPort': modgud.domain.guarded_expr.ports.GuardPort,
-      'ImplicitReturnError': modgud.domain.implicit_ret.ImplicitReturnError,
-      'ExplicitReturnDisallowedError': modgud.domain.implicit_ret.ExplicitReturnDisallowedError,
-      'MissingImplicitReturnError': modgud.domain.implicit_ret.MissingImplicitReturnError,
-      'UnsupportedConstructError': modgud.domain.implicit_ret.UnsupportedConstructError,
-      'ImplicitReturnPort': modgud.domain.implicit_ret.ports.ImplicitReturnPort,
+      'GuardFailureEnum': modgud.domain.enums.GuardFailureEnum,
+      'GuardClauseError': modgud.domain.errors.GuardClauseError,
+      'GuardFunction': modgud.domain.types.GuardFunction,
+      'GuardPort': modgud.domain.ports.GuardPort,
+      'ImplicitReturnError': modgud.domain.errors.ImplicitReturnError,
+      'ExplicitReturnDisallowedError': modgud.domain.errors.ExplicitReturnDisallowedError,
+      'MissingImplicitReturnError': modgud.domain.errors.MissingImplicitReturnError,
+      'UnsupportedConstructError': modgud.domain.errors.UnsupportedConstructError,
+      'ImplicitReturnPort': modgud.domain.ports.ImplicitReturnPort,
       'CommonGuards': modgud.app.CommonGuards,
       'GuardRegistry': modgud.app.GuardRegistry,
     }

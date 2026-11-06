@@ -14,13 +14,10 @@ from typing import Any, Callable
 
 from idunn import Invert
 
-from modgud.domain.guarded_expr import (
-  GuardClauseError,
-  GuardFailureEnum,
-  GuardFunction,
-  GuardPort,
-)
-from modgud.domain.implicit_ret import ImplicitReturnPort
+from modgud.domain.enums import GuardFailureEnum
+from modgud.domain.errors import GuardClauseError
+from modgud.domain.ports import GuardPort, ImplicitReturnPort
+from modgud.domain.types import GuardFunction
 
 from .method_descriptors import MethodDescriptors
 

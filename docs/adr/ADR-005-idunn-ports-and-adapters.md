@@ -11,6 +11,8 @@ Accepted (2026-11-02)
 
 > **Update 2026-11-05.** Idunn 2.0 added `@Invert(bootstrap=...)`. The `Wiring` composition root and the decorators' `__new__` hooks are gone; the decision below describes the wiring as it now stands.
 
+> **Update 2026-11-06.** The ports now live in `modgud.domain.ports`. The `modgud.domain.<feature>.ports` path below predates the flattening of `modgud.domain` (see ADR-004).
+
 ## Context
 The decorators used to import `GuardAdapter` and `ImplicitReturnAdapter` directly. Tests that wanted a fake runtime had to monkeypatch a module attribute, and the "app never imports infrastructure" rule was a comment rather than a fact. A library whose whole pitch is discipline at function boundaries was wiring its own internals by hand.
 

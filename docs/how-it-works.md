@@ -16,7 +16,7 @@ The app layer never imports infrastructure. It knows the ports and nothing else.
 
 Applying `@guarded_expression(...)` takes three steps. The first two happen inside `@Invert(bootstrap='modgud')` on the decorator's `__init__`.
 
-1. If the caller left `runtime` or `transformer` out, Idunn runs `Idunn().bootstrap('modgud')`. The first call in a process discovers `modgud.domain.*.ports` and `modgud.infrastructure.adapters` and registers `GuardAdapter` and `ImplicitReturnAdapter` as singleton adapters. Later calls are a cache hit. A caller who passes both skips discovery altogether.
+1. If the caller left `runtime` or `transformer` out, Idunn runs `Idunn().bootstrap('modgud')`. The first call in a process discovers `modgud.domain.ports` and `modgud.infrastructure.adapters` and registers `GuardAdapter` and `ImplicitReturnAdapter` as singleton adapters. Later calls are a cache hit. A caller who passes both skips discovery altogether.
 2. Idunn injects whichever of `runtime` and `transformer` the caller did not pass.
 3. `__call__(func)` unwraps a `staticmethod` / `classmethod` if it got one, rewrites the function when `implicit_return=True`, wraps it with `runtime.wrap_function(...)`, sets an `__implicit_return__` marker, and puts the descriptor back.
 

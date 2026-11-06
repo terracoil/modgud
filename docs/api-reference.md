@@ -19,7 +19,7 @@ Those 13 names are the public API. Everything else sits in a lower tier:
 | Tier | What | Where | Promise |
 |---|---|---|---|
 | Public | the 13 names above | `modgud` | Documented on this page |
-| Integration seam | the two ports, `runtime=` / `transformer=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud` (ports also at `modgud.domain` and `modgud.domain.<feature>.ports`) | For fakes and Idunn users; see [Integration seam](#integration-seam) |
+| Integration seam | the two ports, `runtime=` / `transformer=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud` (ports also at `modgud.domain` and `modgud.domain.ports`) | For fakes and Idunn users; see [Integration seam](#integration-seam) |
 | Internal | `GuardAdapter`, `ImplicitReturnAdapter`, `modgud.infrastructure.ast` | leaf packages | May move between releases |
 
 `modgud.domain` (nine names) and `modgud.app` (four) are secondary paths to the same objects, there for the package's layering. `modgud.infrastructure` exports nothing. These docs teach one import path.
@@ -290,8 +290,7 @@ The decorators depend on two ports, not on the code behind them. Both are `typin
 
 ```python
 from modgud import GuardPort, ImplicitReturnPort
-from modgud.domain.guarded_expr.ports import GuardPort  # same object, 4-level path
-from modgud.domain.implicit_ret.ports import ImplicitReturnPort  # same object
+from modgud.domain.ports import GuardPort, ImplicitReturnPort  # same objects
 ```
 
 The ports declare `wrap_function(self, func, guards, strategy, on_failure, continuance)` and `transform_function(self, func)` as ordinary instance methods, so a fake is a plain object that may keep state on `self`. Pass it as `runtime=` or `transformer=` and it beats the injected adapter, for that decorator only. Swapping the adapters process-wide isn't supported.
