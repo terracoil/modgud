@@ -16,11 +16,11 @@ The app layer never imports infrastructure. It knows the ports and nothing else.
 
 Applying `@guarded_expression(...)` takes three steps. The first two happen inside `@Invert(bootstrap='modgud')` on the decorator's `__init__`.
 
-1. If the caller left `guard_port` or `imp_return_port` out, Idunn runs `Idunn().bootstrap('modgud')`. The first call in a process discovers `modgud.domain.ports` and `modgud.infrastructure.adapters` and registers `GuardAdapter` and `ImplicitReturnAdapter` as singleton adapters. Later calls are a cache hit. A caller who passes both skips discovery altogether.
-2. Idunn injects whichever of `guard_port` and `imp_return_port` the caller did not pass.
-3. `__call__(func)` hands everything to `guard_port.transform(...)`. `GuardAdapter` unwraps a `staticmethod` / `classmethod` if it got one, rewrites the function through `imp_return_port.transform_function` when `implicit_return=True`, wraps it with the guards, sets the `__modgud_guarded__` and `__implicit_return__` markers, and puts the descriptor back.
+1. If the caller left any of `guard_port`, `imp_return_port`, `eop_cond_port`, `eop_case_port` or `eop_match_port` out, Idunn runs `Idunn().bootstrap('modgud')`. The first call in a process discovers `modgud.domain.ports` and `modgud.infrastructure.adapters` and registers the five singleton adapters: `GuardAdapter`, `ImplicitReturnAdapter`, and the three `EopPort` adapters, each under its `EopFormEnum` key. Later calls are a cache hit. A caller who passes every port skips discovery altogether.
+2. Idunn injects whichever ports the caller did not pass.
+3. `__call__(func)` hands everything to `guard_port.transform(...)`, the three form ports included as `forms`. `GuardAdapter` unwraps a `staticmethod` / `classmethod` if it got one, rewrites the function through `imp_return_port.transform_function`, which lowers every `eop_` form and applies the tail rewrite when `implicit_return=True`, wraps it with the guards, sets the `__modgud_guarded__` and `__implicit_return__` markers, and puts the descriptor back.
 
-`@implicit_return()` takes the same path with only the implicit-return port: its `__call__` is one call to `imp_return_port.transform(func)`, and `ImplicitReturnAdapter.transform` does the unwrapping, the marking and the refusal to sit above `guarded_expression`. The marker is how `guarded_expression` knows a function was already rewritten, so a stacked pair never rewrites twice.
+`@implicit_return()` takes the same path without the guard port: its `__call__` is one call to `imp_return_port.transform(func, forms=...)`, and `ImplicitReturnAdapter.transform` does the unwrapping, the marking and the refusal to sit above `guarded_expression`. The `eop_` markers themselves reach their adapter the same way: a marker called outside a decorated function asks its injected `EopPort` to refuse. The marker is how `guarded_expression` knows a function was already rewritten, so a stacked pair never rewrites twice.
 
 The bootstrap waits for the first decoration on purpose. Run from `modgud/__init__.py`, it would re-enter a half-imported package and create Idunn's container — which reads `IDUNN_ENV` — before the application had a chance to set it. A library that configures your process at import time is a library you end up pinning around.
 
@@ -53,15 +53,16 @@ call(*args, **kwargs)
 
 Python decided long ago that `if` is a statement. The rewrite disagrees, one function at a time.
 
-`ImplicitReturnAdapter.transform_function` does the work. It's an `@Adapter` subclass of `ImplicitReturnPort`, not an `ast.NodeTransformer`; the tree walking lives in three helpers under `infrastructure/ast/`.
+`ImplicitReturnAdapter.transform_function` does the work. It's an `@Adapter` subclass of `ImplicitReturnPort`, not an `ast.NodeTransformer`; the tree walking lives in the helpers under `infrastructure/ast/`.
 
-1. Read the source with `inspect.getsource` and dedent it. No source means `ValueError`.
+1. Read the source with `inspect.getsource` and dedent it. No source means `ValueError`. In explicit-return mode a function whose code object names no `eop_` marker is returned here, untouched.
 2. Parse it. `TopLevelTransformer` finds the `def` by name and strips its decorators, so recompiling doesn't apply them twice.
 3. Refuse zero-argument `super()` and bare `__class__` (nested classes excluded; they get their own cell).
-4. `NoExplicitReturnChecker` walks the whole body for `return`, nested `def`s and classes included, and reports the first one.
-5. `TailRewriter` turns the last statement of every block into an assignment to `__implicit_result` and appends one `return __implicit_result`.
-6. For a method, nest the `def` inside empty stand-in classes named from `__qualname__`; the innermost one declares the PEP 695 type parameters the method closes over, and the rebuilt closure cells are pointed back at the originals. Drop the signature's defaults and annotations from the tree; the originals are reused, so nothing is re-evaluated out of scope.
-7. Compile it and `exec` it in a throwaway namespace. Then rebuild the function with `types.FunctionType` on the original's live module globals, and copy over `__name__`, `__qualname__`, `__doc__`, `__dict__` and the annotations.
+4. `NoExplicitReturnChecker` walks the whole body for `return`, nested `def`s and classes included, and reports the first one. Skipped in explicit-return mode.
+5. `MarkerResolver` replaces every reference to an `eop_` marker with a reserved `@eop_` name, resolving names through the closure, the globals and the builtins, never by spelling. `FormLowerer` then hands each form call to its `EopPort` adapter, innermost first, and places the statements it gets back before the call's statement. See [the expression forms](#the-expression-forms) below.
+6. `TailRewriter` turns the last statement of every block into an assignment to `__implicit_result` and appends one `return __implicit_result`. Skipped in explicit-return mode, where the body keeps its own `return`.
+7. For a method, nest the `def` inside empty stand-in classes named from `__qualname__`; the innermost one declares the PEP 695 type parameters the method closes over, and the rebuilt closure cells are pointed back at the originals. Drop the signature's defaults and annotations from the tree; the originals are reused, so nothing is re-evaluated out of scope.
+8. Compile it and `exec` it in a throwaway namespace. Then rebuild the function with `types.FunctionType` on the original's live module globals, and copy over `__name__`, `__qualname__`, `__doc__`, `__dict__` and the annotations.
 
 The `grade` function from the [implicit_return](api-reference.md#implicit_return) entry comes out shaped like this:
 
@@ -77,6 +78,52 @@ def grade(score: int) -> str:
 ```
 
 The throwaway namespace keeps the stand-in classes out of your module. The rebuild matters more. Because the new function runs on the module's real globals, its body sees names defined after decoration, a `global` write lands in the module, `mock.patch` reaches inside, a recursive call goes back through the guards, and a method can name its own class. Late binding, the way Python intended. Default values are the exception: they're evaluated during the `exec`, so they can't see the class body.
+
+### The expression forms
+
+`eop_cond`, `eop_case` and `eop_match` are markers: typed objects whose calls are compiled away by step 5 above, so the function never calls them. Each form has an adapter behind the one `EopPort` protocol, chosen by its `EopFormEnum` key, and the decorators hand the three ports to the transformer as `forms`. Called outside a decorated function, a marker asks its port to refuse, and gets `MarkerNotRewrittenError`.
+
+`eop_cond` lowers in place to nested conditional expressions with one temporary per call, which carries Elixir's truth rule:
+
+```python
+# before
+sign = eop_cond(eop_clause(x < 0, 'negative'), eop_clause(x == 0, 'zero'), default='positive')
+
+# after
+sign = (
+  'negative' if (@t := x < 0) is not None and @t is not False
+  else 'zero' if (@t := x == 0) is not None and @t is not False
+  else 'positive'
+)
+```
+
+`eop_case` has two lowerings with the same meaning. When the call is the whole value of an assignment or expression statement, it becomes a real `match` placed just before, with every capture renamed so nothing leaks. A guard becomes a small function, because a guard that raises must count as no match:
+
+```python
+# before
+label = eop_case(
+  shape,
+  eop_clause(eop_when(Point(0, eop_var.y), eop_var.y > 0), f'above at {eop_var.y}'),
+  default='elsewhere',
+)
+
+# after
+def @guard(y):
+  try:
+    return (y > 0) is True
+  except Exception:
+    return False
+match shape:
+  case Point(0, @y) if @guard(@y):
+    @label = f'above at {@y}'
+  case _:
+    @label = 'elsewhere'
+label = @label
+```
+
+Anywhere else, each clause becomes a generated matcher that returns its captures as a tuple or `None`, and the call becomes a chain of conditional expressions over those calls. Only definitions are placed before the statement, so nothing is evaluated early, and the form works in comprehensions, lambdas and operands. `eop_match` always uses a matcher that returns a `bool`, which needs no temporary at all. The `@` names are not valid Python; they exist only in the tree, which is what makes them impossible to collide with.
+
+The `PatternTranslator` turns the pattern expression into a real `ast.pattern`: `eop_var.name` becomes a capture, a call becomes a class pattern, a list a sequence pattern, a dict a mapping pattern, and a bare name a capture plus an equality test in the guard. Because the result is a real `match`, the matching semantics are Python's, and the test suite checks both lowerings against handwritten `match` statements on a few dozen subjects.
 
 On Python 3.14, `functools.wraps` copies the lazy `__annotate__` hook rather than `__annotations__`, so a function whose annotations were set eagerly would lose them. The transformer and the runtime both carry annotations across in whichever form the function has: the hook when there is one, the dictionary when there isn't.
 

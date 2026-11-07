@@ -3,21 +3,23 @@
 ## 🗂️ Directory layout
 
 ```bash
-modgud/                            # Facade: the 13 public names, absolute imports + __all__, __version__
-  app/                             # Decorators and guard toolkit (re-exports all four)
-    guarded_expression.py          # class guarded_expression, @Invert(bootstrap='modgud') __init__
+modgud/                            # Facade: the 23 public names, absolute imports + __all__, __version__
+  app/                             # Decorators, markers and guard toolkit (re-exports all nine)
+    guarded_expression.py          # class guarded_expression, @Invert(bootstrap='modgud', keys=...) __init__
     implicit_return.py             # class implicit_return, same @Invert (applied as @implicit_return())
+    eop_cond.py, eop_case.py, eop_match.py   # EopCond / EopCase / EopMatch markers and their eop_* constants
+    eop_when.py, eop_var.py        # EopWhen / EopVar pattern vocabulary
     common_guards.py               # CommonGuards
     guard_registry.py              # GuardRegistry
-  domain/                          # Facade: 9 names (enum, errors, GuardFunction, the two ports)
-    enums/guard_failure_enum.py    # GuardFailureEnum
-    errors/                        # GuardClauseError, ImplicitReturnError + 3 children, one per module
-    ports/                         # @Port protocols (GuardPort, ImplicitReturnPort)
-    types.py                       # GuardFunction, and the T / F type variables the ports use
+  domain/                          # Facade: 14 names (enum, errors, GuardFunction, eop_clause, the three ports)
+    enums/                         # GuardFailureEnum; EopFormEnum (leaf export only)
+    errors/                        # GuardClauseError, ImplicitReturnError + 5 children, MarkerNotRewrittenError, one per module
+    ports/                         # @Port protocols (GuardPort, ImplicitReturnPort, EopPort)
+    types.py                       # GuardFunction, eop_clause, and the T / T_co / F type variables
   infrastructure/                  # Exports nothing; all three subpackages are internal
-    adapters/                      # @Adapter implementations of the ports, discovered and injected by Idunn
-    ast/                           # Internal AST helpers for the transformer (underscore modules, re-exported by __init__ only)
-    internal/                      # MethodDescriptors: unwrap/rewrap staticmethod & classmethod around the adapters
+    adapters/                      # @Adapter implementations of the ports, discovered and injected by Idunn; the three EopPort adapters are keyed
+    ast/                           # Internal AST helpers for the transformer and the form adapters (underscore modules, re-exported by __init__ only)
+    internal/                      # MethodDescriptors: unwrap/rewrap staticmethod & classmethod around the adapters; shared code that is not AST work
 examples/
   free_range/                      # Module-level decorated functions; exempt from single-class-per-file / no-loose-functions
   classy/                          # One class per file, no module-level def, a demo() classmethod with the asserts
@@ -28,9 +30,9 @@ tests/                             # pytest; test_architecture.py enforces the t
 
 | Tier | Names | Import from |
 |---|---|---|
-| Public | `guarded_expression`, `implicit_return`, `GuardFailureEnum`, `GuardClauseError`, `GuardFunction`, `ImplicitReturnError` and its 3 children, `CommonGuards`, `GuardRegistry` (11 names; plus the two ports below, 13 in `__all__`) | `modgud` |
-| Integration seam | `GuardPort`, `ImplicitReturnPort`; the `guard_port=` / `imp_return_port=` parameters; `IDUNN_ENV`; `Idunn().reset()` | `modgud`, `modgud.domain`, or `modgud.domain.ports` |
-| Internal | `GuardAdapter`, `ImplicitReturnAdapter`, `NoExplicitReturnChecker`, `TailRewriter`, `TopLevelTransformer`, `MethodDescriptors` | `modgud.infrastructure.adapters`, `modgud.infrastructure.ast`, `modgud.infrastructure.internal` |
+| Public | `guarded_expression`, `implicit_return`, `GuardFailureEnum`, `GuardClauseError`, `GuardFunction`, `ImplicitReturnError` and its 5 children, `MarkerNotRewrittenError`, `CommonGuards`, `GuardRegistry`, `eop_cond`, `eop_case`, `eop_match`, `eop_clause`, `eop_when`, `eop_var` (20 names; plus the three ports below, 23 in `__all__`) | `modgud` |
+| Integration seam | `GuardPort`, `ImplicitReturnPort`, `EopPort`; the `guard_port=` / `imp_return_port=` / `eop_*_port=` parameters; `IDUNN_ENV`; `Idunn().reset()` | `modgud`, `modgud.domain`, or `modgud.domain.ports` |
+| Internal | the five adapters, the `ast` helpers, `MethodDescriptors`, `EopFormEnum` | `modgud.infrastructure.adapters`, `modgud.infrastructure.ast`, `modgud.infrastructure.internal`, `modgud.domain.enums` |
 
 The structure used to be the API. It turned out people wanted one import line; see ADR-004.
 
@@ -43,7 +45,7 @@ The structure used to be the API. It turned out people wanted one import line; s
 - `GuardFunction` lives in a module directly under `domain`, and the only package above it is the facade. So `from modgud.domain.types import GuardFunction` is the one sanctioned exception to never importing from filenames.
 - Nothing runnable lives under `modgud/`: Idunn's discovery imports every module there. Examples live in `examples/`.
 
-IoC: the app layer depends on ports only. [Idunn](https://pypi.org/project/idunn) discovers `modgud.domain.ports` and `modgud.infrastructure.adapters` the first time a decoration leaves a port to injection: each decorator's `__init__` wears `@Invert(bootstrap='modgud')`, which bootstraps the package and then injects the adapters. A decoration that supplies every port discovers nothing. `Idunn(` appears nowhere under `modgud/`.
+IoC: the app layer depends on ports only. [Idunn](https://pypi.org/project/idunn) discovers `modgud.domain.ports` and `modgud.infrastructure.adapters` the first time a decoration leaves a port to injection: each decorator's `__init__` wears `@Invert(bootstrap='modgud', keys=...)`, which bootstraps the package and then injects the adapters, the three `EopPort` adapters by their `EopFormEnum` key. The decorators pass the form ports to the transformer as `forms`; the markers reach their port through a private `@Invert` helper only to refuse a plain call. A decoration that supplies every port discovers nothing. `Idunn(` appears nowhere under `modgud/`, and `Invert` is imported only in `app`.
 
 ## 🔗 Dependencies
 

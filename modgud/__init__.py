@@ -4,17 +4,28 @@ Import everything you need from here::
 
   from modgud import CommonGuards, GuardFailureEnum, guarded_expression
 
-The names in ``__all__`` are the supported public API. ``GuardPort`` and
-``ImplicitReturnPort`` are the integration seam for the decorators'
-``guard_port=`` / ``imp_return_port=`` parameters. Leaf packages remain importable, but
+The names in ``__all__`` are the supported public API. ``GuardPort``,
+``ImplicitReturnPort`` and ``EopPort`` are the integration seam for the decorators'
+``guard_port=`` / ``imp_return_port=`` / ``eop_*_port=`` parameters. Leaf packages remain importable, but
 their layout may change between releases. Examples:
 https://github.com/terracoil/modgud/tree/main/examples
 """
 
 from importlib.metadata import PackageNotFoundError, version
 
-from modgud.app import CommonGuards, GuardRegistry, guarded_expression, implicit_return
+from modgud.app import (
+  CommonGuards,
+  GuardRegistry,
+  eop_case,
+  eop_cond,
+  eop_match,
+  eop_var,
+  eop_when,
+  guarded_expression,
+  implicit_return,
+)
 from modgud.domain import (
+  EopPort,
   ExplicitReturnDisallowedError,
   GuardClauseError,
   GuardFailureEnum,
@@ -22,8 +33,12 @@ from modgud.domain import (
   GuardPort,
   ImplicitReturnError,
   ImplicitReturnPort,
+  MarkerNotRewrittenError,
+  MarkerPlacementError,
+  MarkerUsageError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
+  eop_clause,
 )
 
 try:
@@ -33,6 +48,7 @@ except PackageNotFoundError:  # running from a checkout that was never installed
 
 __all__ = [
   'CommonGuards',
+  'EopPort',
   'ExplicitReturnDisallowedError',
   'GuardClauseError',
   'GuardFailureEnum',
@@ -41,8 +57,17 @@ __all__ = [
   'GuardPort',
   'ImplicitReturnError',
   'ImplicitReturnPort',
+  'MarkerNotRewrittenError',
+  'MarkerPlacementError',
+  'MarkerUsageError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
+  'eop_case',
+  'eop_clause',
+  'eop_cond',
+  'eop_match',
+  'eop_var',
+  'eop_when',
   'guarded_expression',
   'implicit_return',
 ]

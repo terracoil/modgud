@@ -14,9 +14,9 @@ from typing import Any, Callable
 
 from idunn import Invert
 
-from modgud.domain.enums import GuardFailureEnum
+from modgud.domain.enums import EopFormEnum, GuardFailureEnum
 from modgud.domain.errors import GuardClauseError
-from modgud.domain.ports import GuardPort, ImplicitReturnPort
+from modgud.domain.ports import EopPort, GuardPort, ImplicitReturnPort
 from modgud.domain.types import GuardFunction
 
 
@@ -33,18 +33,28 @@ class guarded_expression:
   - ``CALL_HANDLER``: ``on_failure(errors, *args, **kwargs)`` is called.
 
   ``continuance`` caps how many guards past the first failure are evaluated.
-  ``guard_port`` and ``imp_return_port`` are injected by Idunn, which discovers modgud's
-  adapters the first time a decoration leaves either one to it. Pass either explicitly to
-  substitute a different implementation (e.g. a test fake); pass both and nothing is
-  discovered at all.
+  ``guard_port``, ``imp_return_port`` and the three ``eop_*_port`` ports are injected by Idunn,
+  which discovers modgud's adapters the first time a decoration leaves one of them to it. Pass
+  a port explicitly to substitute a different implementation (e.g. a test fake); pass all five
+  and nothing is discovered at all.
   """
 
   guard_port: GuardPort  # assigned by @Invert
   imp_return_port: ImplicitReturnPort  # assigned by @Invert
+  eop_cond_port: EopPort  # assigned by @Invert
+  eop_case_port: EopPort  # assigned by @Invert
+  eop_match_port: EopPort  # assigned by @Invert
 
   # @Invert assigns the port parameters to self before the body runs.
   # noinspection PyUnusedLocal
-  @Invert(bootstrap='modgud')
+  @Invert(
+    bootstrap='modgud',
+    keys={
+      'eop_cond_port': EopFormEnum.COND,
+      'eop_case_port': EopFormEnum.CASE,
+      'eop_match_port': EopFormEnum.MATCH,
+    },
+  )
   def __init__(
     self,
     *guards: GuardFunction,
@@ -54,8 +64,11 @@ class guarded_expression:
     continuance: int = 0,
     guard_port: GuardPort,
     imp_return_port: ImplicitReturnPort,
+    eop_cond_port: EopPort,
+    eop_case_port: EopPort,
+    eop_match_port: EopPort,
   ) -> None:
-    """Capture the guard configuration; the two ports are injected by Idunn or passed by the caller."""
+    """Capture the guard configuration; the ports are injected by Idunn or passed by the caller."""
     self._guards: tuple[GuardFunction, ...] = guards
     self._implicit_return: bool = implicit_return
     self._strategy: GuardFailureEnum = strategy
@@ -76,4 +89,13 @@ class guarded_expression:
       guards=self._guards,
       strategy=self._strategy,
       on_failure=self._on_failure,
+      forms=self._forms(),
     )
+
+  def _forms(self) -> dict[EopFormEnum, EopPort]:
+    """Map each form to the port that lowers it."""
+    return {
+      EopFormEnum.COND: self.eop_cond_port,
+      EopFormEnum.CASE: self.eop_case_port,
+      EopFormEnum.MATCH: self.eop_match_port,
+    }

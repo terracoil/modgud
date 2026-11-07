@@ -20,6 +20,7 @@ import modgud.infrastructure
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_NAMES = {
   'CommonGuards',
+  'EopPort',
   'ExplicitReturnDisallowedError',
   'GuardClauseError',
   'GuardFailureEnum',
@@ -28,12 +29,22 @@ PUBLIC_NAMES = {
   'GuardPort',
   'ImplicitReturnError',
   'ImplicitReturnPort',
+  'MarkerNotRewrittenError',
+  'MarkerPlacementError',
+  'MarkerUsageError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
+  'eop_case',
+  'eop_clause',
+  'eop_cond',
+  'eop_match',
+  'eop_var',
+  'eop_when',
   'guarded_expression',
   'implicit_return',
 }
 DOMAIN_NAMES = {
+  'EopPort',
   'ExplicitReturnDisallowedError',
   'GuardClauseError',
   'GuardFailureEnum',
@@ -41,16 +52,28 @@ DOMAIN_NAMES = {
   'GuardPort',
   'ImplicitReturnError',
   'ImplicitReturnPort',
+  'MarkerNotRewrittenError',
+  'MarkerPlacementError',
+  'MarkerUsageError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
+  'eop_clause',
 }
 APP_NAMES = {
   'CommonGuards',
   'GuardRegistry',
+  'eop_case',
+  'eop_cond',
+  'eop_match',
+  'eop_var',
+  'eop_when',
   'guarded_expression',
   'implicit_return',
 }
 INTERNAL_NAMES = {
+  'EopCaseAdapter',
+  'EopCondAdapter',
+  'EopMatchAdapter',
   'GuardAdapter',
   'ImplicitReturnAdapter',
   'NoExplicitReturnChecker',
@@ -99,6 +122,16 @@ class TestFacadeIdentity:
       'ImplicitReturnPort': modgud.domain.ports.ImplicitReturnPort,
       'CommonGuards': modgud.app.CommonGuards,
       'GuardRegistry': modgud.app.GuardRegistry,
+      'EopPort': modgud.domain.ports.EopPort,
+      'MarkerNotRewrittenError': modgud.domain.errors.MarkerNotRewrittenError,
+      'MarkerPlacementError': modgud.domain.errors.MarkerPlacementError,
+      'MarkerUsageError': modgud.domain.errors.MarkerUsageError,
+      'eop_case': modgud.app.eop_case,
+      'eop_clause': modgud.domain.types.eop_clause,
+      'eop_cond': modgud.app.eop_cond,
+      'eop_match': modgud.app.eop_match,
+      'eop_var': modgud.app.eop_var,
+      'eop_when': modgud.app.eop_when,
     }
     assert set(leaves) == PUBLIC_NAMES
     for name, leaf in leaves.items():

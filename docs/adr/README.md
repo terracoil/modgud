@@ -21,6 +21,7 @@ Short documents that record one decision each: the context, the choice, the cons
 | [ADR-003](./ADR-003-registry-system-architecture.md) | Registry System Architecture | Accepted | 2025-10-26 |
 | [ADR-004](./ADR-004-public-facade-and-api-tiers.md) | Public Facade and API Tiers | Accepted | 2026-11-02 |
 | [ADR-005](./ADR-005-idunn-ports-and-adapters.md) | Idunn Ports and Adapters | Accepted | 2026-11-02 |
+| [ADR-006](./ADR-006-elixir-expression-forms.md) | Elixir Expression Forms | Accepted | 2026-11-06 |
 
 ## ADR Format
 

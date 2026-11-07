@@ -7,9 +7,11 @@ Run: poetry run python examples/free_range/12_swapping_the_runtime.py
 See: docs/api-reference.md#integration-seam
 """
 
+from collections.abc import Mapping
 from typing import Any, Callable, TypeVar
 
 from modgud import (
+  EopPort,
   GuardFailureEnum,
   GuardFunction,
   GuardPort,
@@ -37,10 +39,11 @@ class AuditingRuntime:
     guards: tuple[GuardFunction, ...],
     strategy: GuardFailureEnum,
     on_failure: Any,
+    forms: Mapping[Any, EopPort],
   ) -> Callable[..., Any]:
     """Wrap ``func`` so each call records the guards' answers, then runs regardless."""
-    target: Callable[..., Any] = (
-      imp_return_port.transform_function(func) if implicit_return else func
+    target: Callable[..., Any] = imp_return_port.transform_function(
+      func, forms=forms, implicit_return=implicit_return
     )
 
     def audited(*args: Any, **kwargs: Any) -> Any:
@@ -58,12 +61,14 @@ class RecordingTransformer:
     """Start with nothing seen."""
     self.seen: list[str] = []
 
-  def transform(self, func: F) -> F:
+  def transform(self, func: F, *, forms: Mapping[Any, EopPort]) -> F:
     """Record ``func`` (as ``@implicit_return()`` would hand it over) and skip the rewrite."""
     self.seen.append(func.__name__)
     return func
 
-  def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
+  def transform_function(
+    self, func: Callable[..., T], *, forms: Mapping[Any, EopPort], implicit_return: bool = True
+  ) -> Callable[..., T]:
     """Record ``func`` (as a guard port hands it over) and skip the AST rewrite entirely."""
     self.seen.append(func.__name__)
     return func

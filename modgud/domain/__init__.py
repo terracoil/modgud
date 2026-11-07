@@ -8,13 +8,17 @@ from .errors import (
   ExplicitReturnDisallowedError,
   GuardClauseError,
   ImplicitReturnError,
+  MarkerNotRewrittenError,
+  MarkerPlacementError,
+  MarkerUsageError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
-from .ports import GuardPort, ImplicitReturnPort
-from .types import GuardFunction
+from .ports import EopPort, GuardPort, ImplicitReturnPort
+from .types import GuardFunction, eop_clause
 
 __all__ = [
+  'EopPort',
   'ExplicitReturnDisallowedError',
   'GuardClauseError',
   'GuardFailureEnum',
@@ -22,6 +26,10 @@ __all__ = [
   'GuardPort',
   'ImplicitReturnError',
   'ImplicitReturnPort',
+  'MarkerNotRewrittenError',
+  'MarkerPlacementError',
+  'MarkerUsageError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
+  'eop_clause',
 ]

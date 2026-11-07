@@ -3,17 +3,27 @@
 from __future__ import annotations
 
 import ast
+import builtins
+import functools
 import inspect
 import textwrap
 import types
+from collections.abc import Mapping
 from typing import Any, Callable, ParamSpec, TypeVar, TypeVarTuple, cast
 
 from idunn import Adapter, LifecycleEnum
 
+from modgud.domain.enums import EopFormEnum
 from modgud.domain.errors import ExplicitReturnDisallowedError, UnsupportedConstructError
-from modgud.domain.ports import ImplicitReturnPort
+from modgud.domain.ports import EopPort, ImplicitReturnPort
 from modgud.domain.types import F, T
-from modgud.infrastructure.ast import NoExplicitReturnChecker, TailRewriter, TopLevelTransformer
+from modgud.infrastructure.ast import (
+  FormLowerer,
+  MarkerResolver,
+  NoExplicitReturnChecker,
+  TailRewriter,
+  TopLevelTransformer,
+)
 from modgud.infrastructure.internal import MethodDescriptors
 
 
@@ -21,11 +31,11 @@ from modgud.infrastructure.internal import MethodDescriptors
 class ImplicitReturnAdapter(ImplicitReturnPort):
   """AST transformation for implicit return functionality; Idunn's adapter for the port."""
 
-  def transform(self, func: F) -> F:
+  def transform(self, func: F, *, forms: Mapping[EopFormEnum, EopPort]) -> F:
     """Transform a function so the last expression in each branch is returned.
 
     ``func`` may also be a ``staticmethod`` / ``classmethod`` object; the result is then a
-    descriptor of the same kind.
+    descriptor of the same kind. Every ``eop_`` form in the body is lowered through ``forms``.
 
     :raises TypeError: if ``func`` is already a ``guarded_expression`` wrapper. The rewrite
       re-reads the original source, so the guards would silently disappear.
@@ -36,21 +46,35 @@ class ImplicitReturnAdapter(ImplicitReturnPort):
         '@implicit_return() must sit below @guarded_expression; put it closer to the def, '
         'or pass implicit_return=True'
       )
-    transformed: Callable[..., Any] = self.transform_function(plain)
+    transformed: Callable[..., Any] = self.transform_function(plain, forms=forms)
     transformed.__implicit_return__ = True  # type: ignore[attr-defined]
     return cast(F, MethodDescriptors.rewrap(transformed, kind))
 
-  def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
-    """Transform a function to use implicit returns.
+  def transform_function(
+    self,
+    func: Callable[..., T],
+    *,
+    forms: Mapping[EopFormEnum, EopPort],
+    implicit_return: bool = True,
+  ) -> Callable[..., T]:
+    """Transform a function to use implicit returns and lower its ``eop_`` forms.
 
-    Extracts source, applies the implicit-return AST rewrite, recompiles
-    in the function's original global namespace, and preserves metadata.
+    Extracts source, lowers every form through its port in ``forms``, applies the
+    implicit-return AST rewrite, recompiles in the function's original global namespace, and
+    preserves metadata. With ``implicit_return=False`` the tail rewrite is skipped, and a
+    function that references no form is returned as it is, without reading its source.
 
     :param func: Function to transform.
-    :returns: Transformed function with implicit return semantics.
+    :param forms: The port that lowers each form.
+    :param implicit_return: Whether to apply the tail rewrite as well.
+    :returns: Transformed function.
     :raises ValueError: If source cannot be extracted.
     :raises ImplicitReturnError: If transformation fails.
     """
+    resolver: MarkerResolver = MarkerResolver(self._scope_of(func))
+    code: Any = getattr(func, '__code__', None)
+    if not implicit_return and (code is None or not resolver.references(code)):
+      return func
     try:
       source = inspect.getsource(func)
     except (TypeError, OSError) as e:
@@ -59,7 +83,12 @@ class ImplicitReturnAdapter(ImplicitReturnPort):
     class_path: tuple[str, ...] = self._class_path(func)
     dedented_src = textwrap.dedent(source)
     transformed_ast, _ = self.apply_implicit_return_transform(
-      dedented_src, func.__name__, class_path, self._enclosing_type_params(func)
+      dedented_src,
+      func.__name__,
+      class_path,
+      self._enclosing_type_params(func),
+      lowerer=FormLowerer(forms, resolver),
+      implicit_return=implicit_return,
     )
     self._strip_signature_expressions(transformed_ast, func.__name__)
     code = compile(transformed_ast, f'<implicit_return:{func.__qualname__}>', 'exec')
@@ -93,6 +122,19 @@ class ImplicitReturnAdapter(ImplicitReturnPort):
     else:
       transformed_func.__annotations__ = func.__annotations__
     return transformed_func
+
+  @classmethod
+  def _scope_of(cls, func: Callable[..., Any]) -> dict[str, Any]:
+    """Where the body's free names resolve: builtins, then globals, then the closure."""
+    globals_: dict[str, Any] = getattr(func, '__globals__', {})
+    module_builtins: Any = globals_.get('__builtins__', builtins)
+    found: dict[str, Any] = (
+      dict(module_builtins) if isinstance(module_builtins, dict) else vars(module_builtins)
+    )
+    found.update(globals_)
+    if hasattr(func, '__code__'):
+      found.update(cls._closure_values(func))
+    return found
 
   @staticmethod
   def _closure_values(func: Callable[..., Any]) -> dict[str, Any]:
@@ -191,7 +233,14 @@ class ImplicitReturnAdapter(ImplicitReturnPort):
     return tuple(tail.split('.')[:-1])
 
   @classmethod
-  def transform_function_ast(cls, fn_node: ast.AST, func_name: str) -> ast.AST:
+  def transform_function_ast(
+    cls,
+    fn_node: ast.AST,
+    func_name: str,
+    *,
+    lowerer: FormLowerer | None = None,
+    implicit_return: bool = True,
+  ) -> ast.AST:
     """Transform function AST to enforce implicit return semantics.
 
     Transforms a FunctionDef/AsyncFunctionDef AST node to enforce
@@ -199,15 +248,23 @@ class ImplicitReturnAdapter(ImplicitReturnPort):
 
     Steps:
       1. Verify no explicit `return` anywhere in the body, nested defs included
-      2. Rewrite tail of the function body to assign to a hidden result var
-      3. Append a single `return __implicit_result`
+      2. Lower every ``eop_`` form through ``lowerer``, when one is given
+      3. Rewrite tail of the function body to assign to a hidden result var
+      4. Append a single `return __implicit_result`
+
+    With ``implicit_return=False`` steps 1, 3 and 4 are skipped: the body keeps its explicit
+    ``return`` statements and only the forms are lowered.
 
     :param fn_node: The function AST node to transform.
     :param func_name: Name of the function (for error messages).
+    :param lowerer: Lowers the ``eop_`` forms; ``None`` leaves the body's calls as they are.
+    :param implicit_return: Whether to apply the tail rewrite.
     :returns: The transformed AST node with implicit return semantics.
     :raises ExplicitReturnDisallowedError: If an explicit return is found anywhere in the body.
     :raises MissingImplicitReturnError: If a block cannot yield a name.
     :raises UnsupportedConstructError: If an unsupported construct is found.
+    :raises MarkerUsageError: If an ``eop_`` form is malformed.
+    :raises MarkerPlacementError: If an ``eop_`` form sits where it cannot be lowered.
     """
     assert isinstance(fn_node, (ast.FunctionDef, ast.AsyncFunctionDef))
     body = fn_node.body
@@ -225,7 +282,7 @@ class ImplicitReturnAdapter(ImplicitReturnPort):
     checker = NoExplicitReturnChecker()
     for stmt in body:
       checker.visit(stmt)
-    if checker.found is not None:
+    if implicit_return and checker.found is not None:
       line, col = checker.found
       raise ExplicitReturnDisallowedError(
         f"Explicit `return` is disallowed in implicit-return function '{func_name}'; "
@@ -233,6 +290,14 @@ class ImplicitReturnAdapter(ImplicitReturnPort):
         line,
         col,
       )
+
+    # Checks first, so a refused function is never half rewritten; the lowering may add
+    # generated nested functions that hold their own `return`, which the tail rewrite never enters.
+    if lowerer is not None:
+      lowerer.lower_function(fn_node)
+      body = fn_node.body
+    if not implicit_return:
+      return fn_node
 
     result_name = '__implicit_result'
     rewriter = TailRewriter(result_name)
@@ -273,6 +338,9 @@ class ImplicitReturnAdapter(ImplicitReturnPort):
     func_name: str,
     class_path: tuple[str, ...] = (),
     class_type_params: tuple[str, ...] = (),
+    *,
+    lowerer: FormLowerer | None = None,
+    implicit_return: bool = True,
   ) -> tuple[ast.Module, str]:
     """Apply implicit return transformation to function source code.
 
@@ -284,13 +352,20 @@ class ImplicitReturnAdapter(ImplicitReturnPort):
     :param class_type_params: PEP 695 type-parameter names the innermost stand-in class
       declares (Python 3.12+), so a body that names ``T`` from ``class Box[T]`` still
       compiles as a closure over ``T``.
+    :param lowerer: Lowers the ``eop_`` forms; ``None`` leaves the body's calls as they are.
+    :param implicit_return: Whether to apply the tail rewrite.
     :returns: Tuple of (transformed_ast, filename hint for compile()).
     :raises ExplicitReturnDisallowedError: If explicit return found.
     :raises MissingImplicitReturnError: If a block cannot yield a name.
     :raises UnsupportedConstructError: If an unsupported construct is found.
     """
     tree = ast.parse(func_source)
-    transformer = TopLevelTransformer(func_name, cls.transform_function_ast)
+    transformer = TopLevelTransformer(
+      func_name,
+      functools.partial(
+        cls.transform_function_ast, lowerer=lowerer, implicit_return=implicit_return
+      ),
+    )
     new_tree: ast.Module = transformer.visit(tree)
     for depth, class_name in enumerate(reversed(class_path)):
       stand_in = ast.ClassDef(

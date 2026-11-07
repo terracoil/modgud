@@ -208,6 +208,7 @@ class TestDependencyTable:
     }
     importers = {module: names for module, names in idunn_importers.items() if names}
     assert importers == {
+      'modgud.domain.ports.eop_port': ['Port'],
       'modgud.domain.ports.guard_port': ['Port'],
       'modgud.domain.ports.implicit_return_port': ['Port'],
     }
@@ -250,6 +251,7 @@ class TestIdunnMarkers:
   def test_ports_are_registered(self) -> None:
     registered = set(Idunn().bootstrap(ROOT_PACKAGE)['registered_ports'])
     for module, name in (
+      ('modgud.domain.ports.eop_port', 'EopPort'),
       ('modgud.domain.ports.guard_port', 'GuardPort'),
       ('modgud.domain.ports.implicit_return_port', 'ImplicitReturnPort'),
     ):
@@ -259,6 +261,9 @@ class TestIdunnMarkers:
     registered = set(Idunn().bootstrap(ROOT_PACKAGE)['registered_adapters'])
     adapters = importlib.import_module(ADAPTERS)
     for adapter_name, port_module, port_name in (
+      ('EopCaseAdapter', DOMAIN_PORTS, 'EopPort'),
+      ('EopCondAdapter', DOMAIN_PORTS, 'EopPort'),
+      ('EopMatchAdapter', DOMAIN_PORTS, 'EopPort'),
       ('GuardAdapter', DOMAIN_PORTS, 'GuardPort'),
       ('ImplicitReturnAdapter', DOMAIN_PORTS, 'ImplicitReturnPort'),
     ):

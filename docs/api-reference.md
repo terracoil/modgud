@@ -11,18 +11,20 @@ from modgud import guarded_expression, implicit_return
 from modgud import CommonGuards, GuardFunction, GuardRegistry
 from modgud import GuardClauseError, GuardFailureEnum
 from modgud import ExplicitReturnDisallowedError, ImplicitReturnError, MissingImplicitReturnError, UnsupportedConstructError
-from modgud import GuardPort, ImplicitReturnPort  # integration seam only
+from modgud import eop_case, eop_clause, eop_cond, eop_match, eop_var, eop_when
+from modgud import MarkerNotRewrittenError, MarkerPlacementError, MarkerUsageError
+from modgud import EopPort, GuardPort, ImplicitReturnPort  # integration seam only
 ```
 
-Those 13 names are the public API. Everything else sits in a lower tier:
+Those 23 names are the public API. Everything else sits in a lower tier:
 
 | Tier | What | Where | Promise |
 |---|---|---|---|
-| Public | the 13 names above | `modgud` | Documented on this page |
-| Integration seam | the two ports, `guard_port=` / `imp_return_port=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud` (ports also at `modgud.domain` and `modgud.domain.ports`) | For fakes and Idunn users; see [Integration seam](#integration-seam) |
-| Internal | `GuardAdapter`, `ImplicitReturnAdapter`, `modgud.infrastructure.ast` | leaf packages | May move between releases |
+| Public | the 23 names above | `modgud` | Documented on this page |
+| Integration seam | the three ports, `guard_port=` / `imp_return_port=` / `eop_*_port=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud` (ports also at `modgud.domain` and `modgud.domain.ports`) | For fakes and Idunn users; see [Integration seam](#integration-seam) |
+| Internal | the adapters, `modgud.infrastructure.ast`, `modgud.infrastructure.internal` | leaf packages | May move between releases |
 
-`modgud.domain` (nine names) and `modgud.app` (four) are secondary paths to the same objects, there for the package's layering. `modgud.infrastructure` exports nothing. These docs teach one import path.
+`modgud.domain` (fourteen names) and `modgud.app` (nine) are secondary paths to the same objects, there for the package's layering. `modgud.infrastructure` exports nothing. These docs teach one import path.
 
 ## 🛡️ Decorators
 
@@ -211,6 +213,89 @@ Full version: [examples/classy/10_decorator_composition.py](../examples/classy/1
 - Guards-only functions have none of these limits.
 - Guards are plain functions: `CommonGuards.positive('x')(5)` returns `True`.
 
+## 🧩 Expression forms
+
+Three forms borrowed from Elixir, each an expression that a modgud decorator rewrites at decoration time. They work only inside a function decorated with `guarded_expression` or `implicit_return`; anywhere else the call raises [`MarkerNotRewrittenError`](#error-classes). The rules that differ from plain Python are collected in the [docs hub](ADVANCED.md#-expression-forms-past-the-basics).
+
+### eop_cond
+
+```python
+eop_cond(*clauses: eop_clause[T], default: D) -> T | D
+```
+
+Elixir's `cond`. Clauses are tested in order and the first true one's value is returned, else `default`. Only the selected value is evaluated. As in Elixir, a test is true unless it is `None` or `False`, so `0`, `''` and `[]` count as true. `default=` is required; a missing one is a mypy error and a `MarkerUsageError` at decoration.
+
+```python
+from modgud import eop_clause, eop_cond, implicit_return
+
+@implicit_return()
+def sign(x: int) -> str:
+  eop_cond(eop_clause(x < 0, 'negative'), eop_clause(x == 0, 'zero'), default='positive')
+```
+
+Full version: [examples/free_range/13_eop_cond.py](../examples/free_range/13_eop_cond.py)
+
+### eop_case
+
+```python
+eop_case(subject: object, *clauses: eop_clause[T], default: D) -> T | D
+```
+
+Elixir's `case`. The subject is evaluated once and matched against each clause's pattern in order; the first match's value is returned, else `default`. A clause test is a pattern written as an expression, or [`eop_when(pattern, guard)`](#eop_when). Captures are visible only in their own clause's guard and value. Matching itself is Python's: `1` matches `1.0`, and a list pattern matches a tuple.
+
+```python
+from modgud import eop_case, eop_clause, eop_var, eop_when, implicit_return
+
+@implicit_return()
+def describe(shape: object) -> str:
+  eop_case(
+    shape,
+    eop_clause(eop_when(Point(0, eop_var.y), eop_var.y > 0), f'above the origin at {eop_var.y}'),
+    eop_clause(Point(eop_var.x, 0), f'on the x axis at {eop_var.x}'),
+    default='elsewhere',
+  )
+```
+
+Full version: [examples/free_range/14_eop_case.py](../examples/free_range/14_eop_case.py)
+
+### eop_match
+
+```python
+eop_match(pattern: object, value: object) -> bool
+```
+
+Elixir's `match?`: whether `value` matches `pattern`, as a real `bool`. The pattern may be `eop_when(pattern, guard)`, and captures are usable only inside that guard. It gives no type narrowing; use `isinstance` when narrowing matters.
+
+```python
+from modgud import eop_match, eop_var, implicit_return
+
+@implicit_return()
+def on_y_axis(shapes: list[object]) -> list[object]:
+  [s for s in shapes if eop_match(Point(0, eop_var._), s)]
+```
+
+Full version: [examples/free_range/15_eop_match.py](../examples/free_range/15_eop_match.py)
+
+### eop_clause
+
+```python
+eop_clause(test: object, value: T)
+```
+
+A frozen dataclass pairing a test with the value it selects; Elixir's word for a branch. In `eop_cond` the test is a condition, in `eop_case` a pattern. A clause must be written inside the form call: one built earlier has already evaluated its value, so the rewrite refuses it.
+
+### eop_when
+
+```python
+eop_when(pattern: object, guard: object) -> object
+```
+
+A pattern with a guard, Elixir's `pattern when guard`. The guard passes only when it is exactly `True`, and a guard that raises counts as no match, as in Elixir; a mistake inside a guard therefore falls through silently. A guard may not contain `await`, `yield` or `:=`. See [guards](ADVANCED.md#guards-and-what-happens-when-one-raises).
+
+### eop_var
+
+The capture object. `eop_var.name` captures into `name`, and `eop_var._` matches anything. Captured values are typed `Any`. The full pattern language is in the [docs hub](ADVANCED.md#the-pattern-language).
+
 ## 🧰 Guard toolkit
 
 ### GuardFunction
@@ -281,30 +366,33 @@ Full version: [examples/free_range/07_custom_guards.py](../examples/free_range/0
 | `ExplicitReturnDisallowedError` | `ImplicitReturnError` | the rewritten body contains `return` |
 | `MissingImplicitReturnError` | `ImplicitReturnError` | a tail `if` has no `else`, or a tail `match` has no wildcard case |
 | `UnsupportedConstructError` | `ImplicitReturnError` | an unsupported tail, zero-argument `super()`, a bare `__class__` |
+| `MarkerUsageError` | `ImplicitReturnError` | an `eop_` form is malformed: no `default=`, a pattern outside the subset, a capture used outside its clause |
+| `MarkerPlacementError` | `ImplicitReturnError` | an `eop_` form sits where it cannot be lowered: a comprehension's first iterable, a nested class body, a guard reading a comprehension variable |
+| `MarkerNotRewrittenError` | `RuntimeError` | an `eop_` form ran as a plain call, outside any modgud decorator; `.name` holds the form |
 
-The `ImplicitReturnError` family is raised at decoration time, with `lineno` counted from the function's first decorator line. Missing source raises `ValueError` instead.
+The `ImplicitReturnError` family is raised at decoration time, with `lineno` counted from the function's first decorator line. Missing source raises `ValueError` instead. `MarkerNotRewrittenError` is the one call-time error.
 
 ## Integration seam
 
-The decorators depend on two ports, not on the code behind them. Both are `typing.Protocol` classes marked `@Port` for [Idunn](https://pypi.org/project/idunn):
+The decorators depend on three ports, not on the code behind them. All are `typing.Protocol` classes marked `@Port` for [Idunn](https://pypi.org/project/idunn):
 
 ```python
-from modgud import GuardPort, ImplicitReturnPort
-from modgud.domain.ports import GuardPort, ImplicitReturnPort  # same objects
+from modgud import EopPort, GuardPort, ImplicitReturnPort
+from modgud.domain.ports import EopPort, GuardPort, ImplicitReturnPort  # same objects
 ```
 
-The ports declare ordinary instance methods, so a fake is a plain object that may keep state on `self`. `ImplicitReturnPort` has `transform_function(self, func)`, the bare rewrite of a plain function, and `transform(self, func)`, what `@implicit_return()` calls: it also unwraps a `staticmethod` / `classmethod`, marks the result and refuses a `guarded_expression` wrapper. `GuardPort` has one method, `transform(self, func, continuance, imp_return_port, implicit_return, guards, strategy, on_failure)`: it rewrites through `imp_return_port.transform_function` when asked, then wraps with the guards. Pass a fake as `guard_port=` or `imp_return_port=` and it beats the injected adapter, for that decorator only. Swapping the adapters process-wide isn't supported.
+The ports declare ordinary instance methods, so a fake is a plain object that may keep state on `self`. `ImplicitReturnPort` has `transform_function(self, func, *, forms, implicit_return=True)`, the rewrite of a plain function, and `transform(self, func, *, forms)`, what `@implicit_return()` calls: it also unwraps a `staticmethod` / `classmethod`, marks the result and refuses a `guarded_expression` wrapper. `GuardPort` has one method, `transform(self, func, continuance, imp_return_port, implicit_return, guards, strategy, on_failure, forms)`: it rewrites through `imp_return_port.transform_function`, then wraps with the guards. `forms` maps each `EopFormEnum` member to the `EopPort` that lowers it; `EopPort` has `lower(call, *, hoistable, fresh)` and `refuse()`, and one adapter serves each form under its key. Pass a fake as `guard_port=`, `imp_return_port=`, `eop_cond_port=`, `eop_case_port=` or `eop_match_port=` and it beats the injected adapter, for that decorator only. Swapping the adapters process-wide isn't supported.
 
 ```python
 class RecordingTransformer:
   def __init__(self) -> None:
     self.seen: list[str] = []
 
-  def transform(self, func: F) -> F:
+  def transform(self, func: F, *, forms: Mapping[Any, EopPort]) -> F:
     self.seen.append(func.__name__)
     return func
 
-  def transform_function(self, func: Callable[..., T]) -> Callable[..., T]:
+  def transform_function(self, func: Callable[..., T], *, forms: Mapping[Any, EopPort], implicit_return: bool = True) -> Callable[..., T]:
     self.seen.append(func.__name__)
     return func
 
@@ -323,7 +411,7 @@ Full version: [examples/free_range/12_swapping_the_runtime.py](../examples/free_
 How the wiring behaves:
 
 - The first decoration in a process that leaves a port to injection, not the import, runs `Idunn().bootstrap('modgud')`. The decorators declare that with `@Invert(bootstrap='modgud')`; modgud itself never constructs `Idunn()`.
-- A decoration that passes every port it takes (`guard_port=` and `imp_return_port=` for `guarded_expression`, `imp_return_port=` for `implicit_return`) triggers no discovery.
+- A decoration that passes every port it takes (the five for `guarded_expression`, the four for `implicit_return`) triggers no discovery. An `eop_` form called outside a decorator also discovers, so its adapter can refuse it.
 - Idunn reads `IDUNN_ENV` when its container is first created. modgud's adapters declare no environment, so it matters only to your own.
 - `Idunn().reset()` clears the whole container, yours included. The next decoration re-discovers modgud; earlier functions keep working. Fixtures call `Idunn().reset(environment=Idunn().environment)` to keep the environment.
 

@@ -10,13 +10,14 @@ from __future__ import annotations
 
 import functools
 import inspect
+from collections.abc import Mapping
 from typing import Any, Callable
 
 from idunn import Adapter, LifecycleEnum
 
-from modgud.domain.enums import GuardFailureEnum
+from modgud.domain.enums import EopFormEnum, GuardFailureEnum
 from modgud.domain.errors import GuardClauseError
-from modgud.domain.ports import GuardPort, ImplicitReturnPort
+from modgud.domain.ports import EopPort, GuardPort, ImplicitReturnPort
 from modgud.domain.types import GuardFunction
 from modgud.infrastructure.internal import MethodDescriptors
 
@@ -34,18 +35,21 @@ class GuardAdapter(GuardPort):
     guards: tuple[GuardFunction, ...],
     strategy: GuardFailureEnum,
     on_failure: Any,
+    forms: Mapping[EopFormEnum, EopPort],
   ) -> Callable[..., Any]:
-    """Apply the (optional) implicit-return rewrite, then wrap ``func`` with guard dispatch.
+    """Apply the implicit-return rewrite and the ``eop_`` lowering, then wrap ``func`` with guards.
 
     ``func`` may be a ``staticmethod`` / ``classmethod`` object; the result is then a descriptor
     of the same kind. A function already marked ``__implicit_return__`` is not rewritten again.
+    With ``implicit_return=False`` the port still lowers any ``eop_`` form and hands back a
+    form-free function untouched.
     """
     plain, kind = MethodDescriptors.unwrap(func)
     already_transformed: bool = getattr(plain, '__implicit_return__', False)
     target: Callable[..., Any] = (
-      imp_return_port.transform_function(plain)
-      if implicit_return and not already_transformed
-      else plain
+      plain
+      if already_transformed
+      else imp_return_port.transform_function(plain, forms=forms, implicit_return=implicit_return)
     )
     wrapped: Callable[..., Any] = self.wrap_function(
       target, guards, strategy, on_failure, continuance

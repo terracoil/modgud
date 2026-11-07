@@ -1,6 +1,6 @@
 # Examples
 
-Twenty small scripts that each prove one thing about modgud. Every one ends in `assert`s, so if it exits with code 0, the claim in its docstring holds on your machine. The `print`s are just there so you can see it happen.
+Twenty-six small scripts that each prove one thing about modgud. Every one ends in `assert`s, so if it exits with code 0, the claim in its docstring holds on your machine. The `print`s are just there so you can see it happen.
 
 ## 🗂️ Two trees, same lessons
 
@@ -11,7 +11,7 @@ The examples come in two flavours. They share numbers and filenames, so `07` in 
 
 Free-range functions roam the module wherever they like. Classy ones live in a class, keep a docstring on every method, and have exactly one way out.
 
-Not every lesson needs both shapes, so `classy/` has 8 files to `free_range/`'s 12. Where a method version would only add ceremony, there isn't one.
+Not every lesson needs both shapes, so `classy/` has 11 files to `free_range/`'s 15. Where a method version would only add ceremony, there isn't one.
 
 ## Running them
 
@@ -50,6 +50,14 @@ poetry run python examples/classy/01_quick_start.py
 | 10 | [10_decorator_composition.py](free_range/10_decorator_composition.py) | [10_decorator_composition.py](classy/10_decorator_composition.py) | Free-range: stacking order, the right one and the `TypeError` for the wrong one, and the metadata that survives. Classy: every method shape, modgud on either side of `@staticmethod`/`@classmethod`, zero-argument `super()` refused, and `@implicit_return()` refused above a guarded method. |
 | 11 | [11_decoration_errors.py](free_range/11_decoration_errors.py) | | The three `ImplicitReturnError` subclasses, raised when the decorator is applied. |
 | 12 | [12_swapping_the_runtime.py](free_range/12_swapping_the_runtime.py) | | Fakes typed against `GuardPort` and `ImplicitReturnPort`, passed as `guard_port=` / `imp_return_port=`. |
+
+## 🧩 Expression forms
+
+| # | free_range | classy | What it shows |
+|---|---|---|---|
+| 13 | [13_eop_cond.py](free_range/13_eop_cond.py) | [13_eop_cond.py](classy/13_eop_cond.py) | `eop_cond`: ordered clauses as one expression, lazy values, Elixir's truth rule, use in a comprehension. |
+| 14 | [14_eop_case.py](free_range/14_eop_case.py) | [14_eop_case.py](classy/14_eop_case.py) | `eop_case`: class, sequence and mapping patterns written as expressions, `eop_when` guards, captures that stay in their clause. |
+| 15 | [15_eop_match.py](free_range/15_eop_match.py) | [15_eop_match.py](classy/15_eop_match.py) | `eop_match`: a pattern test that returns a `bool`, with a guard, as a comprehension filter. |
 
 ## Conventions
 

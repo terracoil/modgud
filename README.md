@@ -136,6 +136,24 @@ The body never runs once a guard has failed. Details: [GuardFailureEnum](https:/
 
 **Implicit returns.** The tail of every branch must produce a value: `if`/`elif`/`else`, `try`/`except`/`else` and `match`/`case` all work; a tail `match` must end in `case _:`. A `return` anywhere in the decorated function, nested functions included, or a branch that ends without a value, is refused at decoration time. Import time, in practice, not the first call in production. Pass `implicit_return=False` to keep explicit returns and use the guards alone. See [implicit_return](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#implicit_return) and [04_implicit_returns.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/04_implicit_returns.py).
 
+**Expression forms.** Three Elixir-style forms turn ordered conditions and pattern matching into expressions, so they fit in a tail, an assignment or a comprehension. Each one needs a modgud decorator on the function.
+
+```python
+from modgud import eop_case, eop_clause, eop_cond, eop_match, eop_var, implicit_return
+
+
+@implicit_return()
+def sign(x):
+  eop_cond(eop_clause(x < 0, 'negative'), eop_clause(x == 0, 'zero'), default='positive')
+
+
+@implicit_return()
+def first_two(values):
+  eop_case(values, eop_clause([eop_var.a, eop_var.b, *eop_var._], (eop_var.a, eop_var.b)), default=None)
+```
+
+`eop_match(pattern, value)` is the same matching as a `bool`. See [Expression forms](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#expression-forms), [13_eop_cond.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/13_eop_cond.py), [14_eop_case.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/14_eop_case.py) and [15_eop_match.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/15_eop_match.py). The rules that differ from plain Python, such as Elixir's truth rule and guards, are in the [docs hub](https://github.com/terracoil/modgud/blob/main/docs/ADVANCED.md#-expression-forms-past-the-basics).
+
 **Methods and async.** Instance methods, `@staticmethod`, `@classmethod` and `async def` all work, with modgud on either side of the built-in decorator. When the first parameter is named `self` or `cls`, guards see the arguments without it. Two shapes are refused at decoration time: zero-argument `super()` and a bare `__class__`; write `super(Cls, self)` instead. Defaults that name class attributes are fine. `@property` and descriptors are not covered. See [Methods](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#methods), [classy/10_decorator_composition.py](https://github.com/terracoil/modgud/blob/main/examples/classy/10_decorator_composition.py) and [08_async_functions.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/08_async_functions.py).
 
 ## 🗂️ Examples
@@ -150,7 +168,8 @@ poetry run python examples/free_range/01_quick_start.py
 
 - Implicit returns need the function's source on disk; modgud can't rewrite what `inspect` can't read. Functions typed into a REPL or built with `exec` get the guards with `implicit_return=False`, but not the rewrite.
 - `GuardRegistry` and the Idunn container are process-wide singletons. `GuardRegistry` has no lock, so register guards at import time, not from worker threads.
-- The status is Beta. The 13 names in `from modgud import ...` are the supported surface; anything deeper may move.
+- The `eop_` forms are rewritten at decoration time, so they work only inside a function decorated with `guarded_expression` or `implicit_return`. Called anywhere else they raise `MarkerNotRewrittenError`.
+- The status is Beta. The 23 names in `from modgud import ...` are the supported surface; anything deeper may move.
 
 The rest are in [How it works: Limitations](https://github.com/terracoil/modgud/blob/main/docs/how-it-works.md#limitations), with what is shared between threads under [Thread safety](https://github.com/terracoil/modgud/blob/main/docs/how-it-works.md#thread-safety).
 

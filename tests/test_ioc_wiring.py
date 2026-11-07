@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from typing import Any, Callable, TypeVar
+import ast
+from collections.abc import Iterator, Mapping
+from typing import Any, Callable, NoReturn, TypeVar
 
 import pytest
 from idunn import Idunn
 from modgud import (
+  EopPort,
   GuardClauseError,
   GuardPort,
   ImplicitReturnPort,
+  MarkerNotRewrittenError,
+  eop_case,
+  eop_cond,
+  eop_match,
   guarded_expression,
   implicit_return,
 )
@@ -30,9 +36,10 @@ class PassthroughRuntime:
     guards: tuple[Any, ...],
     strategy: Any,
     on_failure: Any,
+    forms: Mapping[Any, EopPort],
   ) -> Callable[..., Any]:
     """Hand ``func`` back unguarded; the transformer still sees it when the rewrite is on."""
-    return imp_return_port.transform_function(func) if implicit_return else func
+    return imp_return_port.transform_function(func, forms=forms) if implicit_return else func
 
 
 class RecordingTransformer:
@@ -42,15 +49,42 @@ class RecordingTransformer:
     """Start with nothing recorded."""
     self.seen: list[Callable[..., Any]] = []
 
-  def transform(self, func: F) -> F:
+  def transform(self, func: F, *, forms: Mapping[Any, EopPort]) -> F:
     """Record ``func`` and hand it back unchanged."""
     self.seen.append(func)
     return func
 
-  def transform_function(self, func: Callable[..., Any]) -> Callable[..., Any]:
+  def transform_function(
+    self, func: Callable[..., Any], *, forms: Mapping[Any, EopPort], implicit_return: bool = True
+  ) -> Callable[..., Any]:
     """Record ``func`` and hand it back unchanged."""
     self.seen.append(func)
     return func
+
+
+class RefusingForm:
+  """Form-port fake: lowers nothing and refuses with a recognisable message."""
+
+  def lower(
+    self, call: ast.Call, *, hoistable: bool, fresh: Callable[[str], str]
+  ) -> tuple[list[ast.stmt], ast.expr]:
+    """Hand the call back untouched."""
+    return [], call
+
+  def refuse(self) -> NoReturn:
+    """Refuse with a message the tests can spot."""
+    raise MarkerNotRewrittenError('fake form')
+
+
+def every_port() -> dict[str, Any]:
+  """Return the five ports a decoration can supply, as fakes."""
+  return {
+    'guard_port': PassthroughRuntime(),
+    'imp_return_port': RecordingTransformer(),
+    'eop_cond_port': RefusingForm(),
+    'eop_case_port': RefusingForm(),
+    'eop_match_port': RefusingForm(),
+  }
 
 
 @pytest.fixture(autouse=True)
@@ -67,19 +101,29 @@ class TestBootstrap:
   def test_nothing_is_wired_before_the_first_decoration(self) -> None:
     assert 'modgud' not in Idunn().describe()
 
-  def test_the_first_decoration_discovers_both_adapters_and_both_ports(self) -> None:
+  def test_the_first_decoration_discovers_every_adapter_and_port(self) -> None:
     guarded_expression()
     report = Idunn().bootstrap('modgud')  # a cache hit: the decoration already discovered
 
     assert report['root_package'] == 'modgud'
     assert set(report['registered_adapters']) == {
+      'modgud.infrastructure.adapters.eop_case_adapter.EopCaseAdapter',
+      'modgud.infrastructure.adapters.eop_cond_adapter.EopCondAdapter',
+      'modgud.infrastructure.adapters.eop_match_adapter.EopMatchAdapter',
       'modgud.infrastructure.adapters.guard_adapter.GuardAdapter',
       'modgud.infrastructure.adapters.implicit_return_adapter.ImplicitReturnAdapter',
     }
     assert set(report['registered_ports']) == {
+      'modgud.domain.ports.eop_port.EopPort',
       'modgud.domain.ports.guard_port.GuardPort',
       'modgud.domain.ports.implicit_return_port.ImplicitReturnPort',
     }
+
+  def test_a_marker_called_outside_a_decorator_discovers_and_refuses(self) -> None:
+    with pytest.raises(MarkerNotRewrittenError, match='eop_cond only works inside'):
+      eop_cond(default=None)
+
+    assert 'EopCondAdapter' in Idunn().describe()
 
   def test_implicit_return_alone_discovers_too(self) -> None:
     implicit_return()
@@ -98,11 +142,22 @@ class TestBootstrap:
 class TestInjection:
   """The decorators receive their adapters through ``@Invert``."""
 
-  def test_guarded_expression_receives_both_ports(self) -> None:
+  def test_guarded_expression_receives_every_port(self) -> None:
     decorator = guarded_expression()
 
     assert isinstance(decorator.guard_port, GuardPort)
     assert isinstance(decorator.imp_return_port, ImplicitReturnPort)
+    assert isinstance(decorator.eop_cond_port, EopPort)
+    assert isinstance(decorator.eop_case_port, EopPort)
+    assert isinstance(decorator.eop_match_port, EopPort)
+
+  def test_each_form_port_is_the_adapter_for_its_key(self) -> None:
+    decorator = guarded_expression()
+
+    assert type(decorator.eop_cond_port).__name__ == 'EopCondAdapter'
+    assert type(decorator.eop_case_port).__name__ == 'EopCaseAdapter'
+    assert type(decorator.eop_match_port).__name__ == 'EopMatchAdapter'
+    assert implicit_return().eop_case_port is decorator.eop_case_port
 
   def test_implicit_return_receives_the_transformer_port(self) -> None:
     assert isinstance(implicit_return().imp_return_port, ImplicitReturnPort)
@@ -164,17 +219,25 @@ class TestFakeSeam:
     def identity(x: int) -> int:
       return x
 
-    guarded = guarded_expression(
-      guard_port=PassthroughRuntime(), imp_return_port=RecordingTransformer()
-    )
-    plain = implicit_return(imp_return_port=RecordingTransformer())
+    guarded = guarded_expression(**every_port())
+    ports = every_port()
+    del ports['guard_port']
+    plain = implicit_return(**ports)
 
     assert guarded(double)(2) == 4
     assert plain(identity)(2) == 2
     assert 'modgud' not in Idunn().describe()
 
-  def test_supplying_one_port_of_two_still_discovers_the_other(self) -> None:
+  def test_supplying_some_ports_still_discovers_the_others(self) -> None:
     decorator = guarded_expression(imp_return_port=RecordingTransformer())
 
     assert isinstance(decorator.guard_port, GuardPort)
     assert 'GuardAdapter' in Idunn().describe()
+    assert 'EopMatchAdapter' in Idunn().describe()
+
+  def test_a_supplied_form_port_handles_the_un_rewritten_call(self) -> None:
+    with pytest.raises(MarkerNotRewrittenError, match='fake form'):
+      eop_case._refuse(port=RefusingForm())
+    with pytest.raises(MarkerNotRewrittenError, match='fake form'):
+      eop_match._refuse(port=RefusingForm())
+    assert 'modgud' not in Idunn().describe()
