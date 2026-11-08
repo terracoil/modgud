@@ -8,7 +8,7 @@ Everything a caller needs comes from `modgud`. Entries stay terse; the why is in
 
 ```python
 from modgud import guarded_expression, implicit_return
-from modgud import CommonGuards, GuardFunction, GuardRegistry
+from modgud import Guards, GuardFunction, GuardRegistry
 from modgud import GuardClauseError, GuardFailureEnum
 from modgud import ExplicitReturnDisallowedError, ImplicitReturnError, MissingImplicitReturnError, UnsupportedConstructError
 from modgud import eop_case, eop_clause, eop_cond, eop_match, eop_var, eop_when
@@ -61,9 +61,9 @@ Always applied with parentheses, even with no guards.
 - On `async def` the result is still a coroutine function. Guards run when the coroutine runs, so a refusal, raised or returned, arrives at the `await`.
 
 ```python
-from modgud import CommonGuards, GuardClauseError, guarded_expression
+from modgud import Guards, GuardClauseError, guarded_expression
 
-@guarded_expression(CommonGuards.positive('price'))
+@guarded_expression(Guards.positive('price'))
 def discount(price: float) -> float:
   if price >= 50:
     price * 0.2
@@ -166,13 +166,13 @@ Full version: [examples/free_range/04_implicit_returns.py](../examples/free_rang
 Stacked with guards, the standalone decorator goes underneath, with the rewrite switched off above it:
 
 ```python
-@guarded_expression(CommonGuards.positive('x'), implicit_return=False)  # right: guards outside
+@guarded_expression(Guards.positive('x'), implicit_return=False)  # right: guards outside
 @implicit_return()
 def right(x: int) -> int:
   x * 2
 
 @implicit_return()  # wrong: raises TypeError at decoration (the rewrite would drop the guard)
-@guarded_expression(CommonGuards.positive('x'), implicit_return=False)
+@guarded_expression(Guards.positive('x'), implicit_return=False)
 def wrong(x: int) -> int:
   x * 2
 ```
@@ -193,11 +193,11 @@ Instance, static, class and `async` methods all work, under either decorator or 
 
 ```python
 class Thermostat:
-  @guarded_expression(CommonGuards.positive('by'))  # the guard sees ``by``, never ``self``
+  @guarded_expression(Guards.positive('by'))  # the guard sees ``by``, never ``self``
   def warmer(self, by: int) -> int:
     self.target + by
 
-  @guarded_expression(CommonGuards.in_range(-58, 212, 'fahrenheit'))  # modgud outermost
+  @guarded_expression(Guards.in_range(-58, 212, 'fahrenheit'))  # modgud outermost
   @staticmethod
   def to_celsius(fahrenheit: float) -> float:
     (fahrenheit - 32) * 5 / 9
@@ -211,7 +211,7 @@ Full version: [examples/classy/10_decorator_composition.py](../examples/classy/1
 - Defined inside a test, it may not touch the test's locals: the re-compile drops the closure. Keep such fixtures in a module, like `tests/method_fixtures.py`.
 - The rewritten body uses the module's live globals, so `mock.patch` reaches it.
 - Guards-only functions have none of these limits.
-- Guards are plain functions: `CommonGuards.positive('x')(5)` returns `True`.
+- Guards are plain functions: `Guards.positive('x')(5)` returns `True`.
 
 ## 🧩 Expression forms
 
@@ -302,7 +302,7 @@ The capture object. `eop_var.name` captures into `name`, and `eop_var._` matches
 
 `GuardFunction = Callable[..., bool | str]`. A guard receives the call's `*args, **kwargs` (minus the receiver on methods) and returns exactly `True` to pass, or a message to fail. Anything else, `False` included, fails as `'Guard clause failed'`; hence `return ok or 'message'`. Guards see what the caller passed, so a parameter left at its default isn't there.
 
-### CommonGuards
+### Guards
 
 Nine static factories, each returning a `GuardFunction`. A guard looks for `param_name` in the keyword arguments, then at `args[position]`. For any parameter after the first, pass `position`, or a positional call checks argument 0. A value that isn't found fails, except under `matches_pattern`, which checks `''`.
 
@@ -318,13 +318,15 @@ Nine static factories, each returning a `GuardFunction`. A guard looks for `para
 | `valid_url(param_name='url', position=0, require_scheme=True, schemes=('http', 'https'))` | `None`, scheme not in `schemes`, neither host nor path | `{param_name} is required` / `must use one of http/https: {value}` / `is not a valid URL: {value}` |
 | `valid_enum(enum_class, param_name='parameter', position=0)` | `None`, a string that isn't a member's value, any other non-member | `{param_name} is required` / `must be one of [values]: got {value}` / `must be a valid {Enum} name` |
 
+`CommonGuards`, the name this class had before 2.1, is still exported and is the same object.
+
 `matches_pattern` anchors at the start only; add `$` for a full match. `valid_url` accepts `http` and `https` unless you pass `schemes=('ftp',)` or set `require_scheme=False`.
 
 ```python
 @guarded_expression(
-  CommonGuards.positive('qty'),
-  CommonGuards.in_range(1, 10, 'qty'),
-  CommonGuards.valid_enum(Color, 'color', position=1),
+  Guards.positive('qty'),
+  Guards.in_range(1, 10, 'qty'),
+  Guards.valid_enum(Color, 'color', position=1),
 )
 def order(qty: int, color: str) -> str:
   f'{qty} x {Color(color).name}'
@@ -334,7 +336,7 @@ Full version: [examples/free_range/02_common_guards.py](../examples/free_range/0
 
 ### GuardRegistry
 
-A process-wide registry of guard factories, used through class methods. `namespace=None` is the global namespace, separate from the named ones, and `CommonGuards` fills `'common'` at import. No lock. Register at import time.
+A process-wide registry of guard factories, used through class methods. `namespace=None` is the global namespace, separate from the named ones, and `Guards` fills `'common'` at import. No lock. Register at import time.
 
 | Method | Returns | Notes |
 |---|---|---|

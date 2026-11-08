@@ -29,7 +29,7 @@ poetry run python examples/classy/01_quick_start.py
 | # | free_range | classy | What it shows |
 |---|---|---|---|
 | 01 | [01_quick_start.py](free_range/01_quick_start.py) | [01_quick_start.py](classy/01_quick_start.py) | One guard, an implicit return, and catching `GuardClauseError`. The classy file is the README's `DiscountCalculator`. |
-| 02 | [02_common_guards.py](free_range/02_common_guards.py) | | All nine `CommonGuards`, and how `position=` finds the argument to check. |
+| 02 | [02_common_guards.py](free_range/02_common_guards.py) | | All nine `Guards`, and how `position=` finds the argument to check. |
 | 03 | [03_failure_strategies.py](free_range/03_failure_strategies.py) | [03_failure_strategies.py](classy/03_failure_strategies.py) | `ERROR_RAISE`, `ERROR_RETURN`, `RETURN_VALUE` and `CALL_HANDLER`, plus a custom exception class. |
 | 04 | [04_implicit_returns.py](free_range/04_implicit_returns.py) | [04_implicit_returns.py](classy/04_implicit_returns.py) | `@implicit_return()` on if/elif/else, try/except/else and match/case, with a helper kept outside the body, since `return` is refused anywhere inside it. |
 | 05 | [05_explicit_return_mode.py](free_range/05_explicit_return_mode.py) | | `implicit_return=False` with a single trailing `return`. |

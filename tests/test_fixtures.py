@@ -6,7 +6,7 @@ by the implicit_return transformer.
 
 import asyncio
 
-from modgud import CommonGuards, GuardFailureEnum, guarded_expression
+from modgud import GuardFailureEnum, Guards, guarded_expression
 
 
 # Calls a function defined *after* it: the body must see live module globals, not a snapshot.
@@ -21,7 +21,7 @@ def defined_afterwards():
 
 # Async with a non-raising strategy: the fallback must come back from `await`.
 @guarded_expression(
-  CommonGuards.positive('x'), strategy=GuardFailureEnum.RETURN_VALUE, on_failure='fallback'
+  Guards.positive('x'), strategy=GuardFailureEnum.RETURN_VALUE, on_failure='fallback'
 )
 async def async_with_fallback(x):
   await asyncio.sleep(0)
@@ -64,7 +64,7 @@ def safe_divide(x, y):
 
 
 # Tail match closed by a bare capture: the rewrite requires an irrefutable last case.
-@guarded_expression(CommonGuards.not_none('command'))
+@guarded_expression(Guards.not_none('command'))
 def describe_command(command):
   match command.split():
     case ['go', direction]:
@@ -82,8 +82,8 @@ def safe_divide_with_guard(x):
   result  # noqa: B018 — implicit return
 
 
-# CommonGuards with implicit return
-@guarded_expression(CommonGuards.not_none('x'), CommonGuards.positive('x'), implicit_return=True)
+# Guards with implicit return
+@guarded_expression(Guards.not_none('x'), Guards.positive('x'), implicit_return=True)
 def double_with_guards(x):
   x * 2
 
@@ -101,7 +101,7 @@ async def async_double(x):
   x * 2
 
 
-@guarded_expression(CommonGuards.not_none('x'), implicit_return=True)
+@guarded_expression(Guards.not_none('x'), implicit_return=True)
 async def async_classify(x):
   await asyncio.sleep(0)
   if x > 0:

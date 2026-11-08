@@ -8,7 +8,7 @@ import functools
 import inspect
 from typing import Any, Callable
 
-from modgud import CommonGuards, GuardClauseError, guarded_expression, implicit_return
+from modgud import GuardClauseError, Guards, guarded_expression, implicit_return
 
 CALLS: list[str] = []
 
@@ -24,7 +24,7 @@ def counted(func: Callable[..., Any]) -> Callable[..., Any]:
   return wrapper
 
 
-@guarded_expression(CommonGuards.positive('x'), implicit_return=False)  # right: guards outside
+@guarded_expression(Guards.positive('x'), implicit_return=False)  # right: guards outside
 @implicit_return()
 def right(x: int) -> int:
   """Double ``x``, guarded."""
@@ -32,13 +32,13 @@ def right(x: int) -> int:
 
 
 @counted  # right: other decorators go outside modgud
-@guarded_expression(CommonGuards.positive('x'))
+@guarded_expression(Guards.positive('x'))
 def counted_outside(x: int) -> int:
   """Triple ``x``, and the call is counted."""
   x * 3
 
 
-@guarded_expression(CommonGuards.positive('x'))  # wrong: modgud rebuilds from source, so
+@guarded_expression(Guards.positive('x'))  # wrong: modgud rebuilds from source, so
 @counted  # anything between it and the ``def`` is discarded
 def counted_inside(x: int) -> int:
   """Triple ``x``; the counter never sees the call."""
@@ -57,7 +57,7 @@ if __name__ == '__main__':
   try:
 
     @implicit_return()  # wrong: the rewrite would re-read the source and drop the guard below
-    @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
+    @guarded_expression(Guards.positive('x'), implicit_return=False)
     def wrong(x: int) -> int:
       """Double ``x``; never decorated, the stack is refused."""
       x * 2

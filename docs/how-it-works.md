@@ -8,7 +8,7 @@ Signatures and rules live in the [API reference](api-reference.md). This page is
 
 ## 🏛️ Layers
 
-Three layers, dependencies pointing down. `app/` holds the two decorators and the public `CommonGuards` and `GuardRegistry`. `domain/` holds the passive parts — `GuardFailureEnum`, the errors, the `GuardFunction` type and the two `@Port` protocols. `infrastructure/` holds the adapters behind those ports and the internal AST helpers in `infrastructure/ast/`.
+Three layers, dependencies pointing down. `app/` holds the two decorators and the public `Guards` and `GuardRegistry`. `domain/` holds the passive parts — `GuardFailureEnum`, the errors, the `GuardFunction` type and the two `@Port` protocols. `infrastructure/` holds the adapters behind those ports and the internal AST helpers in `infrastructure/ast/`.
 
 The app layer never imports infrastructure. It knows the ports and nothing else. The package tree, the tiers and the dependency table are in [project.md](../project.md), and `tests/test_architecture.py` fails the run when an import crosses a line. Architecture diagrams drift; an AST walk in the test suite doesn't.
 
@@ -29,7 +29,7 @@ The bootstrap waits for the first decoration on purpose. Run from `modgud/__init
 Importing modgud isn't free. Here's the whole receipt:
 
 - `import modgud` imports `idunn`, the domain, the ports and the guard toolkit. It doesn't import the adapters or create Idunn's container.
-- `CommonGuards` registers its nine factories in `GuardRegistry` under `'common'` as its module loads.
+- `Guards` registers its nine factories in `GuardRegistry` under `'common'` as its module loads.
 - Discovery, on the first decoration, imports every module under `modgud/`. That's why nothing runnable lives there and the examples sit in `examples/`.
 
 ## 🛡️ The guard pipeline
@@ -146,7 +146,7 @@ With the rewrite on, decoration costs one `getsource`, one parse, one compile an
 
 What's shared between threads, plainly:
 
-- Decoration and guard evaluation keep no per-call shared state. The wrapper reads its closure, and `CommonGuards` guards are closures over their arguments.
+- Decoration and guard evaluation keep no per-call shared state. The wrapper reads its closure, and `Guards` guards are closures over their arguments.
 - `GuardRegistry` and the Idunn container are process-wide singletons.
 - Idunn's bootstrap is thread-safe: concurrent first decorations share one discovery, and a decoration that runs while a module is being imported discovers on its own rather than waiting, so it can't deadlock against another importing thread. Each adapter singleton is built once, under its own lock.
 - `GuardRegistry` has no lock. Register guards at import time, before any threads start.

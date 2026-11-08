@@ -20,6 +20,7 @@ import modgud.infrastructure
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PUBLIC_NAMES = {
   'CommonGuards',
+  'Guards',
   'EopPort',
   'ExplicitReturnDisallowedError',
   'GuardClauseError',
@@ -61,6 +62,7 @@ DOMAIN_NAMES = {
 }
 APP_NAMES = {
   'CommonGuards',
+  'Guards',
   'GuardRegistry',
   'eop_case',
   'eop_cond',
@@ -100,6 +102,10 @@ class TestFacadeExports:
     for facade in (modgud, modgud.app, modgud.domain):
       assert not INTERNAL_NAMES & set(facade.__all__)
 
+  def test_common_guards_is_an_alias_of_guards(self) -> None:
+    assert modgud.CommonGuards is modgud.Guards
+    assert modgud.app.CommonGuards is modgud.app.Guards
+
 
 class TestVersion:
   def test_version_is_single_sourced(self) -> None:
@@ -120,7 +126,8 @@ class TestFacadeIdentity:
       'MissingImplicitReturnError': modgud.domain.errors.MissingImplicitReturnError,
       'UnsupportedConstructError': modgud.domain.errors.UnsupportedConstructError,
       'ImplicitReturnPort': modgud.domain.ports.ImplicitReturnPort,
-      'CommonGuards': modgud.app.CommonGuards,
+      'Guards': modgud.app.Guards,
+      'CommonGuards': modgud.app.Guards,
       'GuardRegistry': modgud.app.GuardRegistry,
       'EopPort': modgud.domain.ports.EopPort,
       'MarkerNotRewrittenError': modgud.domain.errors.MarkerNotRewrittenError,
@@ -155,10 +162,10 @@ class TestFreshProcess:
     script.write_text(
       textwrap.dedent(
         """
-        from modgud import CommonGuards, GuardClauseError, guarded_expression
+        from modgud import Guards, GuardClauseError, guarded_expression
 
 
-        @guarded_expression(CommonGuards.positive('x'))
+        @guarded_expression(Guards.positive('x'))
         def double(x: int) -> int:
           x * 2
 

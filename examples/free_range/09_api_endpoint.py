@@ -7,7 +7,7 @@ See: docs/api-reference.md#guardfailureenum
 import hashlib
 from typing import Any
 
-from modgud import CommonGuards, GuardFailureEnum, guarded_expression
+from modgud import GuardFailureEnum, Guards, guarded_expression
 
 USERS: dict[int, dict[str, Any]] = {}  # stands in for the database
 
@@ -31,13 +31,13 @@ def save_user(email: str, age: int, username: str, password_hash: str) -> int:
 
 
 @guarded_expression(
-  CommonGuards.not_empty('email'),
-  CommonGuards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', 'email'),
-  CommonGuards.type_check(int, 'age', position=1),
-  CommonGuards.in_range(13, 120, 'age', position=1),
-  CommonGuards.not_empty('username', position=2),
+  Guards.not_empty('email'),
+  Guards.matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', 'email'),
+  Guards.type_check(int, 'age', position=1),
+  Guards.in_range(13, 120, 'age', position=1),
+  Guards.not_empty('username', position=2),
   username_length,
-  CommonGuards.not_empty('password', position=3),
+  Guards.not_empty('password', position=3),
   continuance=6,
   strategy=GuardFailureEnum.CALL_HANDLER,
   on_failure=bad_request,

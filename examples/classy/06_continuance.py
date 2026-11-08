@@ -7,10 +7,10 @@ See: docs/api-reference.md#collecting-multiple-failures
 from typing import ClassVar
 
 from modgud import (
-  CommonGuards,
   GuardClauseError,
   GuardFailureEnum,
   GuardFunction,
+  Guards,
   guarded_expression,
 )
 
@@ -19,10 +19,10 @@ class Warehouse:
   """Reserve stock, reporting every problem with an order at once."""
 
   CHECKS: ClassVar[tuple[GuardFunction, ...]] = (
-    CommonGuards.positive('qty'),
-    CommonGuards.in_range(1, 10, 'qty'),
-    CommonGuards.not_empty('sku', position=1),
-    CommonGuards.matches_pattern(r'^[A-Z]{3}-\d+$', 'sku', position=1),
+    Guards.positive('qty'),
+    Guards.in_range(1, 10, 'qty'),
+    Guards.not_empty('sku', position=1),
+    Guards.matches_pattern(r'^[A-Z]{3}-\d+$', 'sku', position=1),
   )
 
   @staticmethod
@@ -40,7 +40,7 @@ class Warehouse:
     """Reserve, or return the ExceptionGroup instead of raising it."""
     f'{qty} x {sku}'
 
-  @guarded_expression(CommonGuards.not_none('sku', position=1), short_sku, continuance=5)
+  @guarded_expression(Guards.not_none('sku', position=1), short_sku, continuance=5)
   def reserve_safely(self, qty: int, sku: str) -> str:
     """Stop quietly when ``short_sku`` raises after not_none failed: one error, no group."""
     f'{qty} x {sku}'

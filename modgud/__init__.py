@@ -2,9 +2,10 @@
 
 Import everything you need from here::
 
-  from modgud import CommonGuards, GuardFailureEnum, guarded_expression
+  from modgud import Guards, GuardFailureEnum, guarded_expression
 
-The names in ``__all__`` are the supported public API. ``GuardPort``,
+The names in ``__all__`` are the supported public API; ``CommonGuards`` is the
+former name of ``Guards`` and the same object. ``GuardPort``,
 ``ImplicitReturnPort`` and ``EopPort`` are the integration seam for the decorators'
 ``guard_port=`` / ``imp_return_port=`` / ``eop_*_port=`` parameters. Leaf packages remain importable, but
 their layout may change between releases. Examples:
@@ -16,6 +17,7 @@ from importlib.metadata import PackageNotFoundError, version
 from modgud.app import (
   CommonGuards,
   GuardRegistry,
+  Guards,
   eop_case,
   eop_cond,
   eop_match,
@@ -48,6 +50,7 @@ except PackageNotFoundError:  # running from a checkout that was never installed
 
 __all__ = [
   'CommonGuards',
+  'Guards',
   'EopPort',
   'ExplicitReturnDisallowedError',
   'GuardClauseError',

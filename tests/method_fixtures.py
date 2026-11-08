@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from modgud import CommonGuards, GuardFailureEnum, guarded_expression, implicit_return
+from modgud import GuardFailureEnum, Guards, guarded_expression, implicit_return
 
-POSITIVE = CommonGuards.positive('x')
+POSITIVE = Guards.positive('x')
 
 
 def explain(errors: list[str], *args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -103,7 +103,7 @@ def not_a_method(cls, n):
   return cls * n
 
 
-guarded_not_a_method = guarded_expression(CommonGuards.positive('cls'), implicit_return=False)(
+guarded_not_a_method = guarded_expression(Guards.positive('cls'), implicit_return=False)(
   not_a_method
 )
 
@@ -112,8 +112,8 @@ guarded_not_a_method = guarded_expression(CommonGuards.positive('cls'), implicit
 class DiscountCalculator:
   @staticmethod
   @guarded_expression(
-    CommonGuards.positive('x'),
-    CommonGuards.in_range(1, 100, 'x'),
+    Guards.positive('x'),
+    Guards.in_range(1, 100, 'x'),
   )
   def calculate(x):
     if x >= 50:
@@ -125,8 +125,8 @@ class DiscountCalculator:
 class DiscountCalculatorV2:
   @staticmethod
   @guarded_expression(
-    CommonGuards.positive('x'),
-    CommonGuards.in_range(1, 100, 'x'),
+    Guards.positive('x'),
+    Guards.in_range(1, 100, 'x'),
     implicit_return=False,
   )
   @implicit_return()

@@ -5,7 +5,7 @@ from threading import Thread
 from typing import List
 
 import pytest
-from modgud import CommonGuards, GuardClauseError, GuardRegistry, guarded_expression
+from modgud import GuardClauseError, GuardRegistry, Guards, guarded_expression
 
 from tests.test_fixtures import (
   conditional_noop,
@@ -24,7 +24,7 @@ class TestThreadSafety:
     results: List[int] = []
     errors: List[Exception] = []
 
-    @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
+    @guarded_expression(Guards.positive('x'), implicit_return=False)
     def process(x):
       time.sleep(0.001)  # Simulate processing
       return x * 2
@@ -97,7 +97,7 @@ class TestPerformance:
   def test_guard_evaluation_overhead(self):
     """Guard overhead should be minimal (< 1ms per call)."""
 
-    @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
+    @guarded_expression(Guards.positive('x'), implicit_return=False)
     def compute(x):
       return x * 2
 
@@ -120,10 +120,10 @@ class TestPerformance:
     """Multiple guards should still have acceptable performance."""
 
     @guarded_expression(
-      CommonGuards.not_none('x'),
-      CommonGuards.positive('x'),
-      CommonGuards.in_range(1, 100, 'x'),
-      CommonGuards.type_check(int, 'x'),
+      Guards.not_none('x'),
+      Guards.positive('x'),
+      Guards.in_range(1, 100, 'x'),
+      Guards.type_check(int, 'x'),
       implicit_return=False,
     )
     def process(x):
@@ -165,7 +165,7 @@ class TestErrorConditions:
   def test_unicode_parameter_names(self):
     """Guards should handle unicode parameter names."""
 
-    @guarded_expression(CommonGuards.positive('value'), implicit_return=False)
+    @guarded_expression(Guards.positive('value'), implicit_return=False)
     def process(value):
       return value * 2
 
@@ -197,9 +197,7 @@ class TestErrorConditions:
   def test_recursive_function_with_guards(self):
     """Guards should work with recursive functions."""
 
-    @guarded_expression(
-      CommonGuards.not_none('n'), CommonGuards.positive('n'), implicit_return=False
-    )
+    @guarded_expression(Guards.not_none('n'), Guards.positive('n'), implicit_return=False)
     def factorial(n):
       if n <= 1:
         result = 1
@@ -217,9 +215,9 @@ class TestErrorConditions:
     """Guards should work with functions having many parameters."""
 
     @guarded_expression(
-      CommonGuards.positive('a'),
-      CommonGuards.positive('b'),
-      CommonGuards.positive('c'),
+      Guards.positive('a'),
+      Guards.positive('b'),
+      Guards.positive('c'),
       implicit_return=False,
     )
     def sum_many(a, b, c, d, e, f, g, h, i, j):

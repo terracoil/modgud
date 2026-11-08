@@ -6,7 +6,7 @@ See: docs/api-reference.md#guardfailureenum
 
 from typing import Any
 
-from modgud import CommonGuards, GuardClauseError, GuardFailureEnum, guarded_expression
+from modgud import GuardClauseError, GuardFailureEnum, Guards, guarded_expression
 
 
 class Checkout:
@@ -21,18 +21,18 @@ class Checkout:
     """Shape failures as a 400 payload; on a method, ``args[0]`` is the receiver."""
     return {'status': 400, 'errors': errors, 'args': args}
 
-  @guarded_expression(CommonGuards.positive('amount'))  # ERROR_RAISE + GuardClauseError
+  @guarded_expression(Guards.positive('amount'))  # ERROR_RAISE + GuardClauseError
   def charge(self, amount: float) -> str:
     """Charge ``amount`` or raise."""
     f'charged {amount:.2f} {self.currency}'
 
-  @guarded_expression(CommonGuards.positive('amount'), strategy=GuardFailureEnum.ERROR_RETURN)
+  @guarded_expression(Guards.positive('amount'), strategy=GuardFailureEnum.ERROR_RETURN)
   def charge_or_error(self, amount: float) -> str | GuardClauseError:
     """Charge ``amount`` or hand back the GuardClauseError."""
     f'charged {amount:.2f} {self.currency}'
 
   @guarded_expression(
-    CommonGuards.positive('amount'),
+    Guards.positive('amount'),
     strategy=GuardFailureEnum.RETURN_VALUE,
     on_failure='declined',
   )
@@ -41,7 +41,7 @@ class Checkout:
     f'charged {amount:.2f} {self.currency}'
 
   @guarded_expression(
-    CommonGuards.positive('amount'),
+    Guards.positive('amount'),
     strategy=GuardFailureEnum.CALL_HANDLER,
     on_failure=explain,
   )

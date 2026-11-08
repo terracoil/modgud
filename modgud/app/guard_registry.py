@@ -1,7 +1,7 @@
-"""Custom guard registration system for extending CommonGuards.
+"""Custom guard registration system for extending Guards.
 
 Allows external packages to register custom guard validators that can be
-accessed through the CommonGuards interface or separately.
+accessed through the Guards interface or separately.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ class GuardRegistry:
   """Singleton registry for custom guard validators.
 
   Allows registration of custom guards that can be used alongside
-  CommonGuards. Guards can be registered globally or namespaced
+  Guards. Guards can be registered globally or namespaced
   for organizational purposes.
 
   Usage:

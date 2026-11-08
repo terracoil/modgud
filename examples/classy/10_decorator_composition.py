@@ -13,7 +13,7 @@ from __future__ import annotations
 import inspect
 from typing import ClassVar
 
-from modgud import CommonGuards, UnsupportedConstructError, guarded_expression, implicit_return
+from modgud import Guards, UnsupportedConstructError, guarded_expression, implicit_return
 
 
 class Thermostat:
@@ -25,25 +25,25 @@ class Thermostat:
     """Start at ``target`` degrees Celsius."""
     self.target: int = target
 
-  @guarded_expression(CommonGuards.positive('by'))  # the guard sees ``by``, never ``self``
+  @guarded_expression(Guards.positive('by'))  # the guard sees ``by``, never ``self``
   def warmer(self, by: int) -> int:
     """Return the target raised by ``by`` degrees."""
     self.target + by
 
   @staticmethod  # built-in outermost
-  @guarded_expression(CommonGuards.in_range(-50, 100, 'celsius'))
+  @guarded_expression(Guards.in_range(-50, 100, 'celsius'))
   def to_fahrenheit(celsius: float) -> float:
     """Convert ``celsius`` to Fahrenheit."""
     celsius * 9 / 5 + 32
 
-  @guarded_expression(CommonGuards.in_range(-58, 212, 'fahrenheit'))  # modgud outermost
+  @guarded_expression(Guards.in_range(-58, 212, 'fahrenheit'))  # modgud outermost
   @staticmethod
   def to_celsius(fahrenheit: float) -> float:
     """Convert ``fahrenheit`` to Celsius."""
     (fahrenheit - 32) * 5 / 9
 
   @classmethod
-  @guarded_expression(CommonGuards.matches_pattern(r'^(eco|comfort)$', 'mode'))
+  @guarded_expression(Guards.matches_pattern(r'^(eco|comfort)$', 'mode'))
   def preset(cls, mode: str) -> Thermostat:
     """Build a thermostat for a named ``mode``."""
     cls(18 if mode == 'eco' else 21)

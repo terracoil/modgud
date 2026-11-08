@@ -10,11 +10,11 @@ evaluate their annotations the same way, and the decorated half is what is under
 
 from typing import Any
 
-from modgud import CommonGuards, guarded_expression, implicit_return
+from modgud import Guards, guarded_expression, implicit_return
 
 DEFAULT_LIMIT: int = 10
 SENTINEL: object = object()  # compared by identity, so a re-evaluated default would show up
-FIRST_NOT_NONE = CommonGuards.not_none('a')
+FIRST_NOT_NONE = Guards.not_none('a')
 
 
 def accept_all(*args: Any, **kwargs: Any) -> bool:
@@ -72,7 +72,7 @@ def module_default_twin(a: int, limit: int = DEFAULT_LIMIT, marker: object = SEN
 
 # Two guarded layers: only the inner one rewrites, the outer one wraps a wrapper.
 @guarded_expression(FIRST_NOT_NONE)
-@guarded_expression(CommonGuards.positive('a'))
+@guarded_expression(Guards.positive('a'))
 def stacked(a: int, /, *, scale: float = 1.5) -> float:
   """Scale a, which must be positive."""
   a * scale
@@ -124,7 +124,7 @@ class Pricing:
   rate: int = 5
   cap: int = 100
 
-  @guarded_expression(CommonGuards.positive('qty'))
+  @guarded_expression(Guards.positive('qty'))
   def total(self, qty: int, rate: int = rate, *, cap: int = cap) -> int:
     """Price qty items at rate, never more than cap."""
     min(qty * rate, cap)

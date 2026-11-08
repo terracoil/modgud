@@ -4,10 +4,10 @@ Run: poetry run python examples/free_range/01_quick_start.py
 See: docs/api-reference.md#guarded_expression
 """
 
-from modgud import CommonGuards, GuardClauseError, guarded_expression
+from modgud import GuardClauseError, Guards, guarded_expression
 
 
-@guarded_expression(CommonGuards.positive('price'))
+@guarded_expression(Guards.positive('price'))
 def discount(price: float) -> float:
   """Return the discount on ``price``: 20% from 50 up, 10% below.
 

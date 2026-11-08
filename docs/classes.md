@@ -52,7 +52,7 @@
       the counts in "Public API surface" (tests/test_public_api.py pins them).
     • RE-READ the two decorators' __init__ signatures so Purpose text matches the
       current parameters, and the port method signatures so the Seam rows do too.
-    • RE-READ each active class's public methods (GuardRegistry, CommonGuards,
+    • RE-READ each active class's public methods (GuardRegistry, Guards,
       GuardAdapter, ImplicitReturnAdapter, TailRewriter) so the method lists in
       Purpose are complete.
     • compare the Exceptions table with "Error classes" in api-reference.md and
@@ -105,9 +105,9 @@ A map of every class defined in the `modgud/` package and the runnable `examples
 
 ## 📦 Public API surface: `modgud/__init__.py`
 
-`modgud/__init__.py` is the barrel: it re-exports 23 names in its `__all__` and holds no logic beyond reading `__version__` from the installed metadata. Twenty are Public: the two decorators (`guarded_expression`, `implicit_return`), the guard toolkit (`CommonGuards`, `GuardRegistry`), `GuardFailureEnum`, the `GuardFunction` alias, the eight exceptions, the three forms (`eop_cond`, `eop_case`, `eop_match`) and their vocabulary (`eop_clause`, `eop_when`, `eop_var`). Three are Seam: `GuardPort`, `ImplicitReturnPort` and `EopPort`.
+`modgud/__init__.py` is the barrel: it re-exports 24 names in its `__all__` and holds no logic beyond reading `__version__` from the installed metadata. Twenty-one are Public: the two decorators (`guarded_expression`, `implicit_return`), the guard toolkit (`Guards`, its alias `CommonGuards`, `GuardRegistry`), `GuardFailureEnum`, the `GuardFunction` alias, the eight exceptions, the three forms (`eop_cond`, `eop_case`, `eop_match`) and their vocabulary (`eop_clause`, `eop_when`, `eop_var`). Three are Seam: `GuardPort`, `ImplicitReturnPort` and `EopPort`.
 
-Two secondary barrels reach the same objects: `modgud.domain` (14 names: the enum, the alias, `eop_clause`, the eight exceptions, the three ports) and `modgud.app` (9 names: the decorators, the toolkit and the five markers). `modgud.infrastructure` exports nothing. Everything else stays home: the five adapters, `MethodDescriptors` and the AST helpers, all under `infrastructure/`. `tests/test_public_api.py` pins all three `__all__` lists, so a name cannot join or leave by accident.
+Two secondary barrels reach the same objects: `modgud.domain` (14 names: the enum, the alias, `eop_clause`, the eight exceptions, the three ports) and `modgud.app` (10 names: the decorators, the toolkit with its `CommonGuards` alias and the five markers). `modgud.infrastructure` exports nothing. Everything else stays home: the five adapters, `MethodDescriptors` and the AST helpers, all under `infrastructure/`. `tests/test_public_api.py` pins all three `__all__` lists, so a name cannot join or leave by accident.
 
 ## 🛡️ Decorators: `app/`
 
@@ -132,7 +132,7 @@ The markers are typed stand-ins whose calls the rewrite compiles away. Each carr
 
 | Class / Symbol | Nature | Purpose | Audience | Generic utility? |
 |----------------|--------|---------|----------|------------------|
-| `CommonGuards` (`common_guards.py`) | Active | Nine static guard factories: `not_empty`, `not_none`, `positive`, `in_range`, `type_check`, `matches_pattern`, `valid_file_path`, `valid_url` and `valid_enum`. Each returns a `GuardFunction` that finds its argument by name in the keywords first, then by `position`. Importing the module registers all nine in `GuardRegistry` under the `common` namespace. | Public | — |
+| `Guards` (`guards.py`) | Active | Nine static guard factories: `not_empty`, `not_none`, `positive`, `in_range`, `type_check`, `matches_pattern`, `valid_file_path`, `valid_url` and `valid_enum`. Each returns a `GuardFunction` that finds its argument by name in the keywords first, then by `position`. Importing the module registers all nine in `GuardRegistry` under the `common` namespace. `CommonGuards` is the former name, kept as an alias. | Public | — |
 | `GuardRegistry` (`guard_registry.py`) | Active (state) | Process-wide registry of guard factories, global or namespaced, reached through classmethods: `register`, `get`, `has_guard`, `list_guards`, `list_namespaces` and `unregister`. `instance()` returns the singleton; constructing one directly raises `RuntimeError` once the singleton exists, and `_create_for_testing()` builds an isolated one for tests. It has no lock, so register at import time. | Public | Minor |
 
 ## 📜 Definitions and ports: `domain/`
@@ -210,7 +210,7 @@ Functions are not classes, so most of this tree has no rows. Three files define 
 
 | File | Class | Nature | Purpose |
 |------|-------|--------|---------|
-| `free_range/02_common_guards.py` | `Color` | Passive | The `Enum` that `CommonGuards.valid_enum` checks against. |
+| `free_range/02_common_guards.py` | `Color` | Passive | The `Enum` that `Guards.valid_enum` checks against. |
 | `free_range/03_failure_strategies.py` | `PaymentError` | Passive | A custom exception passed as `on_failure`, raised in place of `GuardClauseError`. |
 | `free_range/12_swapping_the_runtime.py` | `AuditingRuntime` | Active (state) | A fake shaped like `GuardPort`, passed as `guard_port=`: it logs each call's guard verdicts and never blocks. |
 | `free_range/12_swapping_the_runtime.py` | `RecordingTransformer` | Active (state) | A fake shaped like `ImplicitReturnPort`, passed as `imp_return_port=`: it notes each function it is handed and returns it untouched. |

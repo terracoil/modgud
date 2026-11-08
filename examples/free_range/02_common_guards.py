@@ -1,14 +1,14 @@
-"""A tour of all nine CommonGuards, and how they find the argument they check.
+"""A tour of all nine Guards, and how they find the argument they check.
 
 Run: poetry run python examples/free_range/02_common_guards.py
-See: docs/api-reference.md#commonguards
+See: docs/api-reference.md#guards
 """
 
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable
 
-from modgud import CommonGuards, GuardClauseError, guarded_expression
+from modgud import GuardClauseError, Guards, guarded_expression
 
 
 class Color(Enum):
@@ -29,10 +29,10 @@ def refusal(call: Callable[[], Any]) -> str:
 
 
 @guarded_expression(
-  CommonGuards.not_none('name'),
-  CommonGuards.not_empty('name'),
-  CommonGuards.type_check(str, 'name'),
-  CommonGuards.matches_pattern(r'^[a-z_]+$', 'name'),
+  Guards.not_none('name'),
+  Guards.not_empty('name'),
+  Guards.type_check(str, 'name'),
+  Guards.matches_pattern(r'^[a-z_]+$', 'name'),
 )
 def slug(name: str) -> str:
   """Turn a snake_case ``name`` into a kebab-case slug."""
@@ -42,9 +42,9 @@ def slug(name: str) -> str:
 # Lookup is by keyword first, then by position (default 0). The second
 # parameter needs position=1, or a positional call would check ``qty`` twice.
 @guarded_expression(
-  CommonGuards.positive('qty'),
-  CommonGuards.in_range(1, 10, 'qty'),
-  CommonGuards.valid_enum(Color, 'color', position=1),
+  Guards.positive('qty'),
+  Guards.in_range(1, 10, 'qty'),
+  Guards.valid_enum(Color, 'color', position=1),
 )
 def order(qty: int, color: str) -> str:
   """Describe an order of ``qty`` items painted ``color``."""
@@ -52,8 +52,8 @@ def order(qty: int, color: str) -> str:
 
 
 @guarded_expression(
-  CommonGuards.valid_url('url'),
-  CommonGuards.valid_file_path('path', position=1, must_be_file=True),
+  Guards.valid_url('url'),
+  Guards.valid_file_path('path', position=1, must_be_file=True),
 )
 def publish(url: str, path: str) -> str:
   """Pretend to upload the file at ``path`` to ``url``."""

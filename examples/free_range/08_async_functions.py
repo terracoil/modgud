@@ -6,17 +6,17 @@ See: docs/api-reference.md#guarded_expression
 
 import asyncio
 
-from modgud import CommonGuards, GuardClauseError, guarded_expression
+from modgud import GuardClauseError, Guards, guarded_expression
 
 
-@guarded_expression(CommonGuards.not_empty('user_id'))
+@guarded_expression(Guards.not_empty('user_id'))
 async def fetch_user(user_id: str) -> dict[str, str]:
   """Pretend to load a user; the await stands in for real I/O."""
   await asyncio.sleep(0)
   {'id': user_id, 'name': user_id.title()}
 
 
-@guarded_expression(CommonGuards.in_range(1, 5, 'count'))
+@guarded_expression(Guards.in_range(1, 5, 'count'))
 async def fetch_many(count: int) -> list[str]:
   """Load ``count`` users concurrently and return their names."""
   users: list[dict[str, str]] = await asyncio.gather(

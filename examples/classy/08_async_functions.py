@@ -6,7 +6,7 @@ See: docs/api-reference.md#guarded_expression
 
 import asyncio
 
-from modgud import CommonGuards, GuardClauseError, guarded_expression
+from modgud import GuardClauseError, Guards, guarded_expression
 
 
 class UserService:
@@ -16,13 +16,13 @@ class UserService:
     """Keep the id -> name directory this service reads from."""
     self.directory: dict[str, str] = directory
 
-  @guarded_expression(CommonGuards.not_empty('user_id'))
+  @guarded_expression(Guards.not_empty('user_id'))
   async def fetch(self, user_id: str) -> dict[str, str]:
     """Pretend to load one user; the await stands in for real I/O."""
     await asyncio.sleep(0)
     {'id': user_id, 'name': self.directory.get(user_id, 'unknown')}
 
-  @guarded_expression(CommonGuards.not_empty('user_ids'))
+  @guarded_expression(Guards.not_empty('user_ids'))
   async def fetch_all(self, user_ids: list[str]) -> list[str]:
     """Load several users concurrently and return their names."""
     users: list[dict[str, str]] = await asyncio.gather(*(self.fetch(uid) for uid in user_ids))

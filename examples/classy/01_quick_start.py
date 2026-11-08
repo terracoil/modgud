@@ -4,7 +4,7 @@ Run: poetry run python examples/classy/01_quick_start.py
 See: docs/api-reference.md#guarded_expression
 """
 
-from modgud import CommonGuards, GuardClauseError, guarded_expression
+from modgud import GuardClauseError, Guards, guarded_expression
 
 
 class DiscountCalculator:
@@ -12,8 +12,8 @@ class DiscountCalculator:
 
   @staticmethod
   @guarded_expression(
-    CommonGuards.positive('x'),
-    CommonGuards.in_range(1, 100, 'x'),
+    Guards.positive('x'),
+    Guards.in_range(1, 100, 'x'),
   )
   def calculate(x: float) -> float:
     """Return the discount on ``x``: 20% from 50 up, 10% below.

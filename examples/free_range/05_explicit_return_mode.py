@@ -4,10 +4,10 @@ Run: poetry run python examples/free_range/05_explicit_return_mode.py
 See: docs/api-reference.md#guarded_expression
 """
 
-from modgud import CommonGuards, GuardClauseError, guarded_expression
+from modgud import GuardClauseError, Guards, guarded_expression
 
 
-@guarded_expression(CommonGuards.not_empty('readings'), implicit_return=False)
+@guarded_expression(Guards.not_empty('readings'), implicit_return=False)
 def average(readings: list[float]) -> float:
   """Return the mean of ``readings``; the guard has already ruled out an empty list.
 
@@ -18,7 +18,7 @@ def average(readings: list[float]) -> float:
   return sum(readings) / len(readings)
 
 
-@guarded_expression(CommonGuards.positive('x'), implicit_return=False)
+@guarded_expression(Guards.positive('x'), implicit_return=False)
 def forgetful(x: int) -> None:
   """Compute ``x * 2`` and drop it: explicit mode means what it says."""
   x * 2

@@ -18,12 +18,12 @@ def create_user(email, age, username, password):
 Four exits. One of them does the job, and the caller only ever hears about the first bad field. modgud moves the checks into a decorator and lets the last expression be the return value:
 
 ```python
-from modgud import CommonGuards, GuardFailureEnum, guarded_expression
+from modgud import Guards, GuardFailureEnum, guarded_expression
 
 @guarded_expression(
-  CommonGuards.not_empty('email'),
-  CommonGuards.in_range(13, 120, 'age', position=1),
-  CommonGuards.not_empty('username', position=2),
+  Guards.not_empty('email'),
+  Guards.in_range(13, 120, 'age', position=1),
+  Guards.not_empty('username', position=2),
   continuance=6,
   strategy=GuardFailureEnum.CALL_HANDLER,
   on_failure=bad_request,
@@ -55,14 +55,14 @@ Python 3.11 or newer. One runtime dependency: [Idunn](https://pypi.org/project/i
 ## 🌱 Quick start
 
 ```python
-from modgud import CommonGuards, guarded_expression, implicit_return
+from modgud import Guards, guarded_expression, implicit_return
 
 
 class DiscountCalculator:
   @staticmethod
   @guarded_expression(
-    CommonGuards.positive('x'),
-    CommonGuards.in_range(1, 100, 'x'),
+    Guards.positive('x'),
+    Guards.in_range(1, 100, 'x'),
   )
   def calculate(x):
     if x >= 50:
@@ -82,8 +82,8 @@ Same function, two decorators, one job each. Guards go on the outside and the re
 class DiscountCalculatorV2:
   @staticmethod
   @guarded_expression(
-    CommonGuards.positive('x'),
-    CommonGuards.in_range(1, 100, 'x'),
+    Guards.positive('x'),
+    Guards.in_range(1, 100, 'x'),
     implicit_return=False,
   )
   @implicit_return()
@@ -98,7 +98,7 @@ Full version: [examples/classy/01_quick_start.py](https://github.com/terracoil/m
 
 ## 🛡️ Feature tour
 
-**Pre-built guards.** `CommonGuards` has nine: `not_none`, `not_empty`, `positive`, `in_range`, `type_check`, `matches_pattern`, `valid_file_path`, `valid_url` and `valid_enum`. Each finds its parameter by name in the keyword arguments, else by `position` (0 by default), which is why the second and third parameters above say `position=1` and `position=2`. See [CommonGuards](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#commonguards) and [02_common_guards.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/02_common_guards.py).
+**Pre-built guards.** `Guards` (formerly `CommonGuards`, which still works) has nine: `not_none`, `not_empty`, `positive`, `in_range`, `type_check`, `matches_pattern`, `valid_file_path`, `valid_url` and `valid_enum`. Each finds its parameter by name in the keyword arguments, else by `position` (0 by default), which is why the second and third parameters above say `position=1` and `position=2`. See [Guards](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#guards) and [02_common_guards.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/02_common_guards.py).
 
 **Custom guards.** A guard is any callable that takes `(*args, **kwargs)` and returns `True` to pass or a message string to fail. No base class, no registration.
 

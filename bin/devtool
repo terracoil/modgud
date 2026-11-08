@@ -3,6 +3,7 @@
 
 Consolidates all development scripts into a single FreyjaCLI implementation.
 """
+
 # deprecated
 import glob
 import os
@@ -16,8 +17,8 @@ import tomllib
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Dict, List, Optional, Union
+
 from freyja import FreyjaCLI
-from freyja.help.help_formatter import HierarchicalHelpFormatter
 
 # Add the project root to the Python path
 REPO_ROOT: Path = Path(__file__).resolve().parent.parent
@@ -813,8 +814,8 @@ class FreyjaDevTools:
       parent._print(f'Failed to create tag: {error_msg}', 'error')
       return False
 
-    def autotag(self, version: Optional[str] = None, auto_increment: bool = True) -> None:
-      """Create git tag with Claude-generated message, auto-incrementing version if needed."""
+    def autotag(self, version: str | None = None, auto_increment: bool = True) -> None:
+      """Create git tag with default message, auto-incrementing version if needed."""
       parent = self.parent
       parent._print(f'🏷️  Creating {parent.project_name} version tag...', 'info')
 
@@ -880,30 +881,9 @@ class FreyjaDevTools:
           parent._print('Failed to commit version change', 'error')
           return
 
-      # Generate tag message with Claude
-      parent._print('🤖 Generating tag message with Claude...', 'info')
-      result = parent._run_command(
-        [
-          'poetry',
-          'run',
-          'claude',
-          '-p',
-          'You must output ONLY a short tag message. NO analysis, NO explanations, NO preamble. Just a brief description for the git tag based on the most recent commit. Do NOT mention Claude, AI, phases, or any automated tools. Output only the tag description itself (e.g., "Add user authentication feature" or "Fix database connection bug").',
-        ],
-        capture_output=True,
-      )
-
-      tag_message = None
-      if isinstance(result, subprocess.CompletedProcess) and result.returncode == 0:
-        tag_message = result.stdout.strip()
-        parent._print(f'Tag message: {tag_message}', 'info')
-      else:
-        parent._print('Failed to generate tag message with Claude', 'error')
-        return
-
       # Create the tag
       parent._print(f'Creating tag: {tag}', 'info')
-      if not self._create_git_tag(final_version, tag_message):
+      if not self._create_git_tag(final_version, f'Tagged at version {final_version}'):
         return
 
       # Push commit and tag to remote

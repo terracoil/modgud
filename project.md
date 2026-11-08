@@ -3,13 +3,13 @@
 ## 🗂️ Directory layout
 
 ```bash
-modgud/                            # Facade: the 23 public names, absolute imports + __all__, __version__
-  app/                             # Decorators, markers and guard toolkit (re-exports all nine)
+modgud/                            # Facade: the 24 public names, absolute imports + __all__, __version__
+  app/                             # Decorators, markers and guard toolkit (re-exports all ten)
     guarded_expression.py          # class guarded_expression, @Invert(bootstrap='modgud', keys=...) __init__
     implicit_return.py             # class implicit_return, same @Invert (applied as @implicit_return())
     eop_cond.py, eop_case.py, eop_match.py   # EopCond / EopCase / EopMatch markers and their eop_* constants
     eop_when.py, eop_var.py        # EopWhen / EopVar pattern vocabulary
-    common_guards.py               # CommonGuards
+    guards.py                      # Guards (CommonGuards alias)
     guard_registry.py              # GuardRegistry
   domain/                          # Facade: 14 names (enum, errors, GuardFunction, eop_clause, the three ports)
     enums/                         # GuardFailureEnum; EopFormEnum (leaf export only)
@@ -30,7 +30,7 @@ tests/                             # pytest; test_architecture.py enforces the t
 
 | Tier | Names | Import from |
 |---|---|---|
-| Public | `guarded_expression`, `implicit_return`, `GuardFailureEnum`, `GuardClauseError`, `GuardFunction`, `ImplicitReturnError` and its 5 children, `MarkerNotRewrittenError`, `CommonGuards`, `GuardRegistry`, `eop_cond`, `eop_case`, `eop_match`, `eop_clause`, `eop_when`, `eop_var` (20 names; plus the three ports below, 23 in `__all__`) | `modgud` |
+| Public | `guarded_expression`, `implicit_return`, `GuardFailureEnum`, `GuardClauseError`, `GuardFunction`, `ImplicitReturnError` and its 5 children, `MarkerNotRewrittenError`, `Guards` and its alias `CommonGuards`, `GuardRegistry`, `eop_cond`, `eop_case`, `eop_match`, `eop_clause`, `eop_when`, `eop_var` (21 names; plus the three ports below, 24 in `__all__`) | `modgud` |
 | Integration seam | `GuardPort`, `ImplicitReturnPort`, `EopPort`; the `guard_port=` / `imp_return_port=` / `eop_*_port=` parameters; `IDUNN_ENV`; `Idunn().reset()` | `modgud`, `modgud.domain`, or `modgud.domain.ports` |
 | Internal | the five adapters, the `ast` helpers, `MethodDescriptors`, `EopFormEnum` | `modgud.infrastructure.adapters`, `modgud.infrastructure.ast`, `modgud.infrastructure.internal`, `modgud.domain.enums` |
 

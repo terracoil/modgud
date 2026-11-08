@@ -7,11 +7,11 @@ without interference.
 import warnings
 
 import pytest
-from modgud import CommonGuards, GuardClauseError, guarded_expression, implicit_return
+from modgud import GuardClauseError, Guards, guarded_expression, implicit_return
 
 
 # Module-level functions for implicit return tests
-@guarded_expression(CommonGuards.positive('x'))
+@guarded_expression(Guards.positive('x'))
 @implicit_return()
 def composed_guards_then_implicit(x):
   """Recommended composition: guards then implicit_return."""
@@ -28,13 +28,13 @@ def standalone_implicit(x, y):
     x - y
 
 
-@guarded_expression(CommonGuards.positive('x', position=0), CommonGuards.not_none('y', position=1))
+@guarded_expression(Guards.positive('x', position=0), Guards.not_none('y', position=1))
 def standalone_guards(x, y):
   """Standalone guards with implicit return (modern pattern)."""
   x + y
 
 
-@guarded_expression(CommonGuards.positive('x'))
+@guarded_expression(Guards.positive('x'))
 def guards_with_modern_pattern(x):
   """Guards with modern implicit return pattern."""
   x * 3
@@ -61,7 +61,7 @@ class TestDecoratorComposition:
     with pytest.raises(TypeError, match=r'must sit below @guarded_expression'):
 
       @implicit_return()
-      @guarded_expression(CommonGuards.positive('x'), implicit_return=inner_rewrite)
+      @guarded_expression(Guards.positive('x'), implicit_return=inner_rewrite)
       def implicit_then_guards(x):
         x * 2
 
@@ -94,7 +94,7 @@ class TestDecoratorComposition:
     with warnings.catch_warnings(record=True) as w:
       warnings.simplefilter('always')
 
-      @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
+      @guarded_expression(Guards.positive('x'), implicit_return=False)
       def explicit_return_usage(x):
         return x * 2
 
@@ -109,7 +109,7 @@ class TestDecoratorComposition:
     with warnings.catch_warnings(record=True) as w:
       warnings.simplefilter('always')
 
-      @guarded_expression(CommonGuards.positive('x'))  # Default implicit_return=True
+      @guarded_expression(Guards.positive('x'))  # Default implicit_return=True
       def default_usage(x):
         result = x * 2
         result  # noqa: B018 - implicit return

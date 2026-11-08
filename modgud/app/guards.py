@@ -1,7 +1,8 @@
 """Common guard validators for typical validation scenarios.
 
-Provides pre-built guard functions through the CommonGuards class for
+Provides pre-built guard functions through the Guards class for
 common validation patterns like not_none, positive, in_range, etc.
+``CommonGuards`` is kept as an alias of ``Guards`` for code written against 2.0.
 """
 
 import re
@@ -15,11 +16,11 @@ from modgud.domain.types import GuardFunction
 from .guard_registry import GuardRegistry
 
 
-class CommonGuards:
+class Guards:
   """Pre-defined common guard clauses.
 
   Usage:
-      @guarded_expression(CommonGuards.not_empty("username"))
+      @guarded_expression(Guards.not_empty("username"))
       def create_user(username):
           {"username": username}
   """
@@ -78,7 +79,7 @@ class CommonGuards:
     """
 
     def check(*args: Any, **kwargs: Any) -> bool | str:
-      value = CommonGuards._extract_param(param_name, position, args, kwargs, default)
+      value = Guards._extract_param(param_name, position, args, kwargs, default)
       # Single return point
       result: bool | str = True
       if not validator(value):
@@ -99,7 +100,7 @@ class CommonGuards:
 
     def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
-      return CommonGuards._check_not_empty(param_name, position, args, kwargs)
+      return Guards._check_not_empty(param_name, position, args, kwargs)
 
     return check
 
@@ -112,7 +113,7 @@ class CommonGuards:
         position: Position for positional args (default: 0)
 
     """
-    return CommonGuards._make_guard(
+    return Guards._make_guard(
       param_name, position, lambda v: v is not None, '{param_name} cannot be None', default=None
     )
 
@@ -125,7 +126,7 @@ class CommonGuards:
         position: Position for positional args (default: 0)
 
     """
-    return CommonGuards._make_guard(
+    return Guards._make_guard(
       param_name, position, lambda v: v > 0, '{param_name} must be positive', default=0
     )
 
@@ -145,7 +146,7 @@ class CommonGuards:
 
     def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
-      return CommonGuards._check_in_range(min_val, max_val, param_name, position, args, kwargs)
+      return Guards._check_in_range(min_val, max_val, param_name, position, args, kwargs)
 
     return check
 
@@ -164,7 +165,7 @@ class CommonGuards:
 
     def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
-      return CommonGuards._check_type(expected_type, param_name, position, args, kwargs)
+      return Guards._check_type(expected_type, param_name, position, args, kwargs)
 
     return check
 
@@ -183,7 +184,7 @@ class CommonGuards:
 
     def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
-      return CommonGuards._check_pattern(pattern, param_name, position, args, kwargs)
+      return Guards._check_pattern(pattern, param_name, position, args, kwargs)
 
     return check
 
@@ -208,7 +209,7 @@ class CommonGuards:
 
     def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
-      return CommonGuards._check_file_path(
+      return Guards._check_file_path(
         param_name, position, must_exist, must_be_file, must_be_dir, args, kwargs
       )
 
@@ -233,7 +234,7 @@ class CommonGuards:
 
     def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
-      return CommonGuards._check_url(param_name, position, require_scheme, schemes, args, kwargs)
+      return Guards._check_url(param_name, position, require_scheme, schemes, args, kwargs)
 
     return check
 
@@ -252,7 +253,7 @@ class CommonGuards:
 
     def check(*args: Any, **kwargs: Any) -> bool | str:
       # Single return point - delegate to static method
-      return CommonGuards._check_enum(enum_class, param_name, position, args, kwargs)
+      return Guards._check_enum(enum_class, param_name, position, args, kwargs)
 
     return check
 
@@ -267,7 +268,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> bool | str:
     """Check if parameter is not empty (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default='')
+    value = Guards._extract_param(param_name, position, args, kwargs, default='')
     result: bool | str = True
 
     # Check if name is empty (works for strings and collections)
@@ -289,7 +290,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> bool | str:
     """Check if parameter is within range (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=min_val - 1)
+    value = Guards._extract_param(param_name, position, args, kwargs, default=min_val - 1)
     result: bool | str = True
 
     if not (min_val <= value <= max_val):
@@ -306,7 +307,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> bool | str:
     """Check if parameter matches expected type (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    value = Guards._extract_param(param_name, position, args, kwargs, default=None)
     result: bool | str = True
 
     if not isinstance(value, expected_type):
@@ -323,7 +324,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> bool | str:
     """Check if parameter matches regex pattern (single return point)."""
-    value = str(CommonGuards._extract_param(param_name, position, args, kwargs, default=''))
+    value = str(Guards._extract_param(param_name, position, args, kwargs, default=''))
     result: bool | str = True
 
     if re.match(pattern, value) is None:
@@ -342,7 +343,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> bool | str:
     """Check if parameter is a valid file path (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    value = Guards._extract_param(param_name, position, args, kwargs, default=None)
     result: bool | str = True
 
     if value is None:
@@ -368,7 +369,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> bool | str:
     """Check if parameter is a valid URL (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    value = Guards._extract_param(param_name, position, args, kwargs, default=None)
     result: bool | str = True
 
     if value is None:
@@ -391,7 +392,7 @@ class CommonGuards:
     kwargs: dict[str, Any],
   ) -> bool | str:
     """Check if parameter is a valid enum name (single return point)."""
-    value = CommonGuards._extract_param(param_name, position, args, kwargs, default=None)
+    value = Guards._extract_param(param_name, position, args, kwargs, default=None)
     result: bool | str = True
 
     if value is None:
@@ -413,7 +414,7 @@ class CommonGuards:
 
   @classmethod
   def register_to_global_registry(cls) -> None:
-    """Auto-register all CommonGuards methods to global registry.
+    """Auto-register all Guards methods to global registry.
 
     This method is called once on module import to make all common guards
     available through the GuardRegistry.
@@ -437,5 +438,8 @@ class CommonGuards:
         GuardRegistry.register(name, method, namespace='common')
 
 
-# Auto-register CommonGuards on module import
-CommonGuards.register_to_global_registry()
+# Auto-register Guards on module import
+Guards.register_to_global_registry()
+
+# Former name of the class, kept so existing imports keep working.
+CommonGuards = Guards

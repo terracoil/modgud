@@ -1,7 +1,7 @@
 """Unit tests for GuardAdapter: check_guards + handle_failure."""
 
 import pytest
-from modgud import CommonGuards, GuardClauseError, GuardFailureEnum
+from modgud import GuardClauseError, GuardFailureEnum, Guards
 from modgud.infrastructure.adapters import GuardAdapter
 
 
@@ -223,7 +223,7 @@ class TestDefaultsSeenByGuards:
       return x
 
     wrapped = GuardAdapter().wrap_function(
-      f, (CommonGuards.positive('x'),), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
+      f, (Guards.positive('x'),), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
     )
     assert wrapped() == 5
     assert wrapped(2) == 2
@@ -235,7 +235,7 @@ class TestDefaultsSeenByGuards:
       return x
 
     wrapped = GuardAdapter().wrap_function(
-      f, (CommonGuards.positive('x'),), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
+      f, (Guards.positive('x'),), GuardFailureEnum.ERROR_RAISE, GuardClauseError, 0
     )
     with pytest.raises(GuardClauseError, match='x must be positive'):
       wrapped()

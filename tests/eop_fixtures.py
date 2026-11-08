@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Any
 
 from modgud import (
-  CommonGuards,
+  Guards,
   eop_case,
   eop_clause,
   eop_cond,
@@ -126,7 +126,7 @@ async def async_cond(x: int) -> str:
   eop_cond(eop_clause(x > 0, 'pos'), default='non-pos')
 
 
-@guarded_expression(CommonGuards.not_none('x'))
+@guarded_expression(Guards.not_none('x'))
 def guarded_cond(x: int) -> str:
   """``eop_cond`` under ``guarded_expression``."""
   eop_cond(eop_clause(x > 0, 'pos'), default='non-pos')

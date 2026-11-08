@@ -289,12 +289,12 @@ class TestProbeSelfChecks:
       ('sys', ()),
     ]
     module_edges = ArchitectureProbe.edges_from_source(
-      'from .guard_registry import GuardRegistry', 'modgud.app.common_guards', is_package=False
+      'from .guard_registry import GuardRegistry', 'modgud.app.guards', is_package=False
     )
     assert module_edges == [('modgud.app.guard_registry', ('GuardRegistry',))]
 
   def test_app_importing_infrastructure_is_flagged(self) -> None:
-    for module in ('guarded_expression', 'common_guards', 'guard_registry'):
+    for module in ('guarded_expression', 'guards', 'guard_registry'):
       for target in (ADAPTERS, AST_HELPERS, INTERNAL, INFRA_FACADE):
         assert ArchitectureProbe.violations(f'modgud.app.{module}', [(target, ('X',))])
 
@@ -403,7 +403,7 @@ class TestProbeSelfChecks:
   def test_idunn_outside_its_fence_is_flagged(self) -> None:
     assert ArchitectureProbe.violations('modgud.domain.types', [('idunn', ('Port',))])
     assert ArchitectureProbe.violations(f'{DOMAIN_PORTS}.guard_port', [('idunn', ('Idunn',))])
-    assert ArchitectureProbe.violations('modgud.app.common_guards', [('idunn', ('Port',))])
+    assert ArchitectureProbe.violations('modgud.app.guards', [('idunn', ('Port',))])
     assert ArchitectureProbe.violations('modgud.app.guarded_expression', [('idunn', ('Idunn',))])
     assert ArchitectureProbe.violations('modgud.app.implicit_return', [('idunn', ())])
     assert ArchitectureProbe.violations('modgud.app.implicit_return', [('idunn', ('ReportMap',))])
@@ -413,8 +413,8 @@ class TestProbeSelfChecks:
     assert not ArchitectureProbe.violations(f'{DOMAIN_PORTS}.guard_port', [('idunn', ('Port',))])
 
   def test_third_party_imports_are_flagged(self) -> None:
-    assert ArchitectureProbe.violations('modgud.app.common_guards', [('requests', ())])
-    assert not ArchitectureProbe.violations('modgud.app.common_guards', [('re', ())])
+    assert ArchitectureProbe.violations('modgud.app.guards', [('requests', ())])
+    assert not ArchitectureProbe.violations('modgud.app.guards', [('re', ())])
 
   def test_idunn_construction_is_detected(self) -> None:
     assert ArchitectureProbe.idunn_constructions('Idunn().bootstrap("x")') == 1

@@ -6,10 +6,10 @@ Guidance for Claude Code (claude.ai/code) working in this repository. Humans are
 
 `modgud` is a Python library with two decorators. `guarded_expression` runs guard clauses before a function and, by default, rewrites the body so the last expression of each branch is the return value. `implicit_return` does only the rewrite. The point is a single return per function without the wall of `if` statements Python usually asks for. Three Elixir-style expression forms, `eop_cond`, `eop_case` and `eop_match`, ride on the same rewrite.
 
-- **Guards**: callables that return `True` or an error string. `CommonGuards` ships nine; `GuardRegistry` holds custom ones.
+- **Guards**: callables that return `True` or an error string. `Guards` ships nine (`CommonGuards` is its pre-2.1 name, kept as an alias); `GuardRegistry` holds custom ones.
 - **Failure handling**: `GuardFailureEnum` (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload. `continuance: int` caps how many guards past the first failure still run; several failures become an `ExceptionGroup`.
 - **Expression forms**: `eop_cond` (ordered clauses), `eop_case` (patterns written as expressions) and `eop_match` (a pattern test), with `eop_clause`, `eop_when` and `eop_var`. Markers in `app/` that the rewrite compiles away; one `EopPort` adapter per form, keyed by `EopFormEnum`. Rules that differ from plain Python are in `docs/ADVANCED.md`.
-- **Layers**: `app/` (decorators and markers, wired by Idunn, plus `CommonGuards` and `GuardRegistry`), `domain/` (passive types, enums, errors, `@Port` protocols), `infrastructure/` (`adapters/`, internal `ast/` and `internal/`). The full tree and the dependency table live in `project.md`.
+- **Layers**: `app/` (decorators and markers, wired by Idunn, plus `Guards` and `GuardRegistry`), `domain/` (passive types, enums, errors, `@Port` protocols), `infrastructure/` (`adapters/`, internal `ast/` and `internal/`). The full tree and the dependency table live in `project.md`.
 
 ## ⚙️ Development Commands
 
@@ -34,13 +34,13 @@ poetry build && poetry run twine check dist/*
 
 ## 📦 Public API and Tiers
 
-Everything a user needs is `from modgud import ...`. Exactly 23 names, pinned by `tests/test_public_api.py`:
+Everything a user needs is `from modgud import ...`. Exactly 24 names, pinned by `tests/test_public_api.py`:
 
-`CommonGuards`, `EopPort`, `ExplicitReturnDisallowedError`, `GuardClauseError`, `GuardFailureEnum`, `GuardFunction`, `GuardRegistry`, `GuardPort`, `ImplicitReturnError`, `ImplicitReturnPort`, `MarkerNotRewrittenError`, `MarkerPlacementError`, `MarkerUsageError`, `MissingImplicitReturnError`, `UnsupportedConstructError`, `eop_case`, `eop_clause`, `eop_cond`, `eop_match`, `eop_var`, `eop_when`, `guarded_expression`, `implicit_return`.
+`CommonGuards` (alias of `Guards`), `Guards`, `EopPort`, `ExplicitReturnDisallowedError`, `GuardClauseError`, `GuardFailureEnum`, `GuardFunction`, `GuardRegistry`, `GuardPort`, `ImplicitReturnError`, `ImplicitReturnPort`, `MarkerNotRewrittenError`, `MarkerPlacementError`, `MarkerUsageError`, `MissingImplicitReturnError`, `UnsupportedConstructError`, `eop_case`, `eop_clause`, `eop_cond`, `eop_match`, `eop_var`, `eop_when`, `guarded_expression`, `implicit_return`.
 
 | Tier | What | Where |
 |---|---|---|
-| Public | the 23 names above | `modgud` (also `modgud.domain`, 14 names, and `modgud.app`, 9 names) |
+| Public | the 24 names above | `modgud` (also `modgud.domain`, 14 names, and `modgud.app`, 10 names) |
 | Integration seam | the three ports, `guard_port=` / `imp_return_port=` / `eop_cond_port=` / `eop_case_port=` / `eop_match_port=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud`, `modgud.domain` or `modgud.domain.ports` |
 | Internal | the five adapters, the `ast` helpers, `MethodDescriptors` | `modgud.infrastructure.adapters`, `modgud.infrastructure.ast`, `modgud.infrastructure.internal` |
 
@@ -55,7 +55,7 @@ Rules, and what enforces them (`test_architecture.py` checks import edges; `test
 
 `GuardPort`, `ImplicitReturnPort` and `EopPort` are `@Port` Protocols; the decorators depend on them only. `GuardAdapter` and `ImplicitReturnAdapter` subclass their port as `@Adapter(..., lifecycle=SINGLETON)`; `EopCondAdapter`, `EopCaseAdapter` and `EopMatchAdapter` subclass `EopPort` under their `EopFormEnum` key. Each decorator's `__init__` wears `@Invert(bootstrap='modgud', keys=...)`: the first decoration that leaves a port to injection runs `Idunn().bootstrap('modgud')`, which discovers `modgud.domain.ports` and `modgud.infrastructure.adapters`, then `guard_port` / `imp_return_port` / `eop_*_port` are injected. A caller-supplied port wins, which is the test seam; supply every port and nothing is discovered. The decorators only delegate: `guarded_expression.__call__` is one call to `GuardPort.transform(...)`, which rewrites (through the implicit-return port) and wraps; `implicit_return.__call__` is one call to `ImplicitReturnPort.transform(...)`. Both pass the three form ports along as `forms`, and the transformer lowers each form through its port. A marker called outside a decorated function reaches its port the same way, through a private `@Invert` helper, and is refused. Descriptor handling, the `__modgud_guarded__` / `__implicit_return__` markers and the stacking `TypeError` all live in the adapters. There is no composition-root module: `Idunn(` appears nowhere under `modgud/`, and `Invert` is imported only in `app`; the architecture test keeps it that way. `Idunn().reset()` clears the bootstrap so the next decoration re-discovers.
 
-Import-time side effects, so nobody is surprised: `import modgud` imports `idunn`, and `CommonGuards` registers its guards into the global `GuardRegistry`. Bootstrap itself waits for the first decoration.
+Import-time side effects, so nobody is surprised: `import modgud` imports `idunn`, and `Guards` registers its guards into the global `GuardRegistry`. Bootstrap itself waits for the first decoration.
 
 ## 🛡️ Behaviour to Preserve
 
@@ -104,20 +104,20 @@ Tests live in `tests/` (`test_*.py`). Decorated functions with implicit returns 
 ## 📜 Import Examples
 
 ```python
-from modgud import CommonGuards, GuardFailureEnum, guarded_expression
+from modgud import Guards, GuardFailureEnum, guarded_expression
 
 
-@guarded_expression(CommonGuards.positive('x'))
+@guarded_expression(Guards.positive('x'))
 def double(x):
   x * 2  # implicit return
 
 
-@guarded_expression(CommonGuards.positive('x'), strategy=GuardFailureEnum.RETURN_VALUE, on_failure=-1)
+@guarded_expression(Guards.positive('x'), strategy=GuardFailureEnum.RETURN_VALUE, on_failure=-1)
 def safe_square(x):
   x * x
 
 
-@guarded_expression(CommonGuards.positive('x'), CommonGuards.positive('y'), continuance=2)
+@guarded_expression(Guards.positive('x'), Guards.positive('y'), continuance=2)
 def add(x, y):
   x + y
 ```

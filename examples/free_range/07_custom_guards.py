@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
   assert GuardRegistry.has_guard('max_weight', namespace='shipping')
   assert {'common', 'shipping'} <= set(GuardRegistry.list_namespaces())
-  assert GuardRegistry.get('positive', namespace='common') is not None  # CommonGuards live here
+  assert GuardRegistry.get('positive', namespace='common') is not None  # Guards live here
   assert GuardRegistry.unregister('max_weight', namespace='shipping')
   assert not GuardRegistry.has_guard('max_weight', namespace='shipping')
 

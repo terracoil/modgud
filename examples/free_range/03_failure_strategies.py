@@ -7,14 +7,14 @@ See: docs/api-reference.md#guardfailureenum
 from typing import Any
 
 from modgud import (
-  CommonGuards,
   GuardClauseError,
   GuardFailureEnum,
   GuardFunction,
+  Guards,
   guarded_expression,
 )
 
-AMOUNT: GuardFunction = CommonGuards.positive('amount')
+AMOUNT: GuardFunction = Guards.positive('amount')
 
 
 class PaymentError(Exception):

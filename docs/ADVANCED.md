@@ -7,7 +7,7 @@ Each topic has one home. This page says which one, and where to start. An earlie
 ## 📚 What each document is for
 
 - [README](../README.md): install, the quick start, a tour of the features, and the three limitations most people hit first.
-- [API reference](api-reference.md): what to import, every signature and parameter table, the [`GuardFailureEnum`](api-reference.md#guardfailureenum) × `on_failure` table, the [`CommonGuards`](api-reference.md#commonguards) and [`GuardRegistry`](api-reference.md#guardregistry) catalogues, the [implicit-return rules](api-reference.md#implicit_return), [method support](api-reference.md#methods) and the [integration seam](api-reference.md#integration-seam).
+- [API reference](api-reference.md): what to import, every signature and parameter table, the [`GuardFailureEnum`](api-reference.md#guardfailureenum) × `on_failure` table, the [`Guards`](api-reference.md#guards) and [`GuardRegistry`](api-reference.md#guardregistry) catalogues, the [implicit-return rules](api-reference.md#implicit_return), [method support](api-reference.md#methods) and the [integration seam](api-reference.md#integration-seam).
 - [How it works](how-it-works.md): the layers, the Idunn wiring, the guard pipeline, the AST rewrite, [thread safety](how-it-works.md#thread-safety) and the full list of [limitations](how-it-works.md#limitations).
 - [Class catalog](classes.md): every class in the package and the examples, what it is for, and which tier it belongs to.
 - [Examples](../examples/README.md): runnable files in two trees, `free_range/` for module-level functions and `classy/` for methods.

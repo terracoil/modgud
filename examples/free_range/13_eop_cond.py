@@ -8,7 +8,7 @@ Run: poetry run python examples/free_range/13_eop_cond.py
 See: docs/api-reference.md#eop_cond
 """
 
-from modgud import CommonGuards, eop_clause, eop_cond, guarded_expression, implicit_return
+from modgud import Guards, eop_clause, eop_cond, guarded_expression, implicit_return
 
 
 @implicit_return()
@@ -21,7 +21,7 @@ def sign(x: int) -> str:
   )
 
 
-@guarded_expression(CommonGuards.not_none('items'))
+@guarded_expression(Guards.not_none('items'))
 def summary(items: list[str]) -> str:
   """Describe ``items``; only the chosen value runs, so ``items[0]`` is never touched when empty."""
   size: str = eop_cond(eop_clause(len(items) > 3, 'many'), eop_clause(items, 'few'), default='no')
