@@ -1,743 +1,194 @@
+![Modgud](https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg)
 
-<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Freyja" title="Freyja" width="300"/>
-    
-[//]: # (https://github.com/terracoil/modgud/blob/8613cce30d374538d80b8e2513096a1336fba437/docs/modgud-github.jpg)
+# modgud
 
-**Parent**: [📚 Documentation Hub](docs/README.md) | [📖 API Reference](docs/api-reference.md) | [⚙️ How It Works](docs/how-it-works.md)
-
-## Finally. Expression-Oriented Programming for Python.
-
-**Stop writing defensive spaghetti. Start writing beautiful, contract-driven code.**
-
-Tired of functions where 80% of the code is validation boilerplate? Frustrated by nested conditionals checking types, values, and state before you can even *think* about business logic? Wish Python had expression-oriented programming like Ruby, Rust, or Scala?
-
-**modgud changes everything.**
-
-
-
----
-
-## The Name: Móðguðr, Guardian of the Bridge
-
-In Norse mythology, **Móðguðr** (*"Furious Battler"*) stands as guardian of Gjallarbrú—the golden-roofed bridge spanning the river Gjöll on the path to Hel. Every soul seeking passage must stop and state their name and business before crossing. She is the threshold keeper, the boundary enforcer, the one who demands identification before allowing entry to sacred ground.
-
-This is exactly what `modgud` does for your functions. Just as Móðguðr guards the bridge to the underworld, our guard clauses protect your function boundaries—challenging invalid inputs before they can corrupt your logic. And yes, we're well aware that "modgud" sounds remarkably like **"mod-good"** or **"good mods"**. That's not accidental. 😊
-
-After all, what are expression-oriented guard clauses if not *genuinely good modifications* to Python? You're literally adding **gud mods** to your functions. The Norse goddess would approve: proper guards at every threshold, allowing only the worthy to pass. Your code deserves both mythological protection *and* some really good enhancements.
-
----
-
-## 📋 Table of Contents
-- [🔥️ Why Modgud](#the-problem) - Why modgud is essential
-- [⚠️ The Problem](#the-problem) - Why defensive programming gets messy
-- [💡 The Solution](#the-solution) - How modgud changes everything
-- [🔑 Features](#features) - Six compelling features
-- [🌀 Quick Start](#quick-start) - Get started in 60 seconds
-- [🔑 Key Features at a Glance](#key-features-at-a-glance) - What makes modgud special
-- [🌍 Real-World Example](#real-world-example-api-endpoint) - See it in action
-- [📚 Documentation](#documentation) - Complete guides and references
-- [📦 Installation](#installation) - How to install
-- [🤝 Contributing](#contributing) - Join the project
-- [✨ What's New](#whats-new-in-v11) - Latest changes
-
----
-## 🔥 Why Modgud?
-
-Despite Python's evolution toward more functional features (pattern matching in 3.10+, better type hints, etc.), modgud fills a critical gap: **making Python functions behave like expressions without changing Python's syntax**. This is uniquely valuable because:
-
-### 1. **Zero-Syntax-Cost Expression Orientation**
-While Python 3.10+ adds pattern matching, it's still statement-based. modgud's `@guarded_expression` transforms regular functions into expression-oriented code *today*, working seamlessly with Python 3.6+ codebases. You get Haskell-like guards and implicit returns without waiting for PEP acceptance or version upgrades.
-
-### 2. **Gradual Adoption Path**
-Unlike heavy functional libraries (PyMonad, toolz, etc.) that require wholesale architectural changes, modgud decorators can be applied selectively. Start with one critical function, see the benefits, expand gradually. This pragmatic approach reduces resistance in teams unfamiliar with FP.
-
-### 3. **Pythonic Integration**
-Rather than forcing Haskell or Scala idioms into Python, modgud enhances Python's existing decorator pattern. This feels natural to Python developers while delivering expression-oriented benefits. No new operators, no category theory, just cleaner functions.
-
-### 4. **Performance Without Overhead**
-Many FP libraries introduce abstraction penalties through wrapper objects and indirection. modgud's approach (presumably) operates at the function level with minimal runtime overhead, making it suitable for performance-sensitive code where other FP solutions might be rejected.
-
-### 5. **Compatibility Story**
-Working from Python 3.6+ means modgud supports the vast majority of production Python deployments. Enterprises stuck on older versions for stability can still adopt modern expression-oriented patterns without infrastructure changes.
-
-
-## ⚠️ The Problem
-
-Look familiar?
+Most functions that take input open the same way: a wall of `if`s, each with its own early `return`, and the real work somewhere near the bottom.
 
 ```python
-def process_payment(user_id, amount, payment_method):
-    # Validation hell begins...
-    if user_id is None:
-        return {"error": "User ID required"}
-
-    if not isinstance(user_id, int):
-        return {"error": "Invalid user ID type"}
-
-    if user_id <= 0:
-        return {"error": "User ID must be positive"}
-
-    if amount is None or amount <= 0:
-        return {"error": "Invalid amount"}
-
-    if amount > 10000:
-        return {"error": "Amount exceeds limit"}
-
-    if not payment_method or payment_method == "":
-        return {"error": "Payment method required"}
-
-    if payment_method not in ["card", "bank", "crypto"]:
-        return {"error": "Invalid payment method"}
-
-    # Finally, the actual business logic (if you can find it)
-    transaction = create_transaction(user_id, amount, payment_method)
-    return {"success": True, "transaction_id": transaction.id}
+def create_user(email, age, username, password):
+  if not email:
+    return {'status': 400, 'errors': ['email cannot be empty']}
+  if not 13 <= age <= 120:
+    return {'status': 400, 'errors': ['age must be between 13 and 120']}
+  if not username:
+    return {'status': 400, 'errors': ['username cannot be empty']}
+  return {'status': 201, 'user_id': save_user(email, age, username, hash_password(password))}
 ```
 
-**8 validation checks. 16 lines of defensive code. 2 lines of actual business logic.**
-
-Multiple return points everywhere. Business logic buried at the bottom. Error handling inconsistent. This is what happens when validation and logic mix.
-
----
-
-## 💡 The Solution
-
-**modgud** gives you guard clauses and expression-oriented programming in Python:
+Four exits. One of them does the job, and the caller only ever hears about the first bad field. modgud moves the checks into a decorator and lets the last expression be the return value:
 
 ```python
-from modgud import guarded_expression, implicit_return, positive, type_check, in_range, not_empty, GuardRegistry
+from modgud import CommonGuards, GuardFailureEnum, guarded_expression
 
 @guarded_expression(
-    positive("user_id"),
-    type_check(int, "user_id"),
-    positive("amount"),
-    in_range(1, 10000, "amount"),
-    not_empty("payment_method"),
-    lambda pm: pm in ["card", "bank", "crypto"] or "Invalid payment method",
-    implicit_return=True,  # Unified approach - fully supported!
-    on_error={"success": False, "error": "Validation failed"}
+  CommonGuards.not_empty('email'),
+  CommonGuards.in_range(13, 120, 'age', position=1),
+  CommonGuards.not_empty('username', position=2),
+  continuance=6,
+  strategy=GuardFailureEnum.CALL_HANDLER,
+  on_failure=bad_request,
 )
-def process_payment(user_id, amount, payment_method):
-    transaction = create_transaction(user_id, amount, payment_method)
-    {"success": True, "transaction_id": transaction.id}  # Implicit return!
+def create_user(email, age, username, password):
+  {'status': 201, 'user_id': save_user(email, age, username, hash_password(password))}
 ```
 
-**Same functionality. Zero defensive clutter. Single return point. Business logic front and center.**
+Full version: [examples/free_range/09_api_endpoint.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/09_api_endpoint.py)
 
----
+`continuance=6` keeps checking after the first failure, so `bad_request` gets the whole list and the caller gets one 400 with every complaint in it.
 
-## 🔑 Features
+The contract goes on top. The body does the work.
 
-### 1. 🛡️ Guard Clauses That Actually Work
+## 🧭 Overview
 
-Declare your function's contract upfront. Validations execute before your function runs. Guards fail fast. No more deeply nested if statements cluttering your business logic.
+modgud gives Python two decorators. `@guarded_expression(...)` runs guard functions before the body and decides what happens when one fails. `@implicit_return()` rewrites the function so the last expression in each branch is returned, the way Ruby, Rust and Scala already behave. `@guarded_expression` does both by default.
 
-**Before:**
-```python
-def withdraw(account_id, amount):
-    if account_id is None:
-        raise ValueError("Account required")
-    if amount <= 0:
-        raise ValueError("Amount must be positive")
-    if amount > get_balance(account_id):
-        raise ValueError("Insufficient funds")
+Python made `if` a statement in 1991 and has wanted a `return` in every branch ever since. modgud rewrites the function once, at decoration time, so each branch ends on a value and the function keeps a single exit. Nothing is rewritten per call.
 
-    # Actual work hidden at the bottom
-    balance = get_balance(account_id) - amount
-    update_balance(account_id, balance)
-    return balance
-```
-
-**After:**
-```python
-from modgud import guarded_expression, not_none, positive
-
-@guarded_expression(
-    not_none("account_id"),
-    positive("amount"),
-    lambda account_id, amount: amount <= get_balance(account_id) or "Insufficient funds",
-    implicit_return=True  # Unified approach - clean and simple!
-)
-def withdraw(account_id, amount):
-    balance = get_balance(account_id) - amount
-    update_balance(account_id, balance)
-    balance  # Clean implicit return
-```
-
-### 2. 🎨 Expression-Oriented Programming (Finally!)
-
-The last expression in each branch is your return value. Just like Ruby, Rust, Scala, and every other modern language. No more cluttered `return` statements everywhere.
-
-**Before:**
-```python
-def classify_user(age, premium):
-    if age < 18:
-        return "minor"
-    elif premium:
-        return "premium_adult"
-    else:
-        return "standard_adult"
-```
-
-**After:**
-```python
-from modgud import guarded_expression, positive
-
-# Using the unified parameter approach
-@guarded_expression(
-    positive("age"),
-    implicit_return=True
-)
-def classify_user(age, premium):
-    if age < 18:
-        "minor"
-    elif premium:
-        "premium_adult"
-    else:
-        "standard_adult"
-```
-
-Clean. Readable. Expressive. The way code should be.
-
-### 3. 🎖️ Single Return Point Architecture
-
-Every function has exactly one logical exit point. Easier debugging. Clearer control flow. No hunting through nested conditionals for hidden `return` statements.
-
-Guards handle early exits. Your function handles business logic. Separation of concerns at its finest.
-
-### 4. 🧩 Pre-Built Guards
-
-Stop writing the same validations over and over:
-
-```python
-from modgud import guarded_expression, not_none, matches_pattern, positive, in_range, not_empty, type_check
-
-@guarded_expression(
-    not_none("email"),
-    matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
-    positive("age"),
-    in_range(13, 120, "age"),
-    not_empty("username"),
-    type_check(str, "username"),
-    implicit_return=True  # Clean, all-in-one configuration
-)
-def register_user(email, age, username):
-    user_id = create_user_record(email, age, username)
-    send_welcome_email(email)
-    {"success": True, "user_id": user_id}
-```
-
-Built-in guards for:
-- `not_none` - Ensure values exist
-- `not_empty` - Validate collections/strings have content
-- `positive` - Numeric validation
-- `in_range` - Bounded value checking
-- `type_check` - Runtime type validation
-- `matches_pattern` - Regex pattern matching
-
-Plus you can write custom guards in seconds.
-
-#### Creating Custom Guards
-
-Register your own reusable guards:
-
-```python
-from modgud import GuardRegistry, guarded_expression
-
-# Define a custom guard factory
-def valid_age(min_age=0, max_age=150, param_name="age"):
-    def check(*args, **kwargs):
-        age = kwargs.get(param_name, args[0] if args else None)
-        if not isinstance(age, int):
-            return f"{param_name} must be an integer"
-        if min_age <= age <= max_age:
-            return True
-        return f"{param_name} must be between {min_age} and {max_age}"
-    return check
-
-# Register it for reuse
-GuardRegistry.register("valid_age", valid_age)
-
-# Use your custom guard with implicit returns
-@guarded_expression(
-    GuardRegistry.get("valid_age")(min_age=18, max_age=120),
-    implicit_return=True  # All configured in one place
-)
-def can_vote(age):
-    age >= 18
-```
-
-### 5. 🎛️ Flexible Error Handling
-
-Your code, your rules. Choose how guards fail:
-
-**Return custom values:**
-```python
-from modgud import guarded_expression, positive
-
-@guarded_expression(
-    positive("amount"),
-    implicit_return=True,
-    on_error={"error": "Invalid amount", "code": 400}
-)
-def process(amount):
-    {"success": True, "amount": amount}
-```
-
-**Raise exceptions:**
-```python
-from modgud import guarded_expression, not_empty
-
-@guarded_expression(
-    not_empty("username"),
-    implicit_return=True,
-    on_error=ValueError
-)
-def create_account(username):
-    Account(username)
-```
-
-**Custom handlers:**
-```python
-from modgud import guarded_expression
-
-def audit_and_return(error_msg, *args, **kwargs):
-    log_security_event(error_msg)
-    return None
-
-@guarded_expression(
-    lambda api_key: validate_key(api_key) or "Invalid key",
-    implicit_return=True,
-    on_error=audit_and_return
-)
-def sensitive_operation(api_key):
-    perform_operation()
-```
-
-### 6. 📦 Zero Dependencies
-
-Built entirely on Python's standard library. No bloat. No version conflicts. Just clean, fast Python.
-
-### 7. ✅ Battle-Tested & Type-Safe
-
-- Full mypy type checking support
-- Comprehensive test suite with 92% coverage
-- Clean architecture with separation of concerns
-- Thread-safe decorators
-- Preserves all function metadata for debugging
-
----
-
-## 🌀 Quick Start
-
-### 📦 Installation
+## 📦 Install
 
 ```bash
 pip install modgud
 ```
 
-**Requirements:** Python 3.11+
+Python 3.11 or newer. One runtime dependency: [Idunn](https://pypi.org/project/idunn), which wires the decorators to their implementations.
 
-### Your First Guarded Function
+## 🌱 Quick start
 
 ```python
-from modgud import guarded_expression, positive, in_range
+from modgud import CommonGuards, guarded_expression, implicit_return
 
-# Option 1: Unified approach (recommended for simple cases)
-@guarded_expression(
-    positive("x"),
-    in_range(1, 100, "x"),
-    implicit_return=True  # All-in-one configuration
-)
-def calculate_discount(x):
+
+class DiscountCalculator:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.positive('x'),
+    CommonGuards.in_range(1, 100, 'x'),
+  )
+  def calculate(x):
     if x >= 50:
-        x * 0.2
+      x * 0.2
     else:
-        x * 0.1
+      x * 0.1
 
-# Option 2: Separate decorators (for complex compositions)
-from modgud import implicit_return
 
-@guarded_expression(
-    positive("x"),
-    in_range(1, 100, "x")
-)
-@implicit_return
-def calculate_discount_v2(x):
+DiscountCalculator.calculate(75)  # 15.0
+DiscountCalculator.calculate(25)  # 2.5
+DiscountCalculator.calculate(-10)  # raises GuardClauseError: x must be positive
+```
+
+Same function, two decorators, one job each. Guards go on the outside and the rewrite sits closest to the `def`; the other order quietly skips the guards:
+
+```python
+class DiscountCalculatorV2:
+  @staticmethod
+  @guarded_expression(
+    CommonGuards.positive('x'),
+    CommonGuards.in_range(1, 100, 'x'),
+    implicit_return=False,
+  )
+  @implicit_return()
+  def calculate(x):
     if x >= 50:
-        x * 0.2
+      x * 0.2
     else:
-        x * 0.1
-
-print(calculate_discount(75))   # Returns 15.0
-print(calculate_discount(25))   # Returns 2.5
-print(calculate_discount(-10))  # Raises GuardClauseError
+      x * 0.1
 ```
 
-**That's it.** You're writing cleaner Python.
+Full version: [examples/classy/01_quick_start.py](https://github.com/terracoil/modgud/blob/main/examples/classy/01_quick_start.py)
 
----
+## 🛡️ Feature tour
 
-## 🔑 Key Features at a Glance
+**Pre-built guards.** `CommonGuards` has nine: `not_none`, `not_empty`, `positive`, `in_range`, `type_check`, `matches_pattern`, `valid_file_path`, `valid_url` and `valid_enum`. Each finds its parameter by name in the keyword arguments, else by `position` (0 by default), which is why the second and third parameters above say `position=1` and `position=2`. See [CommonGuards](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#commonguards) and [02_common_guards.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/02_common_guards.py).
 
-- **🎨 Implicit Returns by Default** - Last expression in each branch is auto-returned (like Ruby/Rust/Scala)
-- **🛡️ Guard Clause Decorators** - Validate inputs before function execution
-- **🎯 Single Return Point** - One logical exit point per function
-- **🧩 Pre-Built Guards** - Standard validations ready to use (not_none, positive, in_range, type_check, etc.)
-- **📝 Custom Guard Registry** - Create and register reusable validation guards
-- **🎛️ Configurable Failure Behaviors** - Return values, raise exceptions, or call custom handlers
-- **🏛️ Clean Architecture** - Per-feature decomposition with ports + adapters
-- **📦 Zero Dependencies** - Uses only Python standard library
-- **✅ Type-Safe** - Full mypy support with proper type hints
-- **🔒 Thread-Safe** - No shared mutable state
-- **🧪 Well-Tested** - 92% coverage with 40+ comprehensive tests
-
----
-
-## 🌍 Real-World Example: API Endpoint
-
-**Before modgud:**
+**Custom guards.** A guard is any callable that takes `(*args, **kwargs)` and returns `True` to pass or a message string to fail. No base class, no registration.
 
 ```python
-def create_user(email, age, username, password):
-    # Validation nightmare
-    if not email or email == "":
-        return {"status": 400, "error": "Email required"}
-
-    if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
-        return {"status": 400, "error": "Invalid email format"}
-
-    if age is None or not isinstance(age, int):
-        return {"status": 400, "error": "Invalid age"}
-
-    if age < 13 or age > 120:
-        return {"status": 400, "error": "Age must be 13-120"}
-
-    if not username or username == "":
-        return {"status": 400, "error": "Username required"}
-
-    if len(username) < 3 or len(username) > 20:
-        return {"status": 400, "error": "Username must be 3-20 chars"}
-
-    if not password or password == "":
-        return {"status": 400, "error": "Password required"}
-
-    # Finally, the actual work
-    user_id = db.create_user(email, age, username, hash_password(password))
-    return {"status": 200, "user_id": user_id}
-```
-
-**With modgud:**
-
-```python
-from modgud import guarded_expression, not_empty, matches_pattern, type_check, in_range
-
-@guarded_expression(
-    not_empty("email"),
-    matches_pattern(r'^[\w\.-]+@[\w\.-]+\.\w+$', "email"),
-    type_check(int, "age"),
-    in_range(13, 120, "age"),
-    not_empty("username"),
-    lambda username: 3 <= len(username) <= 20 or "Username must be 3-20 chars",
-    not_empty("password"),
-    implicit_return=True,  # Clean configuration in one place
-    on_error={"status": 400, "error": "Validation failed"}
-)
-def create_user(email, age, username, password):
-    user_id = db.create_user(email, age, username, hash_password(password))
-    {"status": 200, "user_id": user_id}
-```
-
-**14 lines → 8 lines. Zero defensive clutter. 100% focus on business logic.**
-
----
-
-## What Developers Say
-
-*"I can't believe this isn't built into Python. Guard clauses should be standard."*
-
-*"Finally! Expression-oriented programming in Python. My functions are half the size now."*
-
-*"The single return point architecture makes debugging so much easier."*
-
-*"Pre-built guards saved me from writing the same validations 100 times."*
-
----
-
-## The Name: Why Móðguðr?
-
-In Norse mythology, **Móðguðr** (*"Furious Battler"*) is the guardian of Gjallarbrú, the golden-roofed bridge spanning the river Gjöll on the path to Hel. She stands at this critical boundary, demanding that all who would cross must first state their name and business.
-
-Just like this legendary guardian, `modgud` stands watch at your function boundaries—and yes, we know it also sounds like "good mods" for your Python code! 😊 After all, what better way to enhance your functions than with some good mods that guard them like a Norse goddess?
-
-This ancient guardian embodies exactly what this library does:
-
-- **Guards the Boundary**: Just as Móðguðr guards the bridge to the underworld, our guards protect function boundaries
-- **Demands Identification**: Móðguðr requires travelers to identify themselves; our guards require parameters to validate themselves
-- **Controls Passage**: Only the worthy may cross her bridge; only valid inputs enter your functions
-- **Maintains Order**: She prevents chaos at the boundary; we prevent bad data from corrupting your logic
-
-Your functions are sacred spaces. They deserve a guardian at the gate—and perhaps some good mods to make them even better!
-
----
-
-## Expression-Oriented Programming: Finally in Python
-
-Most modern languages have embraced [expression-oriented programming](https://en.wikipedia.org/wiki/Expression-oriented_programming_language):
-
-- **Ruby**: Everything is an expression
-- **Rust**: if, match, and blocks are expressions
-- **Scala**: Unified expression model
-- **Kotlin**: When expressions, if expressions
-- Even **JavaScript**: Arrow functions with implicit returns
-
-Python has been left behind—until now.
-
-### What is Expression-Oriented Programming?
-
-In [expression-oriented languages](https://en.wikipedia.org/wiki/Expression-oriented_programming_language), nearly every construct yields a value. This isn't just syntactic sugar—it's a fundamental paradigm shift that leads to:
-
-- **Cleaner code**: No unnecessary intermediate variables
-- **Better composability**: Everything can be chained and combined
-- **Functional thinking**: Focus on transformations, not procedures
-- **Less boilerplate**: The language works with you, not against you
-
-### Why It Matters
-
-Expression-oriented programming isn't about being clever—it's about writing code that expresses intent clearly:
-
-```python
-# Statement-oriented (traditional Python)
-def get_status(user):
-    if user.is_active:
-        if user.is_premium:
-            status = "premium_active"
-        else:
-            status = "standard_active"
-    else:
-        status = "inactive"
-    return status
-
-# Expression-oriented (with modgud)
 from modgud import guarded_expression
 
-@guarded_expression(implicit_return=True)
-def get_status(user):
-    if user.is_active:
-        "premium_active" if user.is_premium else "standard_active"
-    else:
-        "inactive"
+
+def fragile_ok(*args, **kwargs):
+  mode = kwargs.get('mode', args[1] if len(args) > 1 else '')
+  fragile = kwargs.get('fragile', args[2] if len(args) > 2 else False)
+  return not (fragile and mode == 'sea') or 'fragile parcels cannot go by sea'
+
+
+@guarded_expression(fragile_ok)
+def ship(kg, mode, fragile=False):
+  f'{kg} kg by {mode}'
 ```
 
-The second version isn't just shorter—it's *clearer*. The code structure mirrors the logic structure. No hunting for return statements. No temporary variables. Just pure intent.
+Full version: [examples/free_range/07_custom_guards.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/07_custom_guards.py)
 
-### Bringing Expressions to Python
+When the same guard shows up in five modules, `GuardRegistry` stores its factory by name, in an optional namespace. See [GuardRegistry](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#guardregistry).
 
-With modgud, Python developers can finally write in an expression-oriented style:
+**When a guard fails.** `strategy` picks the behaviour and `on_failure` is its payload:
 
-- **Implicit Returns**: The last expression in each branch becomes the return value
-- **Single Return Point**: One logical exit, multiple paths to get there
-- **Clean Composition**: Guards handle preconditions, your code handles logic
+| `strategy` | The caller gets |
+|---|---|
+| `ERROR_RAISE` (default) | `on_failure(message)` raised; `GuardClauseError` unless you name another class |
+| `ERROR_RETURN` | the same exception, returned instead of raised |
+| `RETURN_VALUE` | `on_failure`, as-is |
+| `CALL_HANDLER` | whatever `on_failure(errors, *args, **kwargs)` returns |
+
+The body never runs once a guard has failed. Details: [GuardFailureEnum](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#guardfailureenum) and [03_failure_strategies.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/03_failure_strategies.py).
+
+**More than one failure.** Guards stop at the first failure. `continuance=N` keeps checking up to `N` more, so a form with three bad fields reports three, not one per round trip. The error strategies then hand back an `ExceptionGroup` for `except*` to take apart. See [06_continuance.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/06_continuance.py).
+
+**Implicit returns.** The tail of every branch must produce a value: `if`/`elif`/`else`, `try`/`except`/`else` and `match`/`case` all work; a tail `match` must end in `case _:`. A `return` anywhere in the decorated function, nested functions included, or a branch that ends without a value, is refused at decoration time. Import time, in practice, not the first call in production. Pass `implicit_return=False` to keep explicit returns and use the guards alone. See [implicit_return](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#implicit_return) and [04_implicit_returns.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/04_implicit_returns.py).
+
+**Expression forms.** Three Elixir-style forms turn ordered conditions and pattern matching into expressions, so they fit in a tail, an assignment or a comprehension. Each one needs a modgud decorator on the function.
 
 ```python
-# Complex business logic, expression style
-from modgud import guarded_expression, not_none, positive
+from modgud import eop_case, eop_clause, eop_cond, eop_match, eop_var, implicit_return
 
-@guarded_expression(
-    not_none("order"),
-    positive("discount_rate"),
-    implicit_return=True  # Expression-oriented with guards!
-)
-def calculate_final_price(order, discount_rate, is_premium):
-    base_price = order.total
-    if is_premium:
-        if base_price > 100:
-            base_price * (1 - discount_rate * 1.5)  # Premium + bulk discount
-        else:
-            base_price * (1 - discount_rate * 1.2)  # Premium discount only
-    else:
-        if base_price > 100:
-            base_price * (1 - discount_rate)        # Standard bulk discount
-        else:
-            base_price                               # No discount
+
+@implicit_return()
+def sign(x):
+  eop_cond(eop_clause(x < 0, 'negative'), eop_clause(x == 0, 'zero'), default='positive')
+
+
+@implicit_return()
+def first_two(values):
+  eop_case(values, eop_clause([eop_var.a, eop_var.b, *eop_var._], (eop_var.a, eop_var.b)), default=None)
 ```
 
-Every branch yields a value. No `return` keywords cluttering the logic. The code reads like a mathematical expression, not a procedure.
+`eop_match(pattern, value)` is the same matching as a `bool`. See [Expression forms](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#expression-forms), [13_eop_cond.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/13_eop_cond.py), [14_eop_case.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/14_eop_case.py) and [15_eop_match.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/15_eop_match.py). The rules that differ from plain Python, such as Elixir's truth rule and guards, are in the [docs hub](https://github.com/terracoil/modgud/blob/main/docs/ADVANCED.md#-expression-forms-past-the-basics).
 
----
+**Methods and async.** Instance methods, `@staticmethod`, `@classmethod` and `async def` all work, with modgud on either side of the built-in decorator. When the first parameter is named `self` or `cls`, guards see the arguments without it. Two shapes are refused at decoration time: zero-argument `super()` and a bare `__class__`; write `super(Cls, self)` instead. Defaults that name class attributes are fine. `@property` and descriptors are not covered. See [Methods](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#methods), [classy/10_decorator_composition.py](https://github.com/terracoil/modgud/blob/main/examples/classy/10_decorator_composition.py) and [08_async_functions.py](https://github.com/terracoil/modgud/blob/main/examples/free_range/08_async_functions.py).
+
+## 🗂️ Examples
+
+The [examples](https://github.com/terracoil/modgud/blob/main/examples/README.md) come in two trees. In `free_range/`, decorated functions roam the module at top level, unfenced. In `classy/`, they live indoors: one class per file, instance, static and class methods, every house rule obeyed. Each classy file has a free-range twin with the same number. The test suite runs all of them, so an example that stops working fails the build.
+
+```bash
+poetry run python examples/free_range/01_quick_start.py
+```
+
+## ⚖️ Limitations
+
+- Implicit returns need the function's source on disk; modgud can't rewrite what `inspect` can't read. Functions typed into a REPL or built with `exec` get the guards with `implicit_return=False`, but not the rewrite.
+- `GuardRegistry` and the Idunn container are process-wide singletons. `GuardRegistry` has no lock, so register guards at import time, not from worker threads.
+- The `eop_` forms are rewritten at decoration time, so they work only inside a function decorated with `guarded_expression` or `implicit_return`. Called anywhere else they raise `MarkerNotRewrittenError`.
+- The status is Beta. The 23 names in `from modgud import ...` are the supported surface; anything deeper may move.
+
+The rest are in [How it works: Limitations](https://github.com/terracoil/modgud/blob/main/docs/how-it-works.md#limitations), with what is shared between threads under [Thread safety](https://github.com/terracoil/modgud/blob/main/docs/how-it-works.md#thread-safety).
+
+## 🌉 The name
+
+In Norse myth, Móðguðr guards Gjallarbrú, the bridge over the river Gjöll on the road to Hel. Every traveller stops and states a name and business before crossing. modgud asks the same of your arguments, with milder consequences for the ones that fail. It also reads as "mod gud". That part was on purpose.
 
 ## 📚 Documentation
 
-Ready to dive deeper?
-
-- **[⚙️ How It Works](docs/how-it-works.md)** - Deep dive into AST transformation and the magic behind implicit returns
-- **[📖 API Reference](docs/api-reference.md)** - Complete API documentation for all decorators and guards
-- **[📚 Full Documentation Hub](docs/README.md)** - Usage examples, migration guide, and advanced patterns
-- **[🏛️ Architecture](docs/architecture/README.md)** - Clean architecture design principles
-- **[GitHub Repository](https://github.com/terracoil/modgud)** - Source code, issues, contributions
-- **[PyPI Package](https://pypi.org/project/modgud/)** - Official releases
-
----
-
-## Philosophy
-
-Like **Móðguðr** (*"Furious Battler"*), the bridge guardian of Norse mythology who demands souls state "their name and business" before crossing to the underworld, **modgud** stands guard at your function boundaries—ensuring only valid inputs pass through while maintaining clean, predictable code flow.
-
-Your functions should focus on *what they do*, not on validating *what they receive*. Guards handle the boundary. Your code handles the logic.
-
-**Single return point. Single responsibility. Single source of truth.**
-
----
-
-## 🎯 Usage Patterns: Two Equally Valid Approaches
-
-**modgud supports two patterns for combining guards with implicit returns. Choose based on your needs:**
-
-### Pattern 1: Unified Parameter (Simple, All-in-One)
-```python
-from modgud import guarded_expression, positive, not_none
-
-# Everything configured in one decorator
-@guarded_expression(
-    not_none("x"),
-    positive("x"),
-    implicit_return=True  # Fully supported!
-)
-def process(x):
-    result = x * 2
-    result  # Clean implicit return
-```
-
-**Best for:**
-- Simple functions with guards and implicit returns
-- When you want all configuration in one place
-- Teaching/learning scenarios
-- Functions where the transformation is core to the function's identity
-
-### Pattern 2: Separate Decorators (Flexible, Composable)
-```python
-from modgud import guarded_expression, implicit_return, positive, not_none
-
-# Separate concerns with multiple decorators
-@guarded_expression(not_none("x"), positive("x"))
-@implicit_return
-def process(x):
-    result = x * 2
-    result  # Clean implicit return
-```
-
-**Best for:**
-- Complex decorator compositions
-- When implicit return is optional/conditional
-- Reusable decorator stacks
-- Maximum flexibility
-
-### ⚠️ Composition Order Warning
-
-When using separate decorators, **order matters**:
-
-```python
-# ✅ CORRECT: Guards before implicit
-@guarded_expression(positive("x"))
-@implicit_return
-def correct(x):
-    x * 2
-
-# ❌ PROBLEMATIC: Implicit before guards (may bypass guards!)
-@implicit_return
-@guarded_expression(positive("x"))  # Guards may be bypassed!
-def problematic(x):
-    x * 2
-```
-
-### Individual Use Cases
-```python
-# Guards only (traditional explicit returns)
-@guarded_expression(
-    not_none("x"),
-    positive("x"),
-    implicit_return=False  # Explicit returns
-)
-def calculate(x):
-    return x * 2
-
-# Expression-orientation only (no guards)
-@implicit_return
-def classify(status):
-    if status == "active":
-        "user_active"
-    else:
-        "user_inactive"
-```
-
-**Both patterns are first-class citizens in modgud. Choose the one that best fits your use case!**
-
----
-
-## 📦 Installation
-
-```bash
-# Using pip
-pip install modgud
-
-# Using Poetry
-poetry add modgud
-```
-
-**Requirements:** Python 3.11+
-
----
+- [Docs hub](https://github.com/terracoil/modgud/blob/main/docs/ADVANCED.md): which document covers what, and where to start.
+- [API reference](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md): signatures, parameter tables, errors, and the integration seam for swapping the runtime in tests ([Integration seam](https://github.com/terracoil/modgud/blob/main/docs/api-reference.md#integration-seam)).
+- [How it works](https://github.com/terracoil/modgud/blob/main/docs/how-it-works.md): the guard pipeline, the AST rewrite and the Idunn wiring.
 
 ## 🤝 Contributing
 
-Contributions welcome! This is a young project with huge potential.
+Install with `poetry install --with dev`, run the lint gate and `poetry run pytest`, and open a pull request with tests.
+The default suite also polices the layering, runs every example and checks the docs' imports and links.
+Details: [CONTRIBUTING.md](https://github.com/terracoil/modgud/blob/main/CONTRIBUTING.md).
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Add your changes with tests
-4. Run the test suite: `poetry run pytest`
-5. Submit a pull request
+## 📜 License
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
----
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## ✨ What's New in v1.1
-
-### 🏛️ Architecture Improvements
-
-- **BREAKING:** Removed all deprecated module-level registry functions
-  - Old: `register_guard()`, `get_guard()`, `list_custom_guards()`, etc.
-  - New: Use `GuardRegistry.register()`, `GuardRegistry.get()`, `GuardRegistry.list_guards()`, etc.
-- **NEW:** `GuardRegistry` now uses proper singleton pattern with `@classmethod` interface
-- **NEW:** `CommonGuards._register_to_global_registry()` - encapsulated registration logic
-- **IMPROVED:** Better code organization - all functionality properly encapsulated in classes
-- **IMPROVED:** Test coverage increased from 94% to 96%
-
-### Migration Guide
-
-```python
-# Old way (v0.2.x - REMOVED)
-from modgud import register_guard, get_guard
-register_guard('my_guard', factory_fn)
-guard = get_guard('my_guard')
-
-# New way (v1.1+)
-from modgud import GuardRegistry
-GuardRegistry.register('my_guard', factory_fn)
-guard = GuardRegistry.get('my_guard')
-```
-
----
-
-**Stop writing defensive code. Start writing declarative contracts.**
-
-**Welcome to modgud. Welcome to cleaner Python.**
-
-*Like Móðguðr at the bridge to Hel, modgud ensures only worthy inputs pass through to your functions' sacred inner workings.*
+MIT. See [LICENSE](https://github.com/terracoil/modgud/blob/main/LICENSE).

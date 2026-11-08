@@ -1,7 +1,7 @@
 """Tests for basic guard clause functionality."""
 
 import pytest
-from modgud import GuardFailureStrategy, guarded_expression
+from modgud import GuardFailureEnum, guarded_expression
 
 from tests.helpers import assert_guard_fails
 
@@ -36,7 +36,7 @@ class TestGuardFailureHandling:
 
     @guarded_expression(
       lambda x: x > 0 or 'Must be positive',
-      strategy=GuardFailureStrategy.RETURN_VALUE,
+      strategy=GuardFailureEnum.RETURN_VALUE,
       on_failure={'error': 'Invalid input'},
     )
     def double(x):
@@ -64,7 +64,7 @@ class TestGuardFailureHandling:
 
     @guarded_expression(
       lambda x: x > 0 or 'Must be positive',
-      strategy=GuardFailureStrategy.CALL_HANDLER,
+      strategy=GuardFailureEnum.CALL_HANDLER,
       on_failure=custom_handler,
     )
     def double(x):

@@ -1,4 +1,4 @@
-**Parent**: [📋 ADR Index](README.md) | [📖 ADR-002](ADR-002-guard-pattern-design-rationale.md) | [📚 Documentation Hub](../README.md)
+**Parent**: [📋 ADR Index](README.md) | [📖 ADR-002](ADR-002-guard-pattern-design-rationale.md) | [📚 Documentation Hub](../ADVANCED.md)
 
 # ADR-003: Registry System Architecture
 
@@ -9,8 +9,10 @@
 ## Status
 Accepted (2025-10-26)
 
+> **Update 2026-11-02.** Still accepted, with two corrections to the sketch below. The registry is a process-wide singleton reached through classmethods (`GuardRegistry.register / get / has_guard / list_guards / list_namespaces / unregister`; `GuardRegistry.instance()` and `_create_for_testing()` exist for tests), and it has **no lock**: the `threading.RLock` under "Thread Safety" was never built. Register guards at import time and the question never comes up. Dependency injection did arrive, by way of Idunn (ADR-005), but for the runtime and the transformer, not for the registry, which stays global on purpose.
+
 ## Context
-Guard functions need a discovery mechanism for runtime configuration and plugin systems. Users should be able to register custom guards and access them by name, while avoiding naming conflicts between different guard sources (built-in, third-party, user-defined).
+A guard that only its author can find is a private function with ambitions. Guard functions need a discovery mechanism for runtime configuration and plugin systems. Users should be able to register custom guards and access them by name, while avoiding naming conflicts between different guard sources (built-in, third-party, user-defined).
 
 ## Decision
 Implement a global singleton registry with namespace support:
@@ -25,13 +27,13 @@ Architecture:
 _GLOBAL_REGISTRY = GuardRegistry()
 
 # Registration with namespaces
-from modgud import positive
-register_guard("positive", positive)  # Default namespace
-register_guard("email", validators.email, namespace="validators")
+from modgud import CommonGuards, GuardRegistry
+GuardRegistry.register("positive", CommonGuards.positive)  # Default namespace
+GuardRegistry.register("email", validators.email, namespace="validators")
 
 # Usage
-registry.get("positive")()  # Returns guard factory
-registry.get("email", namespace="validators")()
+GuardRegistry.get("positive")()  # Returns guard factory
+GuardRegistry.get("email", namespace="validators")()
 ```
 
 ## Consequences
@@ -44,11 +46,11 @@ registry.get("email", namespace="validators")()
 - **Discovery**: Can list available guards for documentation/tooling
 
 ### Negative
-- **Global state**: Singleton pattern introduces global mutable state
+- **Global state**: one mutable dict per process, and everybody's guards in it
 - **Import order**: Registration depends on module import order
 - **Testing complexity**: Must reset registry between tests
 - **No dependency injection**: Hard to substitute registry for testing
-- **Memory overhead**: All registered guards stay in memory
+- **Memory**: every registered factory stays resident; nobody has measured it because nobody has needed to
 
 ## Alternatives Considered
 
@@ -79,7 +81,7 @@ class CommonNamespace:
 ### 4. Decorator Registration
 Register guards via decorator at definition.
 ```python
-@register_guard("positive")
+@GuardRegistry.register("positive")
 def positive_guard(...): ...
 ```
 - **Rejected**: Couples definition with registration, less flexible
@@ -106,9 +108,9 @@ Pre-built guards auto-register at import:
 # At module level in common_guards.py
 def _register_common_guards():
   # Each guard function is registered individually
-  register_guard('not_none', not_none, namespace='common')
-  register_guard('positive', positive, namespace='common')
-  register_guard('type_check', type_check, namespace='common')
+  GuardRegistry.register('not_none', CommonGuards.not_none, namespace='common')
+  GuardRegistry.register('positive', CommonGuards.positive, namespace='common')
+  GuardRegistry.register('type_check', CommonGuards.type_check, namespace='common')
   # ... etc for all pre-built guards
 
 _register_common_guards()

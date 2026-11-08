@@ -6,7 +6,35 @@ by the implicit_return transformer.
 
 import asyncio
 
-from modgud import GuardFailureStrategy, guarded_expression, not_none, positive
+from modgud import CommonGuards, GuardFailureEnum, guarded_expression
+
+
+# Calls a function defined *after* it: the body must see live module globals, not a snapshot.
+@guarded_expression()
+def calls_later_definition():
+  defined_afterwards()
+
+
+def defined_afterwards():
+  return 'late but present'
+
+
+# Async with a non-raising strategy: the fallback must come back from `await`.
+@guarded_expression(
+  CommonGuards.positive('x'), strategy=GuardFailureEnum.RETURN_VALUE, on_failure='fallback'
+)
+async def async_with_fallback(x):
+  await asyncio.sleep(0)
+  x * 2
+
+
+LIMIT = 5
+
+
+# A default that names a module global must keep working (it is reused, not re-evaluated).
+@guarded_expression()
+def clamp_to_limit(x=LIMIT):
+  x if x < LIMIT else LIMIT  # noqa: B018 - implicit return
 
 
 # Simple implicit return
@@ -35,6 +63,18 @@ def safe_divide(x, y):
     0  # noqa: B018 — implicit return
 
 
+# Tail match closed by a bare capture: the rewrite requires an irrefutable last case.
+@guarded_expression(CommonGuards.not_none('command'))
+def describe_command(command):
+  match command.split():
+    case ['go', direction]:
+      f'going {direction}'
+    case ['quit' | 'exit']:
+      'bye'
+    case words:
+      f'unknown: {" ".join(words)}'
+
+
 # Combined guard and implicit return
 @guarded_expression(lambda x: x > 0 or 'Must be positive', implicit_return=True)
 def safe_divide_with_guard(x):
@@ -43,7 +83,7 @@ def safe_divide_with_guard(x):
 
 
 # CommonGuards with implicit return
-@guarded_expression(not_none('x'), positive('x'), implicit_return=True)
+@guarded_expression(CommonGuards.not_none('x'), CommonGuards.positive('x'), implicit_return=True)
 def double_with_guards(x):
   x * 2
 
@@ -61,7 +101,7 @@ async def async_double(x):
   x * 2
 
 
-@guarded_expression(not_none('x'), implicit_return=True)
+@guarded_expression(CommonGuards.not_none('x'), implicit_return=True)
 async def async_classify(x):
   await asyncio.sleep(0)
   if x > 0:
@@ -72,7 +112,7 @@ async def async_classify(x):
 
 @guarded_expression(
   implicit_return=False,
-  strategy=GuardFailureStrategy.RETURN_VALUE,
+  strategy=GuardFailureEnum.RETURN_VALUE,
   on_failure=None,
 )
 async def async_explicit_return(x):

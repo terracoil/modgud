@@ -1,626 +1,171 @@
-**Parent**: [📚 Documentation Hub](README.md) | [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md)
+**Parent**: [📚 Documentation Hub](ADVANCED.md) | [🌉 Main README](../README.md) | [📖 API Reference](api-reference.md)
 
-# How It Works: The Magic Behind Expression-Oriented Python
+# How it works
 
-<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
+A defensive Python function opens with a wall of `if x is None: raise ...` and ends with `return` statements scattered across every branch. modgud moves the wall into a decorator and, by default, rewrites the body so each branch's last expression is its value. Both jobs happen once, when the decorator is applied. A call pays for a wrapper and your guards. That's the bill.
 
----
+Signatures and rules live in the [API reference](api-reference.md). This page is the machinery.
 
-Welcome to the technical deep-dive into modgud's internals. This document explains how we transform Python from a statement-oriented language into one that embraces expression-oriented programming—all through the power of decorators and AST manipulation.
+## 🏛️ Layers
 
----
+Three layers, dependencies pointing down. `app/` holds the two decorators and the public `CommonGuards` and `GuardRegistry`. `domain/` holds the passive parts — `GuardFailureEnum`, the errors, the `GuardFunction` type and the two `@Port` protocols. `infrastructure/` holds the adapters behind those ports and the internal AST helpers in `infrastructure/ast/`.
 
-## 📋 Table of Contents
+The app layer never imports infrastructure. It knows the ports and nothing else. The package tree, the tiers and the dependency table are in [project.md](../project.md), and `tests/test_architecture.py` fails the run when an import crosses a line. Architecture diagrams drift; an AST walk in the test suite doesn't.
 
-1. [💭 Introduction: Breaking Python's Rules (For Good)](#introduction-breaking-pythons-rules-for-good)
-2. [🏛️ The Architecture: Clean, Functional, Powerful](#the-architecture-clean-functional-powerful)
-3. [🛡️ The Guard Pipeline: Your Function's Bouncer](#the-guard-pipeline-your-functions-bouncer)
-4. [🔮 AST Transformation: The Secret Sauce](#ast-transformation-the-secret-sauce)
-5. [🎨 Implicit Return Mechanics: Expression Magic](#implicit-return-mechanics-expression-magic)
-6. [⚡ Runtime Composition: Putting It All Together](#runtime-composition-putting-it-all-together)
-7. [🚨 Error Handling: Graceful Failures](#error-handling-graceful-failures)
-8. [🎓 Advanced Topics](#advanced-topics)
+## 🔌 Ports, adapters and Idunn
 
----
+Applying `@guarded_expression(...)` takes three steps. The first two happen inside `@Invert(bootstrap='modgud')` on the decorator's `__init__`.
 
-## 💭 Introduction: Breaking Python's Rules (For Good)
+1. If the caller left any of `guard_port`, `imp_return_port`, `eop_cond_port`, `eop_case_port` or `eop_match_port` out, Idunn runs `Idunn().bootstrap('modgud')`. The first call in a process discovers `modgud.domain.ports` and `modgud.infrastructure.adapters` and registers the five singleton adapters: `GuardAdapter`, `ImplicitReturnAdapter`, and the three `EopPort` adapters, each under its `EopFormEnum` key. Later calls are a cache hit. A caller who passes every port skips discovery altogether.
+2. Idunn injects whichever ports the caller did not pass.
+3. `__call__(func)` hands everything to `guard_port.transform(...)`, the three form ports included as `forms`. `GuardAdapter` unwraps a `staticmethod` / `classmethod` if it got one, rewrites the function through `imp_return_port.transform_function`, which lowers every `eop_` form and applies the tail rewrite when `implicit_return=True`, wraps it with the guards, sets the `__modgud_guarded__` and `__implicit_return__` markers, and puts the descriptor back.
 
-Python has always been a statement-oriented language. Every `if`, `for`, and `try` block is a statement that executes code but doesn't yield a value. This design choice has served Python well, but it also means we write more boilerplate than necessary.
+`@implicit_return()` takes the same path without the guard port: its `__call__` is one call to `imp_return_port.transform(func, forms=...)`, and `ImplicitReturnAdapter.transform` does the unwrapping, the marking and the refusal to sit above `guarded_expression`. The `eop_` markers themselves reach their adapter the same way: a marker called outside a decorated function asks its injected `EopPort` to refuse. The marker is how `guarded_expression` knows a function was already rewritten, so a stacked pair never rewrites twice.
 
-Consider how other languages handle this:
+The bootstrap waits for the first decoration on purpose. Run from `modgud/__init__.py`, it would re-enter a half-imported package and create Idunn's container — which reads `IDUNN_ENV` — before the application had a chance to set it. A library that configures your process at import time is a library you end up pinning around.
 
-```ruby
-# Ruby - Everything is an expression
-status = if user.active?
-           user.premium? ? "premium" : "standard"
-         else
-           "inactive"
-         end
+### Import-time side effects
+
+Importing modgud isn't free. Here's the whole receipt:
+
+- `import modgud` imports `idunn`, the domain, the ports and the guard toolkit. It doesn't import the adapters or create Idunn's container.
+- `CommonGuards` registers its nine factories in `GuardRegistry` under `'common'` as its module loads.
+- Discovery, on the first decoration, imports every module under `modgud/`. That's why nothing runnable lives there and the examples sit in `examples/`.
+
+## 🛡️ The guard pipeline
+
+`GuardAdapter.wrap_function` (the guard-only step inside `transform`) builds one `functools.wraps` wrapper per decorated function, and every call goes through it:
+
+```
+call(*args, **kwargs)
+  → drop the receiver (methods only)
+  → run guards in order, collecting failures
+  → no failures: call the body and return its result
+  → failures:    dispatch them through strategy / on_failure
 ```
 
-```rust
-// Rust - if is an expression
-let status = if user.is_active {
-    if user.is_premium { "premium" } else { "standard" }
-} else {
-    "inactive"
-};
-```
+- **Receiver.** At wrap time, `inspect.signature` checks whether the first parameter is `self` or `cls`. If it is and the caller passed it positionally, guards get `args[1:]`. The handler still gets everything.
+- **Collection.** The loop stops once it holds `1 + continuance` failures. `True` passes; a string is a failure message; any other return value becomes `'Guard clause failed'`. A guard that raises propagates when the list is empty and ends the loop when it isn't, so one bad input doesn't produce a stack of secondary crashes.
+- **Dispatch.** The error strategies build `on_failure(message)`, or an `ExceptionGroup('Guards failed', [...])` for several; a non-class `on_failure` falls back to `GuardClauseError`. `RETURN_VALUE` returns the payload. `CALL_HANDLER` returns `on_failure(errors, *args, **kwargs)`.
+- **Async.** A coroutine function gets an `async` wrapper. The guards run when the coroutine runs, not when it's created, and every strategy's result, fallback values included, comes back from the `await`. A handler is called, not awaited.
 
-Python forces us into the statement paradigm:
+## ⚙️ The AST rewrite
+
+Python decided long ago that `if` is a statement. The rewrite disagrees, one function at a time.
+
+`ImplicitReturnAdapter.transform_function` does the work. It's an `@Adapter` subclass of `ImplicitReturnPort`, not an `ast.NodeTransformer`; the tree walking lives in the helpers under `infrastructure/ast/`.
+
+1. Read the source with `inspect.getsource` and dedent it. No source means `ValueError`. In explicit-return mode a function whose code object names no `eop_` marker is returned here, untouched.
+2. Parse it. `TopLevelTransformer` finds the `def` by name and strips its decorators, so recompiling doesn't apply them twice.
+3. Refuse zero-argument `super()` and bare `__class__` (nested classes excluded; they get their own cell).
+4. `NoExplicitReturnChecker` walks the whole body for `return`, nested `def`s and classes included, and reports the first one. Skipped in explicit-return mode.
+5. `MarkerResolver` replaces every reference to an `eop_` marker with a reserved `@eop_` name, resolving names through the closure, the globals and the builtins, never by spelling. `FormLowerer` then hands each form call to its `EopPort` adapter, innermost first, and places the statements it gets back before the call's statement. See [the expression forms](#the-expression-forms) below.
+6. `TailRewriter` turns the last statement of every block into an assignment to `__implicit_result` and appends one `return __implicit_result`. Skipped in explicit-return mode, where the body keeps its own `return`.
+7. For a method, nest the `def` inside empty stand-in classes named from `__qualname__`; the innermost one declares the PEP 695 type parameters the method closes over, and the rebuilt closure cells are pointed back at the originals. Drop the signature's defaults and annotations from the tree; the originals are reused, so nothing is re-evaluated out of scope.
+8. Compile it and `exec` it in a throwaway namespace. Then rebuild the function with `types.FunctionType` on the original's live module globals, and copy over `__name__`, `__qualname__`, `__doc__`, `__dict__` and the annotations.
+
+The `grade` function from the [implicit_return](api-reference.md#implicit_return) entry comes out shaped like this:
 
 ```python
-# Traditional Python - Statements everywhere
-if user.is_active:
-    if user.is_premium:
-        status = "premium"
-    else:
-        status = "standard"
-else:
-    status = "inactive"
+def grade(score: int) -> str:
+  if score >= 90:
+    __implicit_result = 'A'
+  elif score >= 75:
+    __implicit_result = 'B'
+  else:
+    __implicit_result = 'C'
+  return __implicit_result
 ```
 
-### Enter modgud
+The throwaway namespace keeps the stand-in classes out of your module. The rebuild matters more. Because the new function runs on the module's real globals, its body sees names defined after decoration, a `global` write lands in the module, `mock.patch` reaches inside, a recursive call goes back through the guards, and a method can name its own class. Late binding, the way Python intended. Default values are the exception: they're evaluated during the `exec`, so they can't see the class body.
 
-With modgud, Python joins the expression-oriented revolution:
+### The expression forms
+
+`eop_cond`, `eop_case` and `eop_match` are markers: typed objects whose calls are compiled away by step 5 above, so the function never calls them. Each form has an adapter behind the one `EopPort` protocol, chosen by its `EopFormEnum` key, and the decorators hand the three ports to the transformer as `forms`. Called outside a decorated function, a marker asks its port to refuse, and gets `MarkerNotRewrittenError`.
+
+`eop_cond` lowers in place to nested conditional expressions with one temporary per call, which carries Elixir's truth rule:
 
 ```python
-from modgud import guarded_expression, implicit_return
+# before
+sign = eop_cond(eop_clause(x < 0, 'negative'), eop_clause(x == 0, 'zero'), default='positive')
 
-@guarded_expression()
-@implicit_return
-def get_status(user):
-    if user.is_active:
-        "premium" if user.is_premium else "standard"
-    else:
-        "inactive"
-```
-
-But how does this work? Let's dive in.
-
----
-
-## 🏛️ The Architecture: Clean, Functional, Powerful
-
-Modgud follows clean architecture principles with three distinct layers:
-
-```
-┌─────────────────────────────────────┐
-│         API Layer                   │
-│ (guarded_expression, implicit_return)│
-├─────────────────────────────────────┤
-│      Implementation Layer           │
-│  (AST Transform, Guard Runtime)     │
-├─────────────────────────────────────┤
-│    Shared Infrastructure            │
-│  (Types, Errors, Messages)          │
-└─────────────────────────────────────┘
-```
-
-### Layer Responsibilities
-
-**API Layer** 
-- `guarded_expression.py`: Guard validation decorator with optional implicit returns
-- `implicit_return_decorator.py`: Standalone expression-oriented transformation 
-- Composable decorator pattern for maximum flexibility
-
-**Implementation Layer**
-- `implicit_return.py`: AST transformation engine
-- `guard_runtime.py`: Guard evaluation logic
-- `common_guards.py`: Pre-built validators
-- `guard_registry.py`: Custom guard management
-
-**Infrastructure Layer**
-- `types.py`: Type definitions and contracts
-- `errors.py`: Exception hierarchy
-- `messages.py`: Error message templates
-
-### Why Clean Architecture?
-
-1. **Testability**: Each layer can be tested independently
-2. **Maintainability**: Changes don't cascade across boundaries
-3. **Extensibility**: New features slot in cleanly
-4. **Clarity**: Clear separation of concerns
-
----
-
-## 🛡️ The Guard Pipeline: Your Function's Bouncer
-
-When you decorate a function with `@guarded_expression`, here's what happens at runtime:
-
-```python
-from modgud import guarded_expression, implicit_return, not_none
-
-# User code
-@guarded_expression(
-    not_none("x"),
-    on_error=ValueError
+# after
+sign = (
+  'negative' if (@t := x < 0) is not None and @t is not False
+  else 'zero' if (@t := x == 0) is not None and @t is not False
+  else 'positive'
 )
-@implicit_return
-def divide_100_by(x):
-    100 / x
-
-# What actually runs
-divide_100_by(5)  # Call enters the pipeline
 ```
 
-### The Pipeline Flow
-
-```
-Function Call
-     ↓
-[Guard Check 1] → Fail? → Handle Error → Return/Raise
-     ↓ Pass
-[Guard Check 2] → Fail? → Handle Error → Return/Raise
-     ↓ Pass
-[Guard Check N] → Fail? → Handle Error → Return/Raise
-     ↓ Pass
-Execute Function
-     ↓
-Return Result
-```
-
-### Guard Evaluation
-
-Each guard is a callable that receives `(*args, **kwargs)` and returns:
-- `True`: Guard passed, continue
-- String: Guard failed with this error message
+`eop_case` has two lowerings with the same meaning. When the call is the whole value of an assignment or expression statement, it becomes a real `match` placed just before, with every capture renamed so nothing leaks. A guard becomes a small function, because a guard that raises must count as no match:
 
 ```python
-def positive_guard(param_name="vector", position=0):
-    def check(*args, **kwargs):
-        value = kwargs.get(param_name, args[position] if position < len(args) else None)
-        return value > 0 or f"{param_name} must be positive"
-    return check
-```
-
-### Failure Handling
-
-The `on_error` parameter determines what happens when a guard fails:
-
-```python
-# Return None on failure
-@guarded_expression(guard, on_error=None)
-
-# Return custom vector
-@guarded_expression(guard, on_error="invalid")
-
-# Call handler function
-@guarded_expression(guard, on_error=lambda msg, *args, **kwargs: log_and_return_default(msg))
-
-# Raise exception (default)
-@guarded_expression(guard, on_error=ValueError)
-```
-
----
-
-## 🔮 AST Transformation: The Secret Sauce
-
-The real magic happens in the Abstract Syntax Tree (AST) transformation. When `implicit_return=True` (the default), modgud rewrites your function at the AST level.
-
-### What is an AST?
-
-An Abstract Syntax Tree represents code structure as a tree of nodes. Python can parse source code into an AST, manipulate it, and compile it back to bytecode.
-
-```python
-# Original Python code
-def get_value(x):
-    if x > 0:
-        x * 2
-    else:
-        0
-
-# Simplified AST representation
-FunctionDef(name='get_value',
-    body=[
-        If(test=Compare(left=Name('x'), ops=[Gt()], comparators=[Constant(0)]),
-           body=[Expr(BinOp(left=Name('x'), op=Mult(), right=Constant(2)))],
-           orelse=[Expr(Constant(0))])
-    ])
-```
-
-### The Transformation Process
-
-1. **Source Extraction**: Get the function's source code
-2. **Parse to AST**: Convert source to AST nodes
-3. **Transform**: Modify AST to add implicit returns
-4. **Compile**: Generate new bytecode
-5. **Execute**: Create the transformed function
-
-Here's what `ImplicitReturnTransformer` does:
-
-```python
-# Before transformation
-def calculate(x, y):
-    if x > y:
-        x + y
-    else:
-        x - y
-
-# After AST transformation (conceptually)
-def calculate(x, y):
-    __implicit_result = None
-    if x > y:
-        __implicit_result = x + y
-    else:
-        __implicit_result = x - y
-    return __implicit_result
-```
-
-### Detecting Tail Positions
-
-The transformer identifies "tail positions"—the last expression in each execution path:
-
-```python
-class ImplicitReturnTransformer(ast.NodeTransformer):
-    def visit_If(self, node):
-        # Transform the last statement in each branch
-        if node.body:
-            node.body[-1] = self.transform_tail_expression(node.body[-1])
-        if node.orelse:
-            node.orelse[-1] = self.transform_tail_expression(node.orelse[-1])
-        return node
-```
-
-### Handling Complex Structures
-
-The transformer handles nested structures intelligently:
-
-```python
-@guarded_expression()
-def complex_logic(x, y, z):
-    if x > 0:
-        if y > 0:
-            x + y  # Tail position in nested if
-        else:
-            x - y  # Tail position in nested else
-    else:
-        try:
-            z / x  # Tail position in try
-        except ZeroDivisionError:
-            0  # Tail position in except
-```
-
----
-
-## 🎨 Implicit Return Mechanics: Expression Magic
-
-The implicit return system transforms Python statements into expressions by introducing a hidden accumulator variable.
-
-### The `__implicit_result` Variable
-
-Every function with implicit returns gets a hidden variable:
-
-```python
-# What you write
-@guarded_expression()
-def calculate(x):
-    x * 2
-
-# What runs (conceptually)
-def calculate(x):
-    __implicit_result = None
-    __implicit_result = x * 2
-    return __implicit_result
-```
-
-### Transforming Control Flow
-
-Different Python constructs get different transformations:
-
-#### If/Else Statements
-
-```python
-# Input
-if condition:
-    value1
-else:
-    value2
-
-# Transformed
-if condition:
-    __implicit_result = value1
-else:
-    __implicit_result = value2
-```
-
-#### Try/Except Blocks
-
-```python
-# Input
-try:
-    risky_operation()
-except Error:
-    default_value
-
-# Transformed
-try:
-    __implicit_result = risky_operation()
-except Error:
-    __implicit_result = default_value
-```
-
-#### Expression Statements
-
-Not all statements are expressions. The transformer identifies expression statements:
-
-```python
-# These become implicit returns
-x + y           # Binary operation
-func()          # Function call
-x if y else z   # Ternary expression
-[x, y, z]       # List literal
-{'a': 1}        # Dict literal
-
-# These remain statements (no implicit return)
-x = 5           # Assignment
-del x           # Deletion
-import foo      # Import
-```
-
-### Validation and Safety
-
-The transformer validates that all paths yield values:
-
-```python
-@guarded_expression()
-def invalid_function(x):
-    if x > 0:
-        x * 2
-    # Error: Missing else branch - not all paths return!
-```
-
-This raises `MissingImplicitReturnError` at decoration time, not runtime.
-
----
-
-## ⚡ Runtime Composition: Putting It All Together
-
-The `guarded_expression` decorator orchestrates the entire process:
-
-```python
-class guarded_expression:
-    def __call__(self, func):
-        # Step 1: Apply implicit return transformation (if enabled)
-        if self.implicit_return_enabled:
-            func = self._apply_implicit_return(func)
-
-        # Step 2: Wrap with guard checking
-        return self._wrap_with_guards(func)
-```
-
-### Execution Order
-
-1. **Decoration Time**:
-   - Parse function source
-   - Transform AST if implicit returns enabled
-   - Compile new function
-   - Wrap with guard checker
-
-2. **Call Time**:
-   - Check all guards in order
-   - Handle any failures per `on_error`
-   - Execute transformed function
-   - Return result
-
-### Performance Considerations
-
-- **AST transformation**: One-time cost at decoration
-- **Guard checking**: Minimal overhead (simple function calls)
-- **No runtime parsing**: Everything compiled at decoration time
-
-### Thread Safety
-
-Modgud is thread-safe:
-- No global state modification
-- Guards are pure functions
-- Each decorated function is independent
-
-### The New Composition Pattern (v0.3.0+)
-
-**Separation of Concerns:** modgud now provides separate decorators that can be composed:
-
-```python
-from modgud import guarded_expression, implicit_return
-
-# Recommended pattern: Guard validation + expression transformation
-@guarded_expression(not_none("x"), positive("x"))
-@implicit_return  
-def process(x):
-    result = x * 2
-    result
-
-# Guards only (traditional explicit returns)
-@guarded_expression(not_none("x"))
-def calculate(x):
-    return x * 2
-
-# Expression transformation only
-@implicit_return
-def classify(status):
-    "active" if status else "inactive"
-```
-
-**Decorator Order:** When composing, `@implicit_return` should typically be the innermost decorator (closest to the function) since it performs AST transformation that other decorators might not expect.
-
-**Why Separate?** This composition pattern enables:
-- **Flexibility**: Use guards without expression transformation or vice versa
-- **Future Extensions**: New expression-oriented decorators can compose cleanly
-- **Clarity**: Each decorator has a single, clear responsibility
-- **Testability**: Each transformation can be tested independently
-
----
-
-## 🚨 Error Handling: Graceful Failures
-
-Modgud provides a rich error hierarchy for different failure modes:
-
-### Guard Failures
-
-```python
-GuardClauseError
-    ├── Message: Human-readable error
-    ├── Function: Which function failed
-    └── Parameters: What was passed
-```
-
-### Transformation Errors
-
-```python
-ImplicitReturnError (base)
-    ├── ExplicitReturnDisallowedError
-    │   └── "Explicit return not allowed with implicit returns"
-    ├── MissingImplicitReturnError
-    │   └── "Not all code paths yield a vector"
-    └── UnsupportedConstructError
-        └── "Cannot transform this Python construct"
-```
-
-### Custom Error Handlers
-
-You can provide custom error handling logic:
-
-```python
-from modgud import guarded_expression, implicit_return, positive
-
-def my_error_handler(error_msg, *args, **kwargs):
-    logger.error(f"Guard failed: {error_msg}")
-    return {"error": error_msg, "args": args}
-
-@guarded_expression(
-    positive("amount"),
-    on_error=my_error_handler
+# before
+label = eop_case(
+  shape,
+  eop_clause(eop_when(Point(0, eop_var.y), eop_var.y > 0), f'above at {eop_var.y}'),
+  default='elsewhere',
 )
-@implicit_return
-def process_payment(amount):
-    # Process payment logic
-    amount * 1.1  # With tax
+
+# after
+def @guard(y):
+  try:
+    return (y > 0) is True
+  except Exception:
+    return False
+match shape:
+  case Point(0, @y) if @guard(@y):
+    @label = f'above at {@y}'
+  case _:
+    @label = 'elsewhere'
+label = @label
 ```
 
-### Logging Integration
+Anywhere else, each clause becomes a generated matcher that returns its captures as a tuple or `None`, and the call becomes a chain of conditional expressions over those calls. Only definitions are placed before the statement, so nothing is evaluated early, and the form works in comprehensions, lambdas and operands. `eop_match` always uses a matcher that returns a `bool`, which needs no temporary at all. The `@` names are not valid Python; they exist only in the tree, which is what makes them impossible to collide with.
 
-Enable built-in logging with `log=True`:
+The `PatternTranslator` turns the pattern expression into a real `ast.pattern`: `eop_var.name` becomes a capture, a call becomes a class pattern, a list a sequence pattern, a dict a mapping pattern, and a bare name a capture plus an equality test in the guard. Because the result is a real `match`, the matching semantics are Python's, and the test suite checks both lowerings against handwritten `match` statements on a few dozen subjects.
 
-```python
-from modgud import guarded_expression, implicit_return, not_none
+On Python 3.14, `functools.wraps` copies the lazy `__annotate__` hook rather than `__annotations__`, so a function whose annotations were set eagerly would lose them. The transformer and the runtime both carry annotations across in whichever form the function has: the hook when there is one, the dictionary when there isn't.
 
+### Methods
 
-@guarded_expression(
-  not_none("user"),
-  log=True  # Logs failures at INFO level
-)
-@implicit_return
-def greet_user(user):
-  f"Hello, {user.item_name}!"
-```
+Methods were the hard part. Four small mechanisms cover them, each pinned by `tests/test_method_decoration.py`.
 
----
+- **Descriptors.** `MethodDescriptors.unwrap` (`infrastructure/internal/`) takes the function out of a `staticmethod` or `classmethod`, and `rewrap` puts the finished one back. Both adapters use it; that's what lets modgud sit on either side of them.
+- **Receiver.** The pipeline drops `self` / `cls` before calling the guards, as above.
+- **Class context.** The stand-in classes make `self.__secret` mangle to `_Cls__secret` as it did in the original class, and `__qualname__` is copied over. They exist only while compiling; at call time the body's globals are the module's, so the class's own name means the real class.
+- **Refusals.** Zero-argument `super()` needs a `__class__` cell, and a stand-in class would give it the wrong one. A default value that names something in the class body is evaluated in the throwaway namespace, where it doesn't exist. Both raise `UnsupportedConstructError` at decoration time, where they used to surface as a `RuntimeError` on the first call or a bare `NameError`.
 
-## 🎓 Advanced Topics
+## ⚖️ Costs and limits
 
-### Custom Guard Registration
+### Performance
 
-Register reusable guards in namespaces:
+With the rewrite on, decoration costs one `getsource`, one parse, one compile and one `exec` per function, paid at import. A call costs one extra Python frame, a tuple slice on methods, a loop over the guards, and each guard's own work. No per-call parsing, no signature binding. We haven't published benchmarks. If the overhead matters, time it in your own code; a number measured on someone else's laptop is a rumour.
 
-```python
-from modgud import register_guard
+### Thread safety
 
-# Define custom guard
-def valid_email(param_name="email", position=0):
-    def check(*args, **kwargs):
-        value = kwargs.get(param_name, args[position] if position < len(args) else None)
-        import re
-        pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-        return bool(re.match(pattern, str(value))) or f"{param_name} must be a valid email"
-    return check
+What's shared between threads, plainly:
 
-# Register it
-register_guard("valid_email", valid_email, namespace="validators")
-
-# Use it anywhere
-from modgud import get_guard
-
-email_guard = get_guard("valid_email", namespace="validators")
-
-@guarded_expression(email_guard("user_email"))
-def send_newsletter(user_email):
-    # Send email logic
-    f"Sending to {user_email}"
-```
-
-### Guard Namespaces
-
-Organize guards by domain:
-
-```python
-# Register domain-specific guards
-register_guard("valid_product_id", product_id_guard, namespace="ecommerce")
-register_guard("valid_user_role", role_guard, namespace="auth")
-register_guard("valid_api_key", api_key_guard, namespace="api")
-
-# List available namespaces
-from modgud import list_guard_namespaces
-namespaces = list_guard_namespaces()  # ['default', 'ecommerce', 'auth', 'api']
-```
-
-### Debugging Transformed Functions
-
-To debug a transformed function, examine the generated code:
-
-```python
-import inspect
-from modgud import guarded_expression
-
-@guarded_expression()
-def my_function(x):
-    if x > 0:
-        x * 2
-    else:
-        0
-
-# The source won't show the transformation (it's at AST level)
-# But you can verify behavior:
-assert my_function(5) == 10
-assert my_function(-5) == 0
-```
-
-### Performance Optimization Tips
-
-1. **Order guards by failure likelihood**: Put most likely to fail first
-2. **Use specific error handlers**: Avoid generic exception catching
-3. **Compile once, run many**: Decoration cost is one-time
-4. **Prefer pre-built guards**: Optimized implementations
-
-```python
-from modgud import guarded_expression, not_none, not_empty, type_check
-
-# Optimized guard ordering
-@guarded_expression(
-    not_none("data"),      # Fails fast on None
-    not_empty("data"),     # Then check if empty
-    type_check(list, "data"),  # Finally validate type
-)
-def process_data(data):
-    len(data) * 100
-```
+- Decoration and guard evaluation keep no per-call shared state. The wrapper reads its closure, and `CommonGuards` guards are closures over their arguments.
+- `GuardRegistry` and the Idunn container are process-wide singletons.
+- Idunn's bootstrap is thread-safe: concurrent first decorations share one discovery, and a decoration that runs while a module is being imported discovers on its own rather than waiting, so it can't deadlock against another importing thread. Each adapter singleton is built once, under its own lock.
+- `GuardRegistry` has no lock. Register guards at import time, before any threads start.
+- Your own guards and handlers are yours: if they touch shared state, they need their own lock.
 
 ### Limitations
 
-Currently, modgud doesn't support:
-- **Match/case statements** (Python 3.10+): Not yet implemented
-- **Async generators**: Complex async iteration patterns
-- **Direct source modification**: Works at AST level, not source level
+The gaps, in one place.
+
+- Implicit returns need source on disk: module level or in a class, in a real file. No REPL, no `exec`.
+- A function nested in another function loses its closure when rewritten; enclosing locals raise `NameError` at call time.
+- Tail positions accept expressions, `if`/`else`, `try`, `match`, `pass` and `raise`. Loops, `with` and assignments are refused. A tail `match` must end in an irrefutable case (`case _:` or a bare capture, no guard); otherwise decoration raises `MissingImplicitReturnError`.
+- Order matters: `@implicit_return()` goes under `guarded_expression`; above a guarded wrapper it raises `TypeError` at decoration time. Decorators placed below modgud are dropped by the re-compile, because the source is read again; put modgud innermost (`@staticmethod` / `@classmethod` excepted), or use `implicit_return=False`.
+- Guards receive the call's positional arguments as given and its keyword arguments plus, by name, every parameter the caller left at its default. Positional values are still found by `position`, not by name, so `positive('y')` on `f(x, y)` called as `f(1, 2)` checks `x` unless you say `position=1`.
+- Generators and async generators aren't tested.
+- `implicit_return=False` doesn't enforce a single trailing `return`; that's convention.
+- On methods: zero-argument `super()` and bare `__class__` are refused, and `@property`, `cached_property` and other descriptors aren't covered.
+- The project is Beta. The public API is the 13 names in [What to import](api-reference.md); everything else may move.
 
 ---
 
-## Conclusion
-
-Modgud brings expression-oriented programming to Python through clever AST manipulation and clean architecture. By combining guard clauses with implicit returns, it enables a more functional, expressive coding style while maintaining Python's readability.
-
-The magic isn't really magic—it's careful AST transformation, thoughtful architecture, and a deep respect for Python's design philosophy. We're not breaking Python's rules; we're extending them to embrace the best of both paradigms.
-
-Happy guarding! 🛡️
-
----
-
-[← Back to Documentation Hub](README.md) | [API Reference →](api-reference.md)
+[← Back to Documentation Hub](ADVANCED.md) | [API Reference →](api-reference.md)

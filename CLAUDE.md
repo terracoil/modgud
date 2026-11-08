@@ -1,258 +1,125 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) working in this repository. Humans are welcome to read it too; the rules are the same.
 
-## Project Overview
+## 🧭 Project Overview
 
-This is `modgud`, a Python library that provides guard clause decorators for implementing validation checks at function entry points. The library enforces single return point architecture and supports various failure behaviors including custom return values, exception raising, and handler functions.
+`modgud` is a Python library with two decorators. `guarded_expression` runs guard clauses before a function and, by default, rewrites the body so the last expression of each branch is the return value. `implicit_return` does only the rewrite. The point is a single return per function without the wall of `if` statements Python usually asks for. Three Elixir-style expression forms, `eop_cond`, `eop_case` and `eop_match`, ride on the same rewrite.
 
-**Core Architecture (v2.0.0):**
-- **Primary API**: `guarded_expression` - unified decorator combining guard validation + implicit returns
-- **Expression decorator**: `implicit_return` (standalone)
-- **Guard system**: Pre-built guards + `GuardRegistry` for custom validators
-- **Failure handling**: Single `GuardFailureStrategy` enum (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload; `continuance: int` caps how many guards past the first failure are evaluated. Multiple collected failures produce an `ExceptionGroup` for the error strategies.
-- **Architecture**: Clean separation across `app/` (decorators), `infrastructure/` (runtime + AST transform), `domain/` (passive types/enums/exceptions).
+- **Guards**: callables that return `True` or an error string. `CommonGuards` ships nine; `GuardRegistry` holds custom ones.
+- **Failure handling**: `GuardFailureEnum` (`ERROR_RAISE` / `ERROR_RETURN` / `RETURN_VALUE` / `CALL_HANDLER`) paired with an `on_failure` payload. `continuance: int` caps how many guards past the first failure still run; several failures become an `ExceptionGroup`.
+- **Expression forms**: `eop_cond` (ordered clauses), `eop_case` (patterns written as expressions) and `eop_match` (a pattern test), with `eop_clause`, `eop_when` and `eop_var`. Markers in `app/` that the rewrite compiles away; one `EopPort` adapter per form, keyed by `EopFormEnum`. Rules that differ from plain Python are in `docs/ADVANCED.md`.
+- **Layers**: `app/` (decorators and markers, wired by Idunn, plus `CommonGuards` and `GuardRegistry`), `domain/` (passive types, enums, errors, `@Port` protocols), `infrastructure/` (`adapters/`, internal `ast/` and `internal/`). The full tree and the dependency table live in `project.md`.
 
-## Development Commands
+## ⚙️ Development Commands
 
-**IMPORTANT: Always use `poetry run` prefix** - This is a Poetry project. ALWAYS use `poetry run` before commands like `pytest`, `ruff`, `mypy`, etc. Do NOT use `.venv/bin/` paths directly.
+**Always prefix with `poetry run`.** This is a Poetry project; never call `.venv/bin/...` directly.
 
-### 🚨 MANDATORY LINTING REQUIREMENT 🚨
+### 🚨 MANDATORY LINT GATE 🚨
 
-**CRITICAL**: You MUST run linting BEFORE:
-- Making ANY code changes
-- Performing code reviews
-- Starting refactoring work. If there are linting and/or mypy typing issues found, fix those first before refactoring.
-- Committing changes
-- Creating pull requests
-
-Run these commands:
-```bash
-poetry run ruff check modgud/ --fix && poetry run ruff format modgud/ && poetry run mypy modgud/
-```
-
-This runs:
-1. **Ruff linting** - catches code quality issues (with auto-fix)
-2. **Ruff formatting** - ensures consistent code style
-3. **MyPy type checking** - validates type annotations with strict settings
-
-**FAILURE TO RUN LINTING = INVALID CODE SUBMISSION**
-
-If linting fails after auto-fix, you MUST resolve all errors before proceeding. No exceptions.
-
-### Package Management
-**This is a Poetry project** - use Poetry for all dependency management:
+Run this BEFORE any code change, review, refactor, commit or pull request, and again after:
 
 ```bash
-# Install dependencies (Python 3.11+ required)
-poetry install
-
-# Install with test dependencies
-poetry install --with test
-
-# Install with development dependencies
-poetry install --with dev
+poetry run ruff check modgud/ tests/ examples/ --fix && poetry run ruff format modgud/ tests/ examples/ && poetry run mypy modgud/ examples/free_range/ && poetry run mypy examples/classy/
 ```
 
-### Testing
+Ruff lints and formats; mypy runs in strict mode (configured in `pyproject.toml`). mypy runs once per examples tree because the two trees share filenames. If the gate is red after auto-fix, fix it first. **No exceptions, and no "it's only a docstring".**
+
 ```bash
-# Run all tests with Poetry
-poetry run pytest
-
-# Run with coverage (configured in pyproject.toml)
-poetry run pytest --cov=modgud --cov-report=term-missing --cov-report=html
-
-# Run specific test file
-poetry run pytest tests/test_specific.py
-
-# Run tests with verbose output
-poetry run pytest -v
+poetry install --with dev        # Python 3.11+; pip users: pip install -e . --group dev
+poetry run pytest                # all tests, with coverage (configured in pyproject.toml)
+poetry run pytest tests/test_x.py
+poetry build && poetry run twine check dist/*
 ```
 
-### Code Quality
-```bash
-# Run ruff linting and formatting with Poetry
-poetry run ruff check
-poetry run ruff format
+## 📦 Public API and Tiers
 
-# Run mypy type checking
-poetry run mypy modgud/
+Everything a user needs is `from modgud import ...`. Exactly 23 names, pinned by `tests/test_public_api.py`:
 
-# Generate mypy reports (requires mypy[reports])
-poetry run mypy modgud/ --html-report reports/mypy/ --linecount-report reports/mypy/ --linecoverage-report reports/mypy/
-```
+`CommonGuards`, `EopPort`, `ExplicitReturnDisallowedError`, `GuardClauseError`, `GuardFailureEnum`, `GuardFunction`, `GuardRegistry`, `GuardPort`, `ImplicitReturnError`, `ImplicitReturnPort`, `MarkerNotRewrittenError`, `MarkerPlacementError`, `MarkerUsageError`, `MissingImplicitReturnError`, `UnsupportedConstructError`, `eop_case`, `eop_clause`, `eop_cond`, `eop_match`, `eop_var`, `eop_when`, `guarded_expression`, `implicit_return`.
 
-### Build and Distribution
-```bash
-# Build package with Poetry
-poetry build
+| Tier | What | Where |
+|---|---|---|
+| Public | the 23 names above | `modgud` (also `modgud.domain`, 14 names, and `modgud.app`, 9 names) |
+| Integration seam | the three ports, `guard_port=` / `imp_return_port=` / `eop_cond_port=` / `eop_case_port=` / `eop_match_port=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud`, `modgud.domain` or `modgud.domain.ports` |
+| Internal | the five adapters, the `ast` helpers, `MethodDescriptors` | `modgud.infrastructure.adapters`, `modgud.infrastructure.ast`, `modgud.infrastructure.internal` |
 
-# Check package
-poetry run twine check dist/*
-```
+Rules, and what enforces them (`test_architecture.py` checks import edges; `test_public_api.py` checks `__all__` and identity; the import style is convention, reviewed by hand):
+- The root facade uses absolute imports and an explicit `__all__`. `modgud.domain`, `modgud.app` and the leaf packages re-export with single-dot relative imports and `__all__`. `modgud.infrastructure` exports nothing: re-exporting the guards from it would point infrastructure at `app`.
+- **Nothing inside `modgud/` imports a facade.** Inner modules import from the `modgud.domain.<owner>` that holds the symbol (`enums`, `errors`, `ports` or `types`). That rule is what makes import cycles impossible.
+- Ports are re-exported by `modgud.domain`, so a port module must never import `modgud.domain`; it imports `modgud.domain.enums`, `.errors` or `.types` directly. Going through the facade only works while `.types` loads before `.ports` in its `__init__`, and ruff's import sort puts `.ports` first. Everything else under `modgud/` takes a port from `modgud.domain.ports`.
+- `GuardFunction` lives in a module directly under `domain`, and the only package above it is the facade, so `from modgud.domain.types import GuardFunction` is the sanctioned exception to never importing from filenames; don't "fix" it.
+- Tests import public names from `modgud`. Leaf imports stay only where the leaf is the subject: the two adapter unit tests, `test_public_api.py` (identity checks) and the architecture probes.
 
-## Code Architecture
+## 🔌 Ports, Adapters and Idunn
 
-Per-feature decomposition (see `project.md` at the repo root). Dependencies flow downward only: `app → domain`, `infrastructure.<feature> → domain.<feature>`, `domain.<feature> → shared, util`, `shared → util`.
+`GuardPort`, `ImplicitReturnPort` and `EopPort` are `@Port` Protocols; the decorators depend on them only. `GuardAdapter` and `ImplicitReturnAdapter` subclass their port as `@Adapter(..., lifecycle=SINGLETON)`; `EopCondAdapter`, `EopCaseAdapter` and `EopMatchAdapter` subclass `EopPort` under their `EopFormEnum` key. Each decorator's `__init__` wears `@Invert(bootstrap='modgud', keys=...)`: the first decoration that leaves a port to injection runs `Idunn().bootstrap('modgud')`, which discovers `modgud.domain.ports` and `modgud.infrastructure.adapters`, then `guard_port` / `imp_return_port` / `eop_*_port` are injected. A caller-supplied port wins, which is the test seam; supply every port and nothing is discovered. The decorators only delegate: `guarded_expression.__call__` is one call to `GuardPort.transform(...)`, which rewrites (through the implicit-return port) and wraps; `implicit_return.__call__` is one call to `ImplicitReturnPort.transform(...)`. Both pass the three form ports along as `forms`, and the transformer lowers each form through its port. A marker called outside a decorated function reaches its port the same way, through a private `@Invert` helper, and is refused. Descriptor handling, the `__modgud_guarded__` / `__implicit_return__` markers and the stacking `TypeError` all live in the adapters. There is no composition-root module: `Idunn(` appears nowhere under `modgud/`, and `Invert` is imported only in `app`; the architecture test keeps it that way. `Idunn().reset()` clears the bootstrap so the next decoration re-discovers.
 
-```
-modgud/
-  app/                                # public decorators (entry points)
-    guarded_expression.py             # @guarded_expression — plain function
-    implicit_return.py                # @implicit_return — plain function
-  domain/
-    guarded_expr/
-      enums.py                        # GuardFailureStrategy (IntEnum)
-      errors.py                       # GuardClauseError
-      ports/guard_runtime_port.py     # Protocol describing GuardRuntime
-    implicit_ret/
-      errors.py                       # ImplicitReturnError + 3 children
-      ports/implicit_return_transformer_port.py
-  infrastructure/
-    guarded_expr/
-      guard_runtime.py                # GuardRuntime — guard eval + dispatch
-      common_guards.py                # CommonGuards (pre-built validators)
-      guard_registry.py               # GuardRegistry (custom guard registration)
-    implicit_ret/
-      implicit_return_transformer.py  # AST rewriter (public)
-      _no_explicit_return_checker.py  # private helper
-      _tail_rewriter.py               # private helper
-      _top_level_transformer.py       # private helper
-  shared/
-    types.py                          # GuardFunction (used by app + infra)
-  util/                               # placeholder; no contents yet
-```
+Import-time side effects, so nobody is surprised: `import modgud` imports `idunn`, and `CommonGuards` registers its guards into the global `GuardRegistry`. Bootstrap itself waits for the first decoration.
 
-**Ports**: `GuardRuntimePort` and `ImplicitReturnTransformerPort` document the contract the app decorators consume. The decorators currently import the concrete classes directly; the ports exist so the wiring can flip to IoC injection (via `gleipnyr`) without surface changes.
+## 🛡️ Behaviour to Preserve
 
-**Public API**: `modgud/__init__.py` re-exports the two decorators, `GuardFailureStrategy`, the guard validators, `CommonGuards`, `GuardRegistry`, and the error classes.
+**Single return point.** With `implicit_return=True` (default) the last expression in each branch is returned, explicit `return` is refused anywhere in the body (nested defs included), and a tail `match` must end in `case _:`. `@implicit_return()` above `@guarded_expression` raises `TypeError`. With `implicit_return=False` the body must end in one explicit `return`. Guards exit early from the wrapper, never from the body.
 
-### Key Design Patterns
+**Guard signature.** `(*args, **kwargs) -> True | str`. On a method the guards receive the call's arguments without `self` / `cls`; `CALL_HANDLER` handlers receive the full list.
 
-**Single Return Point**: All decorated functions maintain single return semantics:
-- With `implicit_return=True` (default): Last expression in each branch is auto-returned (no explicit `return` allowed)
-- With `implicit_return=False`: Explicit `return` statement must be last line, not contained in any block
-- Guard clauses handle early exits by returning from decorator wrapper
+**Failure chain.** Guards run in order. `continuance=0` stops at the first failure; `continuance=N` collects up to `1+N`. A guard that raises propagates when nothing has failed yet, otherwise it ends collection. Then: `ERROR_RAISE` raises `on_failure(msg)` or `ExceptionGroup('Guards failed', [...])`; `ERROR_RETURN` returns the same; `RETURN_VALUE` returns `on_failure`; `CALL_HANDLER` returns `on_failure(errors, *args, **kwargs)`. The body never runs after a failure.
 
-**Guard Function Signature**: Guards are callables that accept `(*args, **kwargs)` and return either `True` (pass) or a string error message (fail).
+**Implicit-return rewrite.** `inspect.getsource()` → AST → decorators stripped → `eop_` markers resolved by object identity and lowered through their ports (innermost first, preludes placed before the statement) → tail expressions assigned to `__implicit_result` → one `return` appended → compiled in a throwaway namespace, then re-bound to the function's *live* globals (the body sees names defined after decoration, including its own class). Methods are re-compiled inside stand-in classes named from `__qualname__`, so `self.__private` mangles correctly and `__qualname__` survives. Defaults and annotations are stripped from the re-compiled tree and reused from the original, so class-scope and module-scope names in them are fine. Refused at decoration time with `UnsupportedConstructError`: zero-argument `super()` and bare `__class__` (no cell after the rewrite). Instance, static, class and async methods all work, with modgud outside or inside `@staticmethod` / `@classmethod` (`modgud/infrastructure/internal/method_descriptors.py`).
 
-**Failure Behavior Chain**:
-1. Guards are evaluated in order. Default `continuance=0` stops at the first failure; `continuance=N` collects up to `1+N` failures. A guard that *raises* propagates if no prior failures were recorded, otherwise it terminates collection (cascade safety).
-2. Collected failure strings (`list[str]`) are dispatched through `GuardFailureStrategy`:
-   - `ERROR_RAISE` (default): raise `on_failure(msg)` for a single error, or `ExceptionGroup('Guards failed', [...])` for multiple.
-   - `ERROR_RETURN`: same instances, but *returned* instead of raised.
-   - `RETURN_VALUE`: return `on_failure` as-is.
-   - `CALL_HANDLER`: return `on_failure(errors, *args, **kwargs)`. `errors` is always a list.
-3. The wrapped function body is never executed when at least one failure was recorded.
+**Expression forms.** `eop_cond` lowers in place to nested conditional expressions with Elixir's truth rule (only `None` and `False` are false). `eop_case` becomes a hoisted real `match` when the call is a whole statement's value, else one generated matcher per clause; `eop_match` is always a generated matcher returning `bool`. Captures are renamed `@mg_cap_<i>_<name>` in the hoisted path and never leak. A guard passes only when exactly `True` and a raising guard is a non-match, through a generated `try`. `default=` is mandatory. A bare name in a pattern compares by value; a call is always a class pattern; no `as` or `A | B`. Both modes lower the forms; in explicit mode a form-free function is returned untouched from a `co_names` probe. Malformed → `MarkerUsageError`; misplaced (comprehension first iterable, nested class body, a guard reading a comprehension variable) → `MarkerPlacementError`; a plain call → `MarkerNotRewrittenError`. `ast/` holds the shared engine (`MarkerResolver`, `FormLowerer`, `FormCallLowerer`, `PatternTranslator`, `MatcherBuilder`, `ClauseReader`, `CaptureSubstituter`); `infrastructure/internal/` is for shared code that is not AST work.
 
-**Implicit Return Transformation** (when `implicit_return=True`):
-1. Function source code extracted via `inspect.getsource()`
-2. AST parsed and decorators stripped to prevent re-application
-3. Tail position expressions transformed to assign to hidden `__implicit_result` variable
-4. Single `return __implicit_result` appended
-5. Transformed AST compiled and exec'd in original function's global scope
-6. Resulting function wrapped with guard checking logic
+**Async.** A coroutine function gets an async wrapper: guards run when the coroutine runs, so a non-raising strategy's fallback comes back from `await`. Decorators placed *below* modgud are dropped by the re-compile (the source is read again); put modgud innermost, or use `implicit_return=False`.
 
-### Configuration Files
+**Python 3.14.** `functools.wraps` copies the lazy `__annotate__` hook, not `__annotations__`; the runtime and the transformer carry annotations in either form. Don't simplify that away.
 
-**ruff.toml**: Standalone ruff configuration
-- Targets Python 3.11
-- 2-space indentation, 100-character line length
-- Single quote style for consistency
-- Includes `modgud/` and `tests/` directories
+## 🧪 Testing
 
-**pyproject.toml**: Project metadata and tool configuration
-- Uses PEP 621 project format with Poetry dependencies
-- pytest configured for `tests/` directory with coverage for `modgud/`
-- mypy configured with reports output to `reports/mypy/`
-- Requires Python >=3.11
+Tests live in `tests/` (`test_*.py`). Decorated functions with implicit returns are re-compiled at module scope, so define them at module level (`tests/test_fixtures.py`, `tests/method_fixtures.py`) unless the test is about decoration-time errors. Closures over test locals are lost; source must exist on disk.
 
-## Testing Strategy
+| File | Covers |
+|---|---|
+| `test_basic_guards.py`, `test_implicit_returns.py`, `test_edge_cases.py` | decorator behaviour end to end |
+| `test_guard_adapter.py` | `GuardAdapter.check_guards` / `handle_failure` / `wrap_function` (the guard-only step under `transform`), continuance, cascade safety |
+| `test_ast_transform.py` | the AST rewrite, unit level |
+| `test_method_decoration.py` + `method_fixtures.py` | every method shape, metadata, the README classes verbatim |
+| `test_ioc_wiring.py` | discovery on first use, injection, singletons, `reset()`, the fake `guard_port=` / `imp_return_port=` / `eop_*_port=` seam, keyed form adapters, no discovery when every port is supplied |
+| `test_eop_cond.py`, `test_eop_match.py`, `test_eop_case.py` + `eop_fixtures.py` | each form end to end, both lowering paths of `eop_case` against handwritten `match` oracles, laziness, Elixir rules, positions, modes, methods, async |
+| `test_eop_patterns.py`, `test_eop_adapters.py` | `PatternTranslator` row by row; the three adapters at unit level with a deterministic `fresh` |
+| `test_eop_refusals.py` | every `MarkerUsageError` and `MarkerPlacementError` case, and each marker refusing outside a decorator |
+| `test_architecture.py` | AST-walks `modgud/` against the dependency table in `project.md`, with probe self-checks |
+| `test_public_api.py` | the `__all__` lists, identity with the leaf objects, two fresh-process checks |
+| `test_examples.py` | runs every file under `examples/` in a subprocess, checks the index and the classy rules |
+| `test_docs.py` | executes every import line in the docs, checks links and banned wording |
 
-Tests should be placed in `tests/` directory following pytest conventions (`test_*.py` or `*_test.py`). The library uses extensive examples in `modgud/README.md` which can guide test case development.
+## 🗂️ Examples
 
-**Test Files:**
-- `tests/test_basic_guards.py` - Core guarded_expression behavior
-- `tests/test_ast_transform.py` - Unit tests for AST transformation logic
-- `tests/test_guard_runtime.py` - Unit tests for `check_guards` / `handle_failure` / `wrap_function`
-- `tests/test_fixtures.py` - Module-level test fixtures for implicit return tests
+`examples/free_range/` holds module-level decorated functions and is exempt from the single-class-per-file and no-loose-functions rules; that is what the files demonstrate. `examples/classy/` holds one class per file, no module-level `def`, a `demo()` classmethod with the asserts. Same numbering in both trees, no `__init__.py`, nothing runnable under `modgud/` (Idunn imports everything there). Docs show excerpts of 12 lines or fewer and link to the full file.
 
-**IMPORTANT:** Functions decorated with `implicit_return=True` must be defined at module level (not inside test functions) because `inspect.getsource()` cannot extract source from nested functions. Use `tests/test_fixtures.py` for these cases.
+## 📜 Configuration
 
-**Key test scenarios**:
-- Guard success / failure paths
-- Each `GuardFailureStrategy` (ERROR_RAISE / ERROR_RETURN / RETURN_VALUE / CALL_HANDLER) with and without a custom `on_failure`
-- `continuance` budget: collecting multiple failures, ExceptionGroup shape, cascade-safety when a guard raises mid-window
-- Implicit return with various constructs (if/else, try/except, match/case)
-- Explicit return disallowed with implicit_return=True
-- Missing else clause / empty block detection
-- Nested function handling (nested functions can use explicit returns)
-- Guard parameter handling (positional vs named)
-- Metadata preservation (__name__, __doc__, __signature__, __annotations__)
+- `ruff.toml`: Python 3.11 target, 2-space indent, 100 columns, single quotes; `src = ["modgud", "tests", "examples"]`.
+- `pyproject.toml`: PEP 621 metadata, Poetry build, pytest with coverage on `modgud/`, strict mypy (`[tool.mypy]`), runtime dependency `idunn (>=2.0.0,<3.0.0)` from PyPI, Python >=3.11. A commented-out `[tool.poetry.dependencies]` line can point `idunn` at the sibling checkout `../idunn` while developing both; never release with it enabled.
 
-## Architecture Notes
+## 📜 Import Examples
 
-### Clean Architecture Principles
-
-The v0.2.0 refactoring implements clean architecture with clear separation of concerns:
-
-1. **Pure Functions**: AST transformation (`ast_transform.py`) and guard checking (`guard_runtime.py`) are pure, composable functions with no decorator-specific logic
-2. **Immutability**: All transformed functions preserve original function metadata
-3. **Functional Composition**: Guard functions are composable - they're pure functions returning True or error messages
-
-### Import Examples
-
-**Primary API:**
 ```python
-from modgud import (
-    guarded_expression, positive, not_none, type_check,
-    GuardFailureStrategy, GuardClauseError,
-)
+from modgud import CommonGuards, GuardFailureEnum, guarded_expression
 
-# Defaults: ERROR_RAISE, on_failure=GuardClauseError, continuance=0, implicit_return=True
-@guarded_expression(positive("x"))
-def process(x):
-    result = x * 2
-    result  # implicit return
 
-# Multiple guards, collect up to 3 failures total (1 + continuance=2)
-@guarded_expression(
-    not_none("user"),
-    type_check(str, "name"),
-    positive("amount"),
-    continuance=2,
-)
-def create_transaction(user, name, amount):
-    Transaction(user, name, amount).id  # implicit return
+@guarded_expression(CommonGuards.positive('x'))
+def double(x):
+  x * 2  # implicit return
 
-# Return a fallback value instead of raising
-@guarded_expression(
-    positive("x"),
-    implicit_return=False,
-    strategy=GuardFailureStrategy.RETURN_VALUE,
-    on_failure=None,
-)
-def calculate(x):
-    return x * 2
 
-# Custom handler that sees the full errors list
-def explain(errors, *args, **kwargs):
-    return {"errors": errors, "args": args}
+@guarded_expression(CommonGuards.positive('x'), strategy=GuardFailureEnum.RETURN_VALUE, on_failure=-1)
+def safe_square(x):
+  x * x
 
-@guarded_expression(
-    positive("x"),
-    strategy=GuardFailureStrategy.CALL_HANDLER,
-    on_failure=explain,
-)
-def report(x):
-    x * 2
+
+@guarded_expression(CommonGuards.positive('x'), CommonGuards.positive('y'), continuance=2)
+def add(x, y):
+  x + y
 ```
 
-### Error Hierarchy
-
-All errors inherit from appropriate base classes:
-- `GuardClauseError(Exception)` - Raised when guards fail (configurable)
-- `ImplicitReturnError(SyntaxError)` - Base for transformation errors
-  - `ExplicitReturnDisallowedError` - Explicit return found with implicit_return=True
-  - `MissingImplicitReturnError` - Block doesn't produce a value
-  - `UnsupportedConstructError` - Unsupported AST construct at tail position
+Full versions live in `examples/`. Error hierarchy: `GuardClauseError(Exception)`; `ImplicitReturnError(SyntaxError)` with `ExplicitReturnDisallowedError`, `MissingImplicitReturnError` and `UnsupportedConstructError`.

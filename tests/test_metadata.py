@@ -1,7 +1,11 @@
 """Tests for metadata preservation and edge cases."""
 
+import functools
+
 import pytest
 from modgud import guarded_expression
+
+from tests.test_fixtures import simple_implicit
 
 
 class TestMetadataPreservation:
@@ -34,8 +38,6 @@ class TestDecoratorWithoutGuards:
 
   def test_no_guards_implicit_return_true(self):
     """Decorator should work with no guards and implicit_return=True."""
-    from tests.test_fixtures import simple_implicit
-
     assert simple_implicit(5) == 10
 
 
@@ -57,3 +59,14 @@ class TestDecoratorEdgeCases:
     exec(code, env)
     decorated = guarded_expression(implicit_return=False)(env['foo'])
     assert decorated() == 42
+
+
+class TestNonFunctionCallables:
+  def test_partial_can_be_guarded_without_implicit_return(self):
+    def scale(factor, x):
+      return factor * x
+
+    doubled = guarded_expression(lambda x: x > 0 or 'x must be positive', implicit_return=False)(
+      functools.partial(scale, 2)
+    )
+    assert doubled(4) == 8
