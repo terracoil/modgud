@@ -47,3 +47,6 @@ junk.txt
 #docs/architecture/
 *.bkp
 *.dtmp
+settings.local*
+CLAUDE*
+./claude

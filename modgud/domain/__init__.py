@@ -1,22 +1,35 @@
-"""Domain layer aggregator.
+"""Domain layer: re-exports the passive types, enum, errors and ports.
 
-Re-exports the public-facing types from each feature subpackage so callers
-can use the shortest absolute path (`from modgud.domain import X`).
+Modules inside ``modgud`` import from the owning subpackage, never from this facade.
 """
 
-from .guarded_expr import GuardClauseError, GuardFailureStrategy
-from .implicit_ret import (
+from .enums import GuardFailureEnum
+from .errors import (
   ExplicitReturnDisallowedError,
+  GuardClauseError,
   ImplicitReturnError,
+  MarkerNotRewrittenError,
+  MarkerPlacementError,
+  MarkerUsageError,
   MissingImplicitReturnError,
   UnsupportedConstructError,
 )
+from .ports import EopPort, GuardPort, ImplicitReturnPort
+from .types import GuardFunction, eop_clause
 
 __all__ = [
+  'EopPort',
   'ExplicitReturnDisallowedError',
   'GuardClauseError',
-  'GuardFailureStrategy',
+  'GuardFailureEnum',
+  'GuardFunction',
+  'GuardPort',
   'ImplicitReturnError',
+  'ImplicitReturnPort',
+  'MarkerNotRewrittenError',
+  'MarkerPlacementError',
+  'MarkerUsageError',
   'MissingImplicitReturnError',
   'UnsupportedConstructError',
+  'eop_clause',
 ]

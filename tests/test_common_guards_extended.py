@@ -1,19 +1,11 @@
-"""Tests for extended CommonGuards validators (file_path, url, enum)."""
+"""Tests for extended Guards validators (file_path, url, enum)."""
 
 import tempfile
 from enum import Enum
 from pathlib import Path
 
 import pytest
-from modgud import (
-  GuardClauseError,
-  guarded_expression,
-  matches_pattern,
-  not_empty,
-  valid_enum,
-  valid_file_path,
-  valid_url,
-)
+from modgud import GuardClauseError, Guards, guarded_expression
 
 from .helpers import create_temp_file
 
@@ -25,7 +17,7 @@ class TestValidFilePathGuard:
     """Test guard passes for existing file."""
     with create_temp_file('test content') as tmp_path:
 
-      @guarded_expression(valid_file_path('filepath', must_be_file=True))
+      @guarded_expression(Guards.valid_file_path('filepath', must_be_file=True))
       def process_file(filepath: str):
         f'Processing {filepath}'  # noqa: B021
 
@@ -35,7 +27,7 @@ class TestValidFilePathGuard:
   def test_nonexistent_file_fails(self):
     """Test guard fails for nonexistent file."""
 
-    @guarded_expression(valid_file_path('filepath'))
+    @guarded_expression(Guards.valid_file_path('filepath'))
     def process_file(filepath: str):
       f'Processing {filepath}'  # noqa: B021
 
@@ -46,7 +38,7 @@ class TestValidFilePathGuard:
     """Test guard passes for existing directory."""
     with tempfile.TemporaryDirectory() as tmp_dir:
 
-      @guarded_expression(valid_file_path('dirpath', must_be_dir=True))
+      @guarded_expression(Guards.valid_file_path('dirpath', must_be_dir=True))
       def process_dir(dirpath: str):
         f'Processing {dirpath}'  # noqa: B021
 
@@ -60,7 +52,7 @@ class TestValidFilePathGuard:
 
     try:
 
-      @guarded_expression(valid_file_path('dirpath', must_be_dir=True))
+      @guarded_expression(Guards.valid_file_path('dirpath', must_be_dir=True))
       def process_dir(dirpath: str):
         f'Processing {dirpath}'  # noqa: B021
 
@@ -72,7 +64,7 @@ class TestValidFilePathGuard:
   def test_allow_nonexistent_path(self):
     """Test guard passes for nonexistent path when must_exist=False."""
 
-    @guarded_expression(valid_file_path('filepath', must_exist=False))
+    @guarded_expression(Guards.valid_file_path('filepath', must_exist=False))
     def create_file(filepath: str):
       f'Creating {filepath}'  # noqa: B021
 
@@ -86,7 +78,7 @@ class TestValidUrlGuard:
   def test_valid_http_url(self):
     """Test guard passes for valid HTTP URL."""
 
-    @guarded_expression(valid_url('url'))
+    @guarded_expression(Guards.valid_url('url'))
     def fetch_url(url: str):
       f'Fetching {url}'  # noqa: B021
 
@@ -96,7 +88,7 @@ class TestValidUrlGuard:
   def test_valid_https_url(self):
     """Test guard passes for valid HTTPS URL."""
 
-    @guarded_expression(valid_url('url'))
+    @guarded_expression(Guards.valid_url('url'))
     def fetch_url(url: str):
       f'Fetching {url}'  # noqa: B021
 
@@ -106,17 +98,32 @@ class TestValidUrlGuard:
   def test_url_without_scheme_fails(self):
     """Test guard fails for URL without scheme when require_scheme=True."""
 
-    @guarded_expression(valid_url('url', require_scheme=True), implicit_return=False)
+    @guarded_expression(Guards.valid_url('url', require_scheme=True), implicit_return=False)
     def fetch_url(url: str):
       return f'Fetching {url}'
 
-    with pytest.raises(GuardClauseError, match='must include a scheme'):
+    with pytest.raises(GuardClauseError, match='must use one of http/https'):
       fetch_url('example.com')
+
+  def test_unexpected_scheme_fails(self):
+    """Test guard rejects a scheme outside the accepted set, and accepts a listed one."""
+
+    @guarded_expression(Guards.valid_url('url'), implicit_return=False)
+    def fetch_url(url: str):
+      return f'Fetching {url}'
+
+    @guarded_expression(Guards.valid_url('url', schemes=('ftp',)), implicit_return=False)
+    def fetch_file(url: str):
+      return f'Fetching {url}'
+
+    with pytest.raises(GuardClauseError, match='must use one of http/https'):
+      fetch_url('ftp://example.com/file')
+    assert fetch_file('ftp://example.com/file') == 'Fetching ftp://example.com/file'
 
   def test_url_without_scheme_allowed(self):
     """Test guard passes for URL without scheme when require_scheme=False."""
 
-    @guarded_expression(valid_url('url', require_scheme=False), implicit_return=False)
+    @guarded_expression(Guards.valid_url('url', require_scheme=False), implicit_return=False)
     def fetch_url(url: str):
       return f'Fetching {url}'
 
@@ -126,11 +133,11 @@ class TestValidUrlGuard:
   def test_invalid_url_fails(self):
     """Test guard fails for completely invalid URL."""
 
-    @guarded_expression(valid_url('url'), implicit_return=False)
+    @guarded_expression(Guards.valid_url('url'), implicit_return=False)
     def fetch_url(url: str):
       return f'Fetching {url}'
 
-    with pytest.raises(GuardClauseError, match='must include a scheme'):
+    with pytest.raises(GuardClauseError, match='must use one of http/https'):
       fetch_url('   ')
 
 
@@ -145,7 +152,7 @@ class TestValidEnumGuard:
       GREEN = 'green'
       BLUE = 'blue'
 
-    @guarded_expression(valid_enum(Color, 'color'), implicit_return=False)
+    @guarded_expression(Guards.valid_enum(Color, 'color'), implicit_return=False)
     def set_color(color: str):
       return f'Color set to {color}'
 
@@ -159,7 +166,7 @@ class TestValidEnumGuard:
       ACTIVE = 'active'
       INACTIVE = 'inactive'
 
-    @guarded_expression(valid_enum(Status, 'status'), implicit_return=False)
+    @guarded_expression(Guards.valid_enum(Status, 'status'), implicit_return=False)
     def set_status(status):
       return f'Status: {status.value if isinstance(status, Status) else status}'
 
@@ -174,7 +181,7 @@ class TestValidEnumGuard:
       MEDIUM = 'medium'
       HIGH = 'high'
 
-    @guarded_expression(valid_enum(Priority, 'priority'), implicit_return=False)
+    @guarded_expression(Guards.valid_enum(Priority, 'priority'), implicit_return=False)
     def set_priority(priority: str):
       return f'Priority: {priority}'
 
@@ -188,7 +195,7 @@ class TestValidEnumGuard:
       DEBUG = 'debug'
       RELEASE = 'release'
 
-    @guarded_expression(valid_enum(Mode, 'mode'), implicit_return=False)
+    @guarded_expression(Guards.valid_enum(Mode, 'mode'), implicit_return=False)
     def set_mode(mode: str):
       return f'Mode: {mode}'
 
@@ -208,8 +215,8 @@ class TestCombinedGuards:
     try:
 
       @guarded_expression(
-        valid_file_path('filepath', position=0, must_be_file=True),
-        not_empty('content', position=1),
+        Guards.valid_file_path('filepath', position=0, must_be_file=True),
+        Guards.not_empty('content', position=1),
         implicit_return=False,
       )
       def process_file_with_content(filepath: str, content: str):
@@ -228,8 +235,8 @@ class TestCombinedGuards:
     """Test combining URL guard with pattern matching."""
 
     @guarded_expression(
-      valid_url('api_url'),
-      matches_pattern(r'^https://api\..*', 'api_url'),
+      Guards.valid_url('api_url'),
+      Guards.matches_pattern(r'^https://api\..*', 'api_url'),
       implicit_return=False,
     )
     def call_api(api_url: str):

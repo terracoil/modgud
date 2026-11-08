@@ -1,16 +1,7 @@
 """Integration tests for common guards with guarded_expression decorator."""
 
 import pytest
-from modgud import (
-  GuardClauseError,
-  guarded_expression,
-  in_range,
-  matches_pattern,
-  not_empty,
-  not_none,
-  positive,
-  type_check,
-)
+from modgud import GuardClauseError, Guards, guarded_expression
 
 
 class TestCommonGuardValidation:
@@ -19,12 +10,12 @@ class TestCommonGuardValidation:
   @pytest.mark.parametrize(
     'guard_factory,valid_value,invalid_value,error_message',
     [
-      (not_none('x'), 5, None, 'cannot be None'),
-      (positive('x'), 5, -5, 'positive'),
-      (not_empty('x'), 'hello', '', 'empty'),
-      (type_check(int, 'x'), 5, '5', 'must be of type int'),
-      (in_range(1, 10, 'x'), 5, 15, 'between 1 and 10'),
-      (matches_pattern(r'^\d+$', 'x'), '123', 'abc', 'must match pattern'),
+      (Guards.not_none('x'), 5, None, 'cannot be None'),
+      (Guards.positive('x'), 5, -5, 'positive'),
+      (Guards.not_empty('x'), 'hello', '', 'empty'),
+      (Guards.type_check(int, 'x'), 5, '5', 'must be of type int'),
+      (Guards.in_range(1, 10, 'x'), 5, 15, 'between 1 and 10'),
+      (Guards.matches_pattern(r'^\d+$', 'x'), '123', 'abc', 'must match pattern'),
     ],
   )
   def test_common_guard_validation(self, guard_factory, valid_value, invalid_value, error_message):
@@ -56,7 +47,7 @@ class TestGuardParameterHandling:
   def test_common_guards_kwargs_precedence(self):
     """Named parameters should take precedence over positional mapping."""
 
-    @guarded_expression(positive('x'))
+    @guarded_expression(Guards.positive('x'))
     def add(x, y):
       x + y
 
@@ -71,7 +62,7 @@ class TestGuardParameterHandling:
   def test_extract_param_out_of_bounds(self):
     """Guard should fail when parameter index is out of bounds and default is invalid."""
 
-    @guarded_expression(positive('y', 1))
+    @guarded_expression(Guards.positive('y', 1))
     def single_param(x):
       x * 2
 
@@ -81,7 +72,7 @@ class TestGuardParameterHandling:
     assert 'positive' in str(exc_info.value)
 
     # Test with named parameter
-    @guarded_expression(positive('y'))
+    @guarded_expression(Guards.positive('y'))
     def with_named(x, y=10):
       x + y
 
@@ -92,7 +83,7 @@ class TestGuardParameterHandling:
   def test_not_empty_with_object_lacking_len(self):
     """not_empty guard should handle objects without len() gracefully."""
 
-    @guarded_expression(not_empty('x'))
+    @guarded_expression(Guards.not_empty('x'))
     def process(x):
       str(x)
 

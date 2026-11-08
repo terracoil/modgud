@@ -1,916 +1,422 @@
-**Parent**: [📚 Documentation Hub](README.md) | [🌉 Main README](../README.md) | [⚙️ How It Works](how-it-works.md)
+**Parent**: [📚 Documentation Hub](ADVANCED.md) | [🌉 Main README](../README.md) | [⚙️ How It Works](how-it-works.md)
 
-# API Reference
+# API reference
 
-<img src="https://github.com/terracoil/modgud/raw/main/docs/modgud-github.jpg" alt="Modgud" title="Modgud" width="300"/>
----
+Everything a caller needs comes from `modgud`. Entries stay terse; the why is in [How It Works](how-it-works.md), and every snippet has a runnable original in [`examples/`](../examples/).
 
-## 📋 Table of Contents
-
-- [📦 Module Overview](#module-overview)
-- [🎖️ Primary Decorators](#primary-decorators)
-  - [guarded_expression](#guarded_expression)
-  - [implicit_return](#implicit_return)
-- [📖 Usage Patterns: Choosing Your Approach](#usage-patterns-choosing-your-approach)
-- [🧩 Pre-built Guard Functions](#pre-built-guard-functions)
-- [🚨 Error Classes](#error-classes)
-- [📝 Guard Registry Functions](#guard-registry-functions)
-- [📐 Type Definitions](#type-definitions)
-
----
-
-## 📦 Module Overview
+## 📜 What to import
 
 ```python
-from modgud import (
-    # Primary decorators
-    guarded_expression,
-    implicit_return,
-
-    # Guard validators (all available guards)
-    not_none,
-    not_empty,
-    positive,
-    in_range,
-    type_check,
-    matches_pattern,
-    valid_file_path,
-    valid_url,
-    valid_enum,
-
-    # Or import from CommonGuards class
-    CommonGuards,
-
-    # Errors
-    GuardClauseError,
-    ImplicitReturnError,
-    ExplicitReturnDisallowedError,
-    MissingImplicitReturnError,
-    UnsupportedConstructError,
-
-    # Guard registry
-    register_guard,
-    get_guard,
-    has_custom_guard,
-    list_custom_guards,
-    list_guard_namespaces,
-    unregister_guard,
-    get_registry,
-)
+from modgud import guarded_expression, implicit_return
+from modgud import Guards, GuardFunction, GuardRegistry
+from modgud import GuardClauseError, GuardFailureEnum
+from modgud import ExplicitReturnDisallowedError, ImplicitReturnError, MissingImplicitReturnError, UnsupportedConstructError
+from modgud import eop_case, eop_clause, eop_cond, eop_match, eop_var, eop_when
+from modgud import MarkerNotRewrittenError, MarkerPlacementError, MarkerUsageError
+from modgud import EopPort, GuardPort, ImplicitReturnPort  # integration seam only
 ```
 
-**Version**: 0.2.0
-**Python**: 3.11+
-**Zero Runtime Dependencies**: Uses only Python standard library
+Those 23 names are the public API. Everything else sits in a lower tier:
 
----
+| Tier | What | Where | Promise |
+|---|---|---|---|
+| Public | the 23 names above | `modgud` | Documented on this page |
+| Integration seam | the three ports, `guard_port=` / `imp_return_port=` / `eop_*_port=`, `IDUNN_ENV`, `Idunn().reset()` | `modgud` (ports also at `modgud.domain` and `modgud.domain.ports`) | For fakes and Idunn users; see [Integration seam](#integration-seam) |
+| Internal | the adapters, `modgud.infrastructure.ast`, `modgud.infrastructure.internal` | leaf packages | May move between releases |
 
-## 🎖️ Primary Decorators
+`modgud.domain` (fourteen names) and `modgud.app` (nine) are secondary paths to the same objects, there for the package's layering. `modgud.infrastructure` exports nothing. These docs teach one import path.
+
+## 🛡️ Decorators
 
 ### guarded_expression
 
-Unified decorator combining guard clauses with optional implicit return transformation.
-
-#### Signature
-
 ```python
 guarded_expression(
-    *guards: GuardFunction,
-    implicit_return: bool = True,
-    strategy: GuardFailureStrategy = GuardFailureStrategy.ERROR_RAISE,
-    on_failure: Any = GuardClauseError,
-    continuance: int = 0,
-) -> Callable[[Callable], Callable]
+  *guards: GuardFunction,
+  implicit_return: bool = True,
+  strategy: GuardFailureEnum = GuardFailureEnum.ERROR_RAISE,
+  on_failure: Any = GuardClauseError,
+  continuance: int = 0,
+  guard_port: GuardPort,                 # injected by Idunn
+  imp_return_port: ImplicitReturnPort,   # injected by Idunn
+)
 ```
-
-#### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `*guards` | `GuardFunction` | - | Variable number of guard functions that validate input |
-| `implicit_return` | `bool` | `True` | Enable implicit return AST rewrite |
-| `strategy` | `GuardFailureStrategy` | `ERROR_RAISE` | How collected failures are dispatched (see below) |
-| `on_failure` | `Any` | `GuardClauseError` | Payload paired with `strategy` |
-| `continuance` | `int` | `0` | Extra guards to evaluate past the first failure |
+| `*guards` | `GuardFunction` | none | Checks run in order before every call |
+| `implicit_return` | `bool` | `True` | Rewrite the body so each branch's last expression is returned |
+| `strategy` | `GuardFailureEnum` | `ERROR_RAISE` | What a failure turns into; see [GuardFailureEnum](#guardfailureenum) |
+| `on_failure` | `Any` | `GuardClauseError` | The payload paired with `strategy` |
+| `continuance` | `int` | `0` | How many more failures to collect after the first |
+| `guard_port` | `GuardPort` | injected | Pass one only to substitute a fake |
+| `imp_return_port` | `ImplicitReturnPort` | injected | Pass one only to substitute a fake |
 
-#### GuardFailureStrategy + on_failure pairings
+Always applied with parentheses, even with no guards.
 
-| `strategy` | `on_failure` means | Body executed on failure? |
-|-----|-----|-----|
-| `ERROR_RAISE` (default) | Exception class to raise | No |
-| `ERROR_RETURN` | Exception class to instantiate and return | No |
-| `RETURN_VALUE` | Value to return as-is | No |
-| `CALL_HANDLER` | Callable invoked as `on_failure(errors, *args, **kwargs)` | No |
-
-When `continuance > 0` and more than one failure is collected, `ERROR_RAISE` / `ERROR_RETURN` wrap the instances in `ExceptionGroup('Guards failed', [...])`.
-
-#### Returns
-
-Decorated function with guard validation and optional implicit returns.
-
-#### Raises
-
-Failure mode is strict: if `implicit_return=True` and the AST rewrite refuses (source unavailable, unsupported construct), the underlying exception (`ValueError`, `OSError`, `UnsupportedConstructError`, etc.) propagates from the decoration site.
-
-#### Examples
-
-##### Basic Guard Validation
+- The body never runs when a guard has failed.
+- With `implicit_return=True` the function is rewritten once, at decoration time, under the [implicit_return](#implicit_return) rules. Unreadable source raises `ValueError`.
+- With `implicit_return=False` nothing is rewritten or checked. One trailing `return` is your convention, and a bare tail expression returns `None`.
+- `__name__`, `__qualname__`, `__doc__`, `__annotations__` and `inspect.signature` survive.
+- On `async def` the result is still a coroutine function. Guards run when the coroutine runs, so a refusal, raised or returned, arrives at the `await`.
 
 ```python
-from modgud import guarded_expression, not_none, positive
+from modgud import Guards, GuardClauseError, guarded_expression
 
-@guarded_expression(
-    not_none("x"),
-    positive("x")
-)
-def calculate(x):
-    return x * 2
+@guarded_expression(Guards.positive('price'))
+def discount(price: float) -> float:
+  if price >= 50:
+    price * 0.2
+  else:
+    price * 0.1
 
-calculate(5)   # Returns: 10
-calculate(-1)  # Raises: GuardClauseError: x must be positive
-calculate(None)  # Raises: GuardClauseError: x must not be None
+discount(75)   # 15.0
+discount(-10)  # raises GuardClauseError('price must be positive')
 ```
 
-##### Implicit Returns
+Full version: [examples/free_range/01_quick_start.py](../examples/free_range/01_quick_start.py)
+
+#### Collecting multiple failures
+
+`continuance=N` collects up to `1 + N` failures. With several, the error strategies build `ExceptionGroup('Guards failed', [...])`, one `on_failure` instance per message; catch it with `except*`. A guard that raises propagates if nothing has failed yet, and otherwise ends collection quietly: tripping over input already known to be bad is fallout, not news. `CHECKS` below holds four guards.
 
 ```python
-@guarded_expression()
-def get_status(user):
-    if user.is_active:
-        "active"
-    else:
-        "inactive"
+@guarded_expression(*CHECKS, continuance=3)  # up to 1 + 3 failures
+def every_problem(qty: int, sku: str) -> str:
+  f'{qty} x {sku}'
 
-# No explicit return needed!
+try:
+  every_problem(-1, '')
+except* GuardClauseError as group:
+  collected = [str(error) for error in group.exceptions]  # four messages
 ```
 
-##### Custom Error Handling
+Full version: [examples/free_range/06_continuance.py](../examples/free_range/06_continuance.py)
+
+### GuardFailureEnum
+
+Four `IntEnum` members, each giving `on_failure` a different job:
+
+| `strategy` | `on_failure` is | One failure | Several failures |
+|---|---|---|---|
+| `ERROR_RAISE` (default) | an exception class | raises `on_failure(msg)` | raises the `ExceptionGroup` |
+| `ERROR_RETURN` | an exception class | returns `on_failure(msg)` | returns the `ExceptionGroup` |
+| `RETURN_VALUE` | any value | returns `on_failure` as-is | same |
+| `CALL_HANDLER` | a callable | returns `on_failure(errors, *args, **kwargs)` | same; `errors` is always a `list[str]` |
+
+- For the two error strategies, an `on_failure` that isn't a class falls back to `GuardClauseError`.
+- A handler gets the call's full arguments, `self` or `cls` included.
+- On `async def`, every strategy's result comes back from the `await`. Handlers are called, not awaited, so write them as plain functions.
 
 ```python
-from modgud import guarded_expression, positive
+def explain(errors: list[str], *args: Any, **kwargs: Any) -> dict[str, Any]:
+  return {'status': 400, 'errors': errors, 'args': args}
 
-# Return None on failure
-@guarded_expression(
-    positive("amount"),
-    on_error=None
-)
-def process_payment(amount):
-    amount * 1.1  # Add tax
+@guarded_expression(AMOUNT, strategy=GuardFailureEnum.CALL_HANDLER, on_failure=explain)
+def charge_or_explain(amount: float) -> str | dict[str, Any]:
+  f'charged {amount:.2f}'
 
-process_payment(-10)  # Returns: None
-
-# Custom handler function
-def log_and_default(msg, *args, **kwargs):
-    print(f"Guard failed: {msg}")
-    return 0
-
-@guarded_expression(
-    positive("x"),
-    on_error=log_and_default
-)
-def safe_divide(x):
-    100 / x
-
-safe_divide(-5)  # Prints error, returns 0
+charge_or_explain(-1)  # {'status': 400, 'errors': ['amount must be positive'], 'args': (-1,)}
 ```
 
-##### With Logging
-
-```python
-from modgud import guarded_expression, not_empty
-
-@guarded_expression(
-    not_empty("items"),
-    log=True  # Enables logging
-)
-def process_items(items):
-    len(items) * 10
-
-process_items([])  # Logs: "INFO: Guard failed: items must not be empty"
-```
-
-##### Usage Patterns (Both Fully Supported)
-
-```python
-from modgud import guarded_expression, implicit_return, positive
-
-# Pattern 1: Unified parameter (simple, all-in-one)
-@guarded_expression(
-    positive("x"),
-    implicit_return=True  # Fully supported!
-)
-def calculate(x):
-    result = x * 2
-    result
-
-# Pattern 2: Separate decorators (flexible, composable)
-@guarded_expression(positive("x"))
-@implicit_return
-def calculate_v2(x):
-    result = x * 2
-    result
-
-# Both patterns are first-class citizens - choose based on your needs!
-```
-
----
+Full version: [examples/free_range/03_failure_strategies.py](../examples/free_range/03_failure_strategies.py)
 
 ### implicit_return
 
-**New in v0.3.0:** Standalone decorator for expression-oriented programming that transforms the last expression in each code path into an implicit return value.
-
-#### Signature
-
 ```python
-implicit_return(func: Callable) -> Callable
+implicit_return(
+  *,
+  imp_return_port: ImplicitReturnPort,  # injected by Idunn
+)
 ```
 
-#### Parameters
+Applied as `@implicit_return()`, parentheses required. At decoration time it rewrites the function so the last statement of each block is the return value. What counts as a tail:
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `func` | `Callable` | Function to transform with implicit returns |
+| Last statement of a block | Yields |
+|---|---|
+| An expression | its value |
+| `if` / `elif` / `else` | each branch's tail; an `if` with no `else` raises `MissingImplicitReturnError` |
+| `try` / `except` / `else` / `finally` | the body's tail, or the handler's; `else` replaces the body's value on success; `finally` never sets it |
+| `match` / `case` | each case's tail; the last case must be `case _:` or a bare capture with no guard, else `MissingImplicitReturnError` |
+| `pass`, or an empty block | `None` |
+| `raise` | raises |
+| anything else (assignment, `for`, `while`, `with`, `def`, ...) | `UnsupportedConstructError` |
 
-#### Returns
-
-Decorated function with AST-transformed implicit return behavior.
-
-#### Raises
-
-- `ExplicitReturnDisallowedError`: If function contains explicit `return` statements
-- `MissingImplicitReturnError`: If not all code paths yield a value
-- `UnsupportedConstructError`: If source code contains unsupported constructs
-
-#### Examples
-
-##### Basic Implicit Returns
+- An explicit `return` anywhere in the body, nested `def`s included, raises `ExplicitReturnDisallowedError`. Keep helpers that need `return` outside the decorated function; a nested `def` without `return` yields `None`.
+- Zero-argument `super()` raises `UnsupportedConstructError`; write `super(Cls, self)`.
+- A leading docstring stays a docstring.
 
 ```python
 from modgud import implicit_return
 
-@implicit_return
-def classify_status(is_active, is_premium):
-    if is_active:
-        "premium" if is_premium else "standard"
-    else:
-        "inactive"
-
-classify_status(True, True)   # Returns: "premium"
-classify_status(True, False)  # Returns: "standard" 
-classify_status(False, True)  # Returns: "inactive"
+@implicit_return()
+def grade(score: int) -> str:
+  if score >= 90:
+    'A'
+  elif score >= 75:
+    'B'
+  else:
+    'C'
 ```
 
-##### Composition with Guards
+Full version: [examples/free_range/04_implicit_returns.py](../examples/free_range/04_implicit_returns.py)
+
+#### Decorator order
+
+Stacked with guards, the standalone decorator goes underneath, with the rewrite switched off above it:
 
 ```python
-from modgud import guarded_expression, implicit_return, not_none
+@guarded_expression(Guards.positive('x'), implicit_return=False)  # right: guards outside
+@implicit_return()
+def right(x: int) -> int:
+  x * 2
 
-@guarded_expression(not_none("user"))
-@implicit_return
-def get_user_role(user):
-    if user.is_admin:
-        "admin"
-    elif user.is_moderator:
-        "moderator"
-    else:
-        "user"
+@implicit_return()  # wrong: raises TypeError at decoration (the rewrite would drop the guard)
+@guarded_expression(Guards.positive('x'), implicit_return=False)
+def wrong(x: int) -> int:
+  x * 2
 ```
 
-##### Complex Control Flow
+The reverse order raises `TypeError` at decoration time: the outer rewrite would re-read the original source and the guards would vanish. Other decorators go above modgud too; below it, the re-compile drops them. `@staticmethod` and `@classmethod` may go either side ([Methods](#methods)).
+
+Full version: [examples/free_range/10_decorator_composition.py](../examples/free_range/10_decorator_composition.py)
+
+### Methods
+
+Instance, static, class and `async` methods all work, under either decorator or the stacked form. modgud may sit outside or inside `@staticmethod` / `@classmethod`.
+
+- Guards see the arguments without the receiver (a first parameter named `self` or `cls`), so `positive('x')` checks `x`. `CALL_HANDLER` handlers get everything, receiver included.
+- `self.__secret` name-mangling works, the body may name its own class, and `__qualname__` stays `Cls.method`.
+- Defaults and annotations are reused from the original function, so a default that names a class attribute or a module global is fine.
+- `UnsupportedConstructError` at decoration time: zero-argument `super()` and a bare `__class__`. The re-compiled body has no `__class__` cell; write `super(Cls, self)`.
+- Not covered: `@property`, `functools.cached_property`, other descriptors.
 
 ```python
-@implicit_return
-def process_data(data, fallback_mode=False):
-    try:
-        if fallback_mode:
-            data.get("simple_result", "default")
-        else:
-            complex_processing(data)
-    except ProcessingError:
-        "error_occurred"
-    except Exception:
-        "unknown_error"
+class Thermostat:
+  @guarded_expression(Guards.positive('by'))  # the guard sees ``by``, never ``self``
+  def warmer(self, by: int) -> int:
+    self.target + by
+
+  @guarded_expression(Guards.in_range(-58, 212, 'fahrenheit'))  # modgud outermost
+  @staticmethod
+  def to_celsius(fahrenheit: float) -> float:
+    (fahrenheit - 32) * 5 / 9
 ```
 
-#### Notes
+Full version: [examples/classy/10_decorator_composition.py](../examples/classy/10_decorator_composition.py)
 
-- **Two Valid Patterns**: Use `implicit_return=True` parameter OR separate `@implicit_return` decorator
-- **Order Matters**: When using separate decorators, `@implicit_return` should typically be the innermost (closest to the function)
-- **⚠️ Composition Warning**: Avoid placing `@implicit_return` before `@guarded_expression` as it may bypass guards
-- **Source Required**: Function source code must be available via `inspect.getsource()`
-- **No Explicit Returns**: Functions cannot contain `return` statements when using implicit returns
-- **All Paths Must Yield**: Every execution path must end with an expression that produces a value
+### Testing guarded code
 
----
+- An implicit-return function needs its source in a file on disk, at module level or in a class. The REPL and `exec` have no source; decoration raises `ValueError`.
+- Defined inside a test, it may not touch the test's locals: the re-compile drops the closure. Keep such fixtures in a module, like `tests/method_fixtures.py`.
+- The rewritten body uses the module's live globals, so `mock.patch` reaches it.
+- Guards-only functions have none of these limits.
+- Guards are plain functions: `Guards.positive('x')(5)` returns `True`.
 
-## 📖 Usage Patterns: Choosing Your Approach
+## 🧩 Expression forms
 
-modgud offers two equally valid patterns for combining guards with implicit returns. Both are fully supported and the choice depends on your specific needs.
+Three forms borrowed from Elixir, each an expression that a modgud decorator rewrites at decoration time. They work only inside a function decorated with `guarded_expression` or `implicit_return`; anywhere else the call raises [`MarkerNotRewrittenError`](#error-classes). The rules that differ from plain Python are collected in the [docs hub](ADVANCED.md#-expression-forms-past-the-basics).
 
-### Pattern 1: Unified Parameter Approach
-
-**When to use:**
-- Simple functions with guards and implicit returns
-- When you want all configuration in one place
-- Teaching/learning scenarios
-- Functions where the transformation is core to the function's identity
-
-**Example:**
-```python
-@guarded_expression(
-    positive("amount"),
-    not_none("user"),
-    implicit_return=True,  # All-in-one configuration
-    on_error=None
-)
-def calculate_discount(amount, user):
-    discount = user.discount_rate if user.is_premium else 0.05
-    amount * (1 - discount)
-```
-
-**Benefits:**
-- Single decorator for complete function transformation
-- Explicit configuration in one place
-- Easier to understand for newcomers
-- Reduces decorator stack complexity
-
-### Pattern 2: Separate Decorators Approach
-
-**When to use:**
-- Complex decorator compositions
-- When implicit return is optional/conditional
-- Building reusable decorator stacks
-- Need maximum flexibility
-
-**Example:**
-```python
-@cache  # Other decorators can be added
-@guarded_expression(positive("amount"), not_none("user"))
-@implicit_return  # Separate concern
-def calculate_discount(amount, user):
-    discount = user.discount_rate if user.is_premium else 0.05
-    amount * (1 - discount)
-```
-
-**Benefits:**
-- More composable and flexible
-- Clearer separation of concerns
-- Better for complex decorator stacks
-- Allows fine-grained control
-
-### ⚠️ Important: Decorator Order Matters
-
-When using separate decorators, the order is critical:
+### eop_cond
 
 ```python
-# ✅ CORRECT: Guards before implicit return
-@guarded_expression(positive("x"))
-@implicit_return
-def correct(x):
-    x * 2
-
-# ❌ WRONG: This can bypass guards!
-@implicit_return
-@guarded_expression(positive("x"))  # Guards may not execute properly
-def problematic(x):
-    x * 2
+eop_cond(*clauses: eop_clause[T], default: D) -> T | D
 ```
 
-The incorrect order can cause guards to be bypassed due to how Python's `inspect.getsource()` works with decorated functions.
-
-### Choosing Between Patterns
-
-| Use Case | Recommended Pattern | Example |
-|----------|-------------------|---------|
-| Simple validation + implicit return | Unified parameter | `@guarded_expression(..., implicit_return=True)` |
-| Complex decorator stacks | Separate decorators | `@cache @guarded_expression(...) @implicit_return` |
-| Guards without implicit returns | Unified with `implicit_return=False` | `@guarded_expression(..., implicit_return=False)` |
-| Conditional implicit returns | Separate decorators | Apply `@implicit_return` conditionally |
-| Teaching/documentation | Unified parameter | Shows all features in one place |
-
-### Migration from Deprecated Pattern
-
-If you previously avoided the `implicit_return` parameter due to deprecation warnings:
-1. **No action required** - your separate decorator code continues to work
-2. **Optional**: Consider if the unified parameter would be cleaner for your use case
-3. **Review**: Check decorator order if using separate decorators
-
----
-
-## 🧩 Pre-built Guard Functions
-
-Pre-defined guard validators for common validation scenarios. These functions are imported directly from modgud.
-
-All methods are static and return `GuardFunction` instances that can be used with `guarded_expression`.
-
-#### Methods
-
-##### not_empty
-
-Ensures collection parameter is not empty.
+Elixir's `cond`. Clauses are tested in order and the first true one's value is returned, else `default`. Only the selected value is evaluated. As in Elixir, a test is true unless it is `None` or `False`, so `0`, `''` and `[]` count as true. `default=` is required; a missing one is a mypy error and a `MarkerUsageError` at decoration.
 
 ```python
-not_empty(param_name: str = 'parameter', position: Optional[int] = None) -> GuardFunction
+from modgud import eop_clause, eop_cond, implicit_return
+
+@implicit_return()
+def sign(x: int) -> str:
+  eop_cond(eop_clause(x < 0, 'negative'), eop_clause(x == 0, 'zero'), default='positive')
 ```
 
-**Parameters:**
-- `param_name`: Name of parameter in kwargs
-- `position`: Position in args (None = first arg)
+Full version: [examples/free_range/13_eop_cond.py](../examples/free_range/13_eop_cond.py)
 
-**Example:**
-```python
-from modgud import guarded_expression, not_empty
-
-# Using unified parameter approach
-@guarded_expression(
-    not_empty("items"),
-    implicit_return=True
-)
-def process(items):
-    len(items)
-```
-
----
-
-##### not_none
-
-Ensures parameter is not None.
+### eop_case
 
 ```python
-not_none(param_name: str = 'parameter', position: int = 0) -> GuardFunction
+eop_case(subject: object, *clauses: eop_clause[T], default: D) -> T | D
 ```
 
-**Parameters:**
-- `param_name`: Name of parameter in kwargs
-- `position`: Position in args (default: 0)
-
-**Example:**
+Elixir's `case`. The subject is evaluated once and matched against each clause's pattern in order; the first match's value is returned, else `default`. A clause test is a pattern written as an expression, or [`eop_when(pattern, guard)`](#eop_when). Captures are visible only in their own clause's guard and value. Matching itself is Python's: `1` matches `1.0`, and a list pattern matches a tuple.
 
 ```python
-from modgud import guarded_expression, not_none
+from modgud import eop_case, eop_clause, eop_var, eop_when, implicit_return
 
-# Using unified parameter approach
-@guarded_expression(
-    not_none("user"),
-    implicit_return=True
-)
-def greet(user):
-  f"Hello, {user.item_name}"
+@implicit_return()
+def describe(shape: object) -> str:
+  eop_case(
+    shape,
+    eop_clause(eop_when(Point(0, eop_var.y), eop_var.y > 0), f'above the origin at {eop_var.y}'),
+    eop_clause(Point(eop_var.x, 0), f'on the x axis at {eop_var.x}'),
+    default='elsewhere',
+  )
 ```
 
----
+Full version: [examples/free_range/14_eop_case.py](../examples/free_range/14_eop_case.py)
 
-##### positive
-
-Ensures numeric parameter is positive (> 0).
+### eop_match
 
 ```python
-positive(param_name: str = 'parameter', position: int = 0) -> GuardFunction
+eop_match(pattern: object, value: object) -> bool
 ```
 
-**Parameters:**
-- `param_name`: Name of parameter in kwargs
-- `position`: Position in args (default: 0)
-
-**Example:**
-```python
-from modgud import guarded_expression, positive
-
-@guarded_expression(
-    positive("amount"),
-    implicit_return=True
-)
-def calculate_tax(amount):
-    amount * 0.1
-```
-
----
-
-##### in_range
-
-Ensures parameter is within specified range (inclusive).
+Elixir's `match?`: whether `value` matches `pattern`, as a real `bool`. The pattern may be `eop_when(pattern, guard)`, and captures are usable only inside that guard. It gives no type narrowing; use `isinstance` when narrowing matters.
 
 ```python
-in_range(
-    min_val: Union[int, float],
-    max_val: Union[int, float],
-    param_name: str = 'parameter',
-    position: int = 0
-) -> GuardFunction
+from modgud import eop_match, eop_var, implicit_return
+
+@implicit_return()
+def on_y_axis(shapes: list[object]) -> list[object]:
+  [s for s in shapes if eop_match(Point(0, eop_var._), s)]
 ```
 
-**Parameters:**
-- `min_val`: Minimum allowed value (inclusive)
-- `max_val`: Maximum allowed value (inclusive)
-- `param_name`: Name of parameter in kwargs
-- `position`: Position in args (default: 0)
+Full version: [examples/free_range/15_eop_match.py](../examples/free_range/15_eop_match.py)
 
-**Example:**
-```python
-from modgud import guarded_expression, in_range
-
-@guarded_expression(
-    in_range(1, 10, "rating"),
-    implicit_return=True
-)
-def save_rating(rating):
-    {"rating": rating}
-
-save_rating(5)   # OK
-save_rating(11)  # Raises: GuardClauseError
-```
-
----
-
-##### type_check
-
-Ensures parameter is of expected type.
+### eop_clause
 
 ```python
-type_check(
-    expected_type: type,
-    param_name: str = 'parameter',
-    position: int = 0
-) -> GuardFunction
+eop_clause(test: object, value: T)
 ```
 
-**Parameters:**
-- `expected_type`: Expected type or tuple of types
-- `param_name`: Name of parameter in kwargs
-- `position`: Position in args (default: 0)
+A frozen dataclass pairing a test with the value it selects; Elixir's word for a branch. In `eop_cond` the test is a condition, in `eop_case` a pattern. A clause must be written inside the form call: one built earlier has already evaluated its value, so the rewrite refuses it.
 
-**Example:**
-```python
-from modgud import guarded_expression, type_check
-
-@guarded_expression(type_check(str, "name"))
-def create_user(name):
-    return {"name": name.upper()}
-
-create_user("alice")  # OK
-create_user(123)      # Raises: GuardClauseError
-```
-
----
-
-##### matches_pattern
-
-Ensures string parameter matches regex pattern.
+### eop_when
 
 ```python
-matches_pattern(
-    pattern: str,
-    param_name: str = 'parameter',
-    position: int = 0
-) -> GuardFunction
+eop_when(pattern: object, guard: object) -> object
 ```
 
-**Parameters:**
-- `pattern`: Regular expression pattern
-- `param_name`: Name of parameter in kwargs
-- `position`: Position in args (default: 0)
+A pattern with a guard, Elixir's `pattern when guard`. The guard passes only when it is exactly `True`, and a guard that raises counts as no match, as in Elixir; a mistake inside a guard therefore falls through silently. A guard may not contain `await`, `yield` or `:=`. See [guards](ADVANCED.md#guards-and-what-happens-when-one-raises).
 
-**Example:**
-```python
-from modgud import guarded_expression, matches_pattern
+### eop_var
 
-@guarded_expression(
-    matches_pattern(r'^\d{3}-\d{3}-\d{4}$', "phone")
-)
-def save_phone(phone):
-    return {"phone": phone}
+The capture object. `eop_var.name` captures into `name`, and `eop_var._` matches anything. Captured values are typed `Any`. The full pattern language is in the [docs hub](ADVANCED.md#the-pattern-language).
 
-save_phone("555-123-4567")  # OK
-save_phone("invalid")        # Raises: GuardClauseError
-```
-
----
-
-##### valid_file_path
-
-Validates file path with optional existence and type checks.
-
-```python
-valid_file_path(
-    param_name: str = 'path',
-    position: int = 0,
-    exists_required: bool = False,
-    is_file: Optional[bool] = None
-) -> GuardFunction
-```
-
-**Parameters:**
-- `param_name`: Name of parameter in kwargs
-- `position`: Position in args (default: 0)
-- `exists_required`: Whether path must exist
-- `is_file`: `True` = must be file, `False` = must be directory, `None` = either
-
-**Example:**
-```python
-@guarded_expression(
-    valid_file_path("config_path", exists_required=True, is_file=True)
-)
-def load_config(config_path):
-    with open(config_path) as f:
-        return f.read()
-```
-
----
-
-##### valid_url
-
-Validates URL format with optional scheme restrictions.
-
-```python
-valid_url(
-    param_name: str = 'url',
-    position: int = 0,
-    schemes: Optional[list[str]] = None
-) -> GuardFunction
-```
-
-**Parameters:**
-- `param_name`: Name of parameter in kwargs
-- `position`: Position in args (default: 0)
-- `schemes`: Allowed URL schemes (default: ['http', 'https'])
-
-**Example:**
-```python
-@guarded_expression(
-    valid_url("endpoint", schemes=['https'])
-)
-def fetch_data(endpoint):
-    # Fetch from HTTPS endpoint
-    return f"Fetching from {endpoint}"
-```
-
----
-
-##### valid_enum
-
-Ensures parameter is valid enum member.
-
-```python
-valid_enum(
-    enum_class: type[Enum],
-    param_name: str = 'parameter',
-    position: int = 0
-) -> GuardFunction
-```
-
-**Parameters:**
-- `enum_class`: The Enum class to validate against
-- `param_name`: Name of parameter in kwargs
-- `position`: Position in args (default: 0)
-
-**Example:**
-```python
-from enum import Enum
-
-class Status(Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-
-@guarded_expression(
-    valid_enum(Status, "status")
-)
-def update_status(status):
-    return {"status": status.value}
-
-update_status(Status.ACTIVE)  # OK
-update_status("active")       # Raises: GuardClauseError
-```
-
----
-
-## 🚨 Error Classes
-
-### GuardClauseError
-
-Base exception raised when a guard clause fails.
-
-```python
-class GuardClauseError(Exception):
-    pass
-```
-
-**Usage:**
-```python
-@guarded_expression(
-    lambda x: x > 0 or "Must be positive",
-    on_error=GuardClauseError  # Default
-)
-```
-
----
-
-### ImplicitReturnError
-
-Base class for implicit return transformation errors. Inherits from `SyntaxError`.
-
-```python
-class ImplicitReturnError(SyntaxError):
-    def __init__(self, message: str, lineno: Optional[int] = None, col_offset: Optional[int] = None)
-```
-
----
-
-### ExplicitReturnDisallowedError
-
-Raised when explicit `return` statement found in function with implicit returns.
-
-```python
-class ExplicitReturnDisallowedError(ImplicitReturnError):
-    pass
-```
-
-**Example:**
-```python
-@guarded_expression()
-def invalid():
-    if True:
-        return 5  # Error! No explicit returns allowed
-```
-
----
-
-### MissingImplicitReturnError
-
-Raised when not all code paths yield a value.
-
-```python
-class MissingImplicitReturnError(ImplicitReturnError):
-    pass
-```
-
-**Example:**
-```python
-@guarded_expression()
-def invalid(x):
-    if x > 0:
-        x * 2
-    # Error! Missing else branch
-```
-
----
-
-### UnsupportedConstructError
-
-Raised when transformation encounters unsupported Python construct.
-
-```python
-class UnsupportedConstructError(ImplicitReturnError):
-    pass
-```
-
----
-
-## 📝 Guard Registry Functions
-
-Functions for managing custom guard registration and retrieval.
-
-### register_guard
-
-Register a custom guard function.
-
-```python
-register_guard(
-    name: str,
-    guard_func: Callable[..., GuardFunction],
-    namespace: str = 'default'
-) -> None
-```
-
-**Example:**
-```python
-def positive_int(param_name="vector", position=0):
-    def check(*args, **kwargs):
-        value = kwargs.get(param_name, args[position] if position < len(args) else None)
-        return (isinstance(value, int) and value > 0) or "Must be a positive integer"
-    return check
-
-register_guard("positive_int", positive_int, namespace="validators")
-```
-
----
-
-### get_guard
-
-Retrieve a registered guard function.
-
-```python
-get_guard(name: str, namespace: str = 'default') -> Callable[..., GuardFunction]
-```
-
-**Example:**
-```python
-positive_int_guard = get_guard("positive_int", namespace="validators")
-
-@guarded_expression(positive_int_guard("count"))
-def process(count):
-    return count * 2
-```
-
----
-
-### has_custom_guard
-
-Check if a guard is registered.
-
-```python
-has_custom_guard(name: str, namespace: str = 'default') -> bool
-```
-
----
-
-### list_custom_guards
-
-List all guards in a namespace.
-
-```python
-list_custom_guards(namespace: str = 'default') -> list[str]
-```
-
----
-
-### list_guard_namespaces
-
-List all available namespaces.
-
-```python
-list_guard_namespaces() -> list[str]
-```
-
----
-
-### unregister_guard
-
-Remove a registered guard.
-
-```python
-unregister_guard(name: str, namespace: str = 'default') -> None
-```
-
----
-
-### get_registry
-
-Get the complete guard registry dictionary.
-
-```python
-get_registry() -> dict[str, dict[str, Callable]]
-```
-
-**Returns:** Dictionary mapping namespaces to guard names to guard functions.
-
----
-
-## 📐 Type Definitions
+## 🧰 Guard toolkit
 
 ### GuardFunction
 
-Type alias for guard validation functions.
+`GuardFunction = Callable[..., bool | str]`. A guard receives the call's `*args, **kwargs` (minus the receiver on methods) and returns exactly `True` to pass, or a message to fail. Anything else, `False` included, fails as `'Guard clause failed'`; hence `return ok or 'message'`. Guards see what the caller passed, so a parameter left at its default isn't there.
+
+### Guards
+
+Nine static factories, each returning a `GuardFunction`. A guard looks for `param_name` in the keyword arguments, then at `args[position]`. For any parameter after the first, pass `position`, or a positional call checks argument 0. A value that isn't found fails, except under `matches_pattern`, which checks `''`.
+
+| Factory | Fails when | Message |
+|---|---|---|
+| `not_none(param_name='parameter', position=0)` | value is `None` | `{param_name} cannot be None` |
+| `not_empty(param_name='parameter', position=None)` | `len()` is 0, or the value is falsy | `{param_name} cannot be empty` |
+| `positive(param_name='parameter', position=0)` | not `> 0` | `{param_name} must be positive` |
+| `in_range(min_val, max_val, param_name='parameter', position=0)` | outside `[min_val, max_val]` | `{param_name} must be between {min_val} and {max_val}` |
+| `type_check(expected_type, param_name='parameter', position=0)` | not an instance | `{param_name} must be of type {name}` |
+| `matches_pattern(pattern, param_name='parameter', position=0)` | `re.match` on `str(value)` fails | `{param_name} must match pattern {pattern}` |
+| `valid_file_path(param_name='path', position=0, must_exist=True, must_be_file=False, must_be_dir=False)` | `None`, missing, not a file, not a directory | `{param_name} is required` / `does not exist: {value}` / `must be a file: {value}` / `must be a directory: {value}` |
+| `valid_url(param_name='url', position=0, require_scheme=True, schemes=('http', 'https'))` | `None`, scheme not in `schemes`, neither host nor path | `{param_name} is required` / `must use one of http/https: {value}` / `is not a valid URL: {value}` |
+| `valid_enum(enum_class, param_name='parameter', position=0)` | `None`, a string that isn't a member's value, any other non-member | `{param_name} is required` / `must be one of [values]: got {value}` / `must be a valid {Enum} name` |
+
+`CommonGuards`, the name this class had before 2.1, is still exported and is the same object.
+
+`matches_pattern` anchors at the start only; add `$` for a full match. `valid_url` accepts `http` and `https` unless you pass `schemes=('ftp',)` or set `require_scheme=False`.
 
 ```python
-GuardFunction = Callable[..., Union[bool, str]]
+@guarded_expression(
+  Guards.positive('qty'),
+  Guards.in_range(1, 10, 'qty'),
+  Guards.valid_enum(Color, 'color', position=1),
+)
+def order(qty: int, color: str) -> str:
+  f'{qty} x {Color(color).name}'
 ```
 
-A guard function:
-- Receives `(*args, **kwargs)` from the decorated function
-- Returns `True` if validation passes
-- Returns error message string if validation fails
+Full version: [examples/free_range/02_common_guards.py](../examples/free_range/02_common_guards.py)
+
+### GuardRegistry
+
+A process-wide registry of guard factories, used through class methods. `namespace=None` is the global namespace, separate from the named ones, and `Guards` fills `'common'` at import. No lock. Register at import time.
+
+| Method | Returns | Notes |
+|---|---|---|
+| `register(name, guard_factory, namespace=None)` | `None` | `ValueError` if the name is taken in that namespace |
+| `get(name, namespace=None)` | factory or `None` | |
+| `has_guard(name, namespace=None)` | `bool` | |
+| `list_guards(namespace=None)` | `list[str]` | |
+| `list_namespaces()` | `list[str]` | includes `'common'` |
+| `unregister(name, namespace=None)` | `bool` | removes a namespace once it's empty |
+| `instance()` | `GuardRegistry` | the singleton the class methods delegate to |
+
+```python
+GuardRegistry.register('max_weight', max_weight, namespace='shipping')
+registered = GuardRegistry.get('max_weight', namespace='shipping')
+
+@guarded_expression(registered(30), fragile_ok)
+def ship(kg: float, mode: str, fragile: bool = False) -> str:
+  f'{kg} kg by {mode}{" (fragile)" if fragile else ""}'
+```
+
+Full version: [examples/free_range/07_custom_guards.py](../examples/free_range/07_custom_guards.py)
+
+## Error classes
+
+| Exception | Base | Raised when |
+|---|---|---|
+| `GuardClauseError` | `Exception` | a guard fails under the default `on_failure` |
+| `ImplicitReturnError` | `SyntaxError` | never directly; the base of the three below |
+| `ExplicitReturnDisallowedError` | `ImplicitReturnError` | the rewritten body contains `return` |
+| `MissingImplicitReturnError` | `ImplicitReturnError` | a tail `if` has no `else`, or a tail `match` has no wildcard case |
+| `UnsupportedConstructError` | `ImplicitReturnError` | an unsupported tail, zero-argument `super()`, a bare `__class__` |
+| `MarkerUsageError` | `ImplicitReturnError` | an `eop_` form is malformed: no `default=`, a pattern outside the subset, a capture used outside its clause |
+| `MarkerPlacementError` | `ImplicitReturnError` | an `eop_` form sits where it cannot be lowered: a comprehension's first iterable, a nested class body, a guard reading a comprehension variable |
+| `MarkerNotRewrittenError` | `RuntimeError` | an `eop_` form ran as a plain call, outside any modgud decorator; `.name` holds the form |
+
+The `ImplicitReturnError` family is raised at decoration time, with `lineno` counted from the function's first decorator line. Missing source raises `ValueError` instead. `MarkerNotRewrittenError` is the one call-time error.
+
+## Integration seam
+
+The decorators depend on three ports, not on the code behind them. All are `typing.Protocol` classes marked `@Port` for [Idunn](https://pypi.org/project/idunn):
+
+```python
+from modgud import EopPort, GuardPort, ImplicitReturnPort
+from modgud.domain.ports import EopPort, GuardPort, ImplicitReturnPort  # same objects
+```
+
+The ports declare ordinary instance methods, so a fake is a plain object that may keep state on `self`. `ImplicitReturnPort` has `transform_function(self, func, *, forms, implicit_return=True)`, the rewrite of a plain function, and `transform(self, func, *, forms)`, what `@implicit_return()` calls: it also unwraps a `staticmethod` / `classmethod`, marks the result and refuses a `guarded_expression` wrapper. `GuardPort` has one method, `transform(self, func, continuance, imp_return_port, implicit_return, guards, strategy, on_failure, forms)`: it rewrites through `imp_return_port.transform_function`, then wraps with the guards. `forms` maps each `EopFormEnum` member to the `EopPort` that lowers it; `EopPort` has `lower(call, *, hoistable, fresh)` and `refuse()`, and one adapter serves each form under its key. Pass a fake as `guard_port=`, `imp_return_port=`, `eop_cond_port=`, `eop_case_port=` or `eop_match_port=` and it beats the injected adapter, for that decorator only. Swapping the adapters process-wide isn't supported.
+
+```python
+class RecordingTransformer:
+  def __init__(self) -> None:
+    self.seen: list[str] = []
+
+  def transform(self, func: F, *, forms: Mapping[Any, EopPort]) -> F:
+    self.seen.append(func.__name__)
+    return func
+
+  def transform_function(self, func: Callable[..., T], *, forms: Mapping[Any, EopPort], implicit_return: bool = True) -> Callable[..., T]:
+    self.seen.append(func.__name__)
+    return func
+
+RECORDER = RecordingTransformer()
+IMP_RETURN_PORT: ImplicitReturnPort = RECORDER  # mypy checks the fake here
+
+@guarded_expression(lambda x: x > 0 or 'x must be positive', guard_port=GUARD_PORT, imp_return_port=IMP_RETURN_PORT)
+def halve(x: int) -> float:
+  return x / 2
+```
+
+`GUARD_PORT`, in the full file, is an auditing fake that logs every verdict and blocks nothing: a bouncer who only takes notes.
+
+Full version: [examples/free_range/12_swapping_the_runtime.py](../examples/free_range/12_swapping_the_runtime.py)
+
+How the wiring behaves:
+
+- The first decoration in a process that leaves a port to injection, not the import, runs `Idunn().bootstrap('modgud')`. The decorators declare that with `@Invert(bootstrap='modgud')`; modgud itself never constructs `Idunn()`.
+- A decoration that passes every port it takes (the five for `guarded_expression`, the four for `implicit_return`) triggers no discovery. An `eop_` form called outside a decorator also discovers, so its adapter can refuse it.
+- Idunn reads `IDUNN_ENV` when its container is first created. modgud's adapters declare no environment, so it matters only to your own.
+- `Idunn().reset()` clears the whole container, yours included. The next decoration re-discovers modgud; earlier functions keep working. Fixtures call `Idunn().reset(environment=Idunn().environment)` to keep the environment.
 
 ---
 
-### GuardFailureStrategy
-
-Enum selecting how collected failures are dispatched. See the `guarded_expression` section above for the strategy × `on_failure` pairing table.
-
-```python
-class GuardFailureStrategy(IntEnum):
-  ERROR_RAISE  = auto()
-  ERROR_RETURN = auto()
-  RETURN_VALUE = auto()
-  CALL_HANDLER = auto()
-```
-
----
-
-### ErrorHandler
-
-Type alias for error handling callables.
-
-```python
-ErrorHandler = Callable[[str, tuple, dict], Any]
-```
-
-Receives:
-- Error message (str)
-- Original args (tuple)
-- Original kwargs (dict)
-
-Returns: Value to return from decorated function
-
----
-
-[← Back to Documentation Hub](README.md) | [← How It Works](how-it-works.md)
+[← Back to Documentation Hub](ADVANCED.md) | [How It Works →](how-it-works.md)

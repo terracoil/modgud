@@ -1,15 +1,7 @@
-"""Infrastructure aggregator.
+"""Infrastructure layer: nothing here is public.
 
-Re-exports the concrete implementations from each feature subpackage so the
-app layer can import them at the shortest absolute path.
+The ``adapters`` (injected by Idunn) and ``ast`` (transformer helpers) subpackages are
+internal, so this package re-exports neither.
 """
 
-from .guarded_expr import CommonGuards, GuardRegistry, GuardRuntime
-from .implicit_ret import ImplicitReturnTransformer
-
-__all__ = [
-  'CommonGuards',
-  'GuardRegistry',
-  'GuardRuntime',
-  'ImplicitReturnTransformer',
-]
+__all__: list[str] = []

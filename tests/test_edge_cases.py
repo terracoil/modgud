@@ -5,7 +5,15 @@ from threading import Thread
 from typing import List
 
 import pytest
-from modgud import CommonGuards, GuardClauseError, GuardRegistry, guarded_expression, positive
+from modgud import GuardClauseError, GuardRegistry, Guards, guarded_expression
+
+from tests.test_fixtures import (
+  conditional_noop,
+  deeply_nested_function,
+  empty_function,
+  exception_only_function,
+  noop_function,
+)
 
 
 class TestThreadSafety:
@@ -16,7 +24,7 @@ class TestThreadSafety:
     results: List[int] = []
     errors: List[Exception] = []
 
-    @guarded_expression(positive('x'), implicit_return=False)
+    @guarded_expression(Guards.positive('x'), implicit_return=False)
     def process(x):
       time.sleep(0.001)  # Simulate processing
       return x * 2
@@ -89,7 +97,7 @@ class TestPerformance:
   def test_guard_evaluation_overhead(self):
     """Guard overhead should be minimal (< 1ms per call)."""
 
-    @guarded_expression(CommonGuards.positive('x'), implicit_return=False)
+    @guarded_expression(Guards.positive('x'), implicit_return=False)
     def compute(x):
       return x * 2
 
@@ -112,10 +120,10 @@ class TestPerformance:
     """Multiple guards should still have acceptable performance."""
 
     @guarded_expression(
-      CommonGuards.not_none('x'),
-      CommonGuards.positive('x'),
-      CommonGuards.in_range(1, 100, 'x'),
-      CommonGuards.type_check(int, 'x'),
+      Guards.not_none('x'),
+      Guards.positive('x'),
+      Guards.in_range(1, 100, 'x'),
+      Guards.type_check(int, 'x'),
       implicit_return=False,
     )
     def process(x):
@@ -157,7 +165,7 @@ class TestErrorConditions:
   def test_unicode_parameter_names(self):
     """Guards should handle unicode parameter names."""
 
-    @guarded_expression(CommonGuards.positive('value'), implicit_return=False)
+    @guarded_expression(Guards.positive('value'), implicit_return=False)
     def process(value):
       return value * 2
 
@@ -179,8 +187,6 @@ class TestErrorConditions:
 
   def test_deeply_nested_control_flow(self):
     """Implicit return should work with deeply nested control flow."""
-    from tests.test_fixtures import deeply_nested_function
-
     assert deeply_nested_function(1) == 'one'
     assert deeply_nested_function(2) == 'two-a'
     assert deeply_nested_function(3) == 'three-a-i'
@@ -191,9 +197,7 @@ class TestErrorConditions:
   def test_recursive_function_with_guards(self):
     """Guards should work with recursive functions."""
 
-    @guarded_expression(
-      CommonGuards.not_none('n'), CommonGuards.positive('n'), implicit_return=False
-    )
+    @guarded_expression(Guards.not_none('n'), Guards.positive('n'), implicit_return=False)
     def factorial(n):
       if n <= 1:
         result = 1
@@ -211,9 +215,9 @@ class TestErrorConditions:
     """Guards should work with functions having many parameters."""
 
     @guarded_expression(
-      CommonGuards.positive('a'),
-      CommonGuards.positive('b'),
-      CommonGuards.positive('c'),
+      Guards.positive('a'),
+      Guards.positive('b'),
+      Guards.positive('c'),
       implicit_return=False,
     )
     def sum_many(a, b, c, d, e, f, g, h, i, j):
@@ -284,16 +288,12 @@ class TestImplicitReturnEdgeCases:
 
   def test_noop_function_with_pass(self):
     """Function with only pass should handle gracefully."""
-    from tests.test_fixtures import noop_function
-
     # pass statement should result in None being returned
     result = noop_function(5)
     assert result is None
 
   def test_exception_only_function(self):
     """Function that only raises exceptions should work correctly."""
-    from tests.test_fixtures import exception_only_function
-
     # All paths raise exceptions
     with pytest.raises(ValueError, match='Negative name'):
       exception_only_function(-5)
@@ -303,16 +303,12 @@ class TestImplicitReturnEdgeCases:
 
   def test_empty_function_body(self):
     """Function with just docstring should handle gracefully."""
-    from tests.test_fixtures import empty_function
-
     # Empty body should result in None being returned
     result = empty_function(10)
     assert result is None
 
   def test_conditional_noop_paths(self):
     """Function with some paths having values and some having pass."""
-    from tests.test_fixtures import conditional_noop
-
     # Positive path has name
     assert conditional_noop(5) == 10
 
